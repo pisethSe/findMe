@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { AuthApiError, login } from "./auth-api";
+import { AuthApiError, getPostAuthenticationPath, login } from "./auth-api";
 
 export function LoginForm() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export function LoginForm() {
         email: String(formData.get("email") ?? ""),
         password: String(formData.get("password") ?? ""),
       });
-      router.replace("/search?university=rupp");
+      router.replace(await getPostAuthenticationPath());
     } catch (caught) {
       setError(
         caught instanceof AuthApiError

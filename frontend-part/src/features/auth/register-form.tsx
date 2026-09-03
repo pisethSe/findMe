@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { AuthApiError, register } from "./auth-api";
+import { AuthApiError, getPostAuthenticationPath, register } from "./auth-api";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export function RegisterForm() {
         password,
         preferredLocale: formData.get("preferredLocale") === "EN" ? "EN" : "KM",
       });
-      router.replace("/search?university=rupp");
+      router.replace(await getPostAuthenticationPath());
     } catch (caught) {
       setError(
         caught instanceof AuthApiError

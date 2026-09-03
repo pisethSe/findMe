@@ -15,6 +15,61 @@ export interface AuthSession {
   user: AuthUser;
 }
 
+export type OnboardingStage =
+  "ROLE_SELECTION" | "STUDENT_PROFILE" | "LANDLORD_PROFILE" | "COMPLETE";
+
+export interface OnboardingState {
+  role: UserRole | null;
+  stage: OnboardingStage;
+  nextPath:
+    | "/onboarding/role"
+    | "/onboarding/landlord"
+    | "/search"
+    | "/landlord"
+    | "/admin";
+  roleSelectionComplete: boolean;
+  profileComplete: boolean;
+  landlordTrialActivated: boolean;
+}
+
+export interface LandlordEntitlement {
+  status: "TRIALING" | "ACTIVE" | "EXPIRED" | "SUSPENDED" | "CANCELLED";
+  source: "TRIAL" | "ADMIN_GRANT" | "SUBSCRIPTION";
+  trialStartedAt: string | null;
+  trialEndsAt: string | null;
+  accessEndsAt: string | null;
+  evaluatedAt: string;
+  isAccessActive: boolean;
+  remainingDays: number | null;
+  capabilities: {
+    canReadListings: true;
+    canCreateListings: boolean;
+    canSubmitListings: boolean;
+    canPublishListings: boolean;
+    canIncreaseAvailability: boolean;
+  };
+}
+
+export interface LandlordOnboardingResult {
+  onboarding: OnboardingState;
+  profile: {
+    userId: string;
+    displayName: string;
+    businessName: string | null;
+    contactPhone: string;
+    contactTelegram: string | null;
+    verificationStatus: "UNVERIFIED" | "PENDING" | "VERIFIED" | "REJECTED";
+  };
+  entitlement: {
+    landlordId: string;
+    status: LandlordEntitlement["status"];
+    source: LandlordEntitlement["source"];
+    trialStartedAt: string | null;
+    trialEndsAt: string | null;
+    accessEndsAt: string | null;
+  };
+}
+
 interface ApiEnvelope<TData> {
   data: TData;
 }
@@ -38,7 +93,21 @@ export class AuthApiError extends Error {
   }
 }
 
+export function isAuthenticationSessionError(error: unknown): boolean {
+  return (
+    error instanceof AuthApiError &&
+    [
+      "SESSION_REQUIRED",
+      "SESSION_INVALID",
+      "ACCESS_TOKEN_REQUIRED",
+      "ACCESS_TOKEN_INVALID",
+      "ACCOUNT_UNAVAILABLE",
+    ].includes(error.code)
+  );
+}
+
 let inMemoryAccessToken: string | null = null;
+let refreshInFlight: Promise<AuthSession> | null = null;
 
 export function getAccessToken(): string | null {
   return inMemoryAccessToken;
@@ -53,7 +122,10 @@ export async function register(input: {
   password: string;
   preferredLocale: PreferredLocale;
 }): Promise<AuthSession> {
-  const session = await post<AuthSession>("/auth/register", input);
+  const session = await request<AuthSession>("/auth/register", {
+    method: "POST",
+    body: input,
+  });
   inMemoryAccessToken = session.accessToken;
   return session;
 }
@@ -62,37 +134,134 @@ export async function login(input: {
   email: string;
   password: string;
 }): Promise<AuthSession> {
-  const session = await post<AuthSession>("/auth/login", input);
+  const session = await request<AuthSession>("/auth/login", {
+    method: "POST",
+    body: input,
+  });
   inMemoryAccessToken = session.accessToken;
   return session;
 }
 
 export async function refreshSession(): Promise<AuthSession> {
-  const session = await post<AuthSession>("/auth/refresh", {});
-  inMemoryAccessToken = session.accessToken;
-  return session;
+  if (!refreshInFlight) {
+    refreshInFlight = request<AuthSession>("/auth/refresh", {
+      method: "POST",
+      body: {},
+    })
+      .then((session) => {
+        inMemoryAccessToken = session.accessToken;
+        return session;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
 }
 
 export async function requestPasswordReset(email: string): Promise<{
   accepted: true;
   developmentResetToken?: string;
 }> {
-  return post("/auth/forgot-password", { email });
+  return request("/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
 }
 
 export async function resetPassword(
   token: string,
   password: string,
 ): Promise<{ passwordReset: true }> {
-  return post("/auth/reset-password", { token, password });
+  return request("/auth/reset-password", {
+    method: "POST",
+    body: { token, password },
+  });
 }
 
-async function post<TData>(path: string, body: object): Promise<TData> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+export async function getOnboardingState(): Promise<OnboardingState> {
+  return authorizedRequest("/me/onboarding", { method: "GET" });
+}
+
+export async function selectRole(input: {
+  role: "STUDENT" | "LANDLORD";
+  displayName?: string;
+}): Promise<OnboardingState> {
+  return authorizedRequest("/me/onboarding/role", {
     method: "POST",
+    body: input,
+  });
+}
+
+export async function completeLandlordOnboarding(input: {
+  displayName: string;
+  businessName?: string;
+  contactPhone: string;
+  contactTelegram?: string;
+}): Promise<LandlordOnboardingResult> {
+  return authorizedRequest("/landlord/onboarding", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function getLandlordEntitlement(): Promise<LandlordEntitlement> {
+  return authorizedRequest("/landlord/entitlement", { method: "GET" });
+}
+
+export async function getPostAuthenticationPath(): Promise<
+  OnboardingState["nextPath"]
+> {
+  return (await getOnboardingState()).nextPath;
+}
+
+async function authorizedRequest<TData>(
+  path: string,
+  options: { method: "GET" | "POST"; body?: object },
+): Promise<TData> {
+  const accessToken = await ensureAccessToken();
+  try {
+    return await request<TData>(path, { ...options, accessToken });
+  } catch (error) {
+    if (
+      !(error instanceof AuthApiError) ||
+      !["ACCESS_TOKEN_INVALID", "SESSION_INVALID"].includes(error.code)
+    ) {
+      throw error;
+    }
+
+    clearAccessToken();
+    const session = await refreshSession();
+    return request<TData>(path, {
+      ...options,
+      accessToken: session.accessToken,
+    });
+  }
+}
+
+async function ensureAccessToken(): Promise<string> {
+  if (inMemoryAccessToken) return inMemoryAccessToken;
+  return (await refreshSession()).accessToken;
+}
+
+async function request<TData>(
+  path: string,
+  options: {
+    method: "GET" | "POST";
+    body?: object;
+    accessToken?: string;
+  },
+): Promise<TData> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: options.method,
     credentials: "include",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
+    headers: {
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...(options.accessToken
+        ? { authorization: `Bearer ${options.accessToken}` }
+        : {}),
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
   });
   const payload = (await response.json().catch(() => ({}))) as
     ApiEnvelope<TData> | ErrorEnvelope;

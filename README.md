@@ -38,6 +38,8 @@ The repository currently includes:
 - NestJS email/password authentication with Argon2id, short-lived access
   tokens, rotating database-backed refresh sessions, password reset, and
   reusable role guards;
+- one-time Student/Landlord role onboarding, atomic profile activation, and a
+  server-timed seven-day Landlord entitlement with expiry-aware capabilities;
 - Docker assets for the frontend, backend, local PostgreSQL/PostGIS, and Redis;
 - domain rules for transparent multi-currency rental costs, publish readiness,
   availability freshness, listing state transitions, and explainable ranking;
@@ -55,6 +57,9 @@ Rental data ownership and the landlord publication flow are documented in
 Authentication behavior, environment requirements, and the local
 password-reset workflow are documented in
 [Authentication foundation](docs/AUTHENTICATION.md).
+
+Role selection, profile activation, and Landlord trial behavior are documented
+in [Onboarding and landlord access](docs/ONBOARDING.md).
 
 The complete folder map and ownership rules are documented in
 [Project structure](PROJECT-STRUCTURE.md).
@@ -87,6 +92,10 @@ The NestJS API exposes:
 - `POST /api/v1/auth/forgot-password`
 - `POST /api/v1/auth/reset-password`
 - `GET /api/v1/auth/me`
+- `GET /api/v1/me/onboarding`
+- `POST /api/v1/me/onboarding/role`
+- `POST /api/v1/landlord/onboarding`
+- `GET /api/v1/landlord/entitlement`
 
 The current frontend demonstration still exposes temporary Next.js route
 handlers until the production NestJS data modules replace them:

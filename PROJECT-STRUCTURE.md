@@ -53,12 +53,15 @@ findMe/
 Step 1 established the workspace, preserved the existing student-facing demo,
 and provided a running API skeleton. Step 2 added the canonical Prisma/PostGIS
 model, migration, reference-data seed, database-enforced integrity rules,
-NestJS connection lifecycle, and dependency-aware readiness check. Step 3 adds
+NestJS connection lifecycle, and dependency-aware readiness check. Step 3 added
 email/password authentication, Argon2id password storage, access and refresh
 sessions, password-reset token handling, reusable authentication/role guards,
-and responsive public account screens. The legacy SQL is no longer a migration
-source.
+and responsive public account screens. Step 4 added one-time Student/Landlord
+role selection, transactional Student profile activation, atomic Landlord
+profile and seven-day trial activation, expiry-aware access policy, and the
+matching responsive onboarding and Landlord access screens. The legacy SQL is
+no longer a migration source.
 
-The next foundation slice is Step 4: one-time Student/Landlord role onboarding,
-student/landlord profile activation, and the server-timed landlord entitlement
-transaction.
+The remaining Phase 0 foundation work is production Google Maps key setup and
+restriction plus CI checks. Institution and amenity seed data was established
+in Step 2.

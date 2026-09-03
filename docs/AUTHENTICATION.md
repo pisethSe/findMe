@@ -37,8 +37,8 @@ GET  /auth/me
 
 Registration accepts email, password, and preferredLocale (KM or EN). It
 deliberately does not accept a role. Unknown fields are rejected, including
-attempts to submit role: ADMIN. The account begins with a null role until the
-server-owned role-onboarding command is implemented in Phase 0 Step 4.
+attempts to submit role: ADMIN. The account begins with a null role and proceeds
+through the server-owned role-onboarding command implemented in Phase 0 Step 4.
 
 Successful register, login, and refresh responses return a short-lived access
 token and a safe user DTO. They never expose password hashes, refresh tokens,

@@ -2,9 +2,17 @@ import { Module } from "@nestjs/common";
 
 import { DatabaseModule } from "./database/database.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
+import { EntitlementsModule } from "./modules/entitlements/entitlements.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
+import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, HealthModule],
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    OnboardingModule,
+    EntitlementsModule,
+    HealthModule,
+  ],
 })
 export class AppModule {}
