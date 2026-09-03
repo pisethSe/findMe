@@ -1,0 +1,29 @@
+{
+  "name": "findme-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "dev": "corepack pnpm --parallel --filter @findme/frontend --filter @findme/backend dev",
+    "dev:frontend": "corepack pnpm --filter @findme/frontend dev",
+    "dev:backend": "corepack pnpm --filter @findme/backend dev",
+    "db:generate": "corepack pnpm --filter @findme/database generate",
+    "db:validate": "corepack pnpm --filter @findme/database validate",
+    "db:migrate": "corepack pnpm --filter @findme/database migrate:deploy",
+    "db:seed": "corepack pnpm --filter @findme/database seed",
+    "build": "corepack pnpm -r --if-present build",
+    "typecheck": "corepack pnpm run db:generate && corepack pnpm -r --if-present typecheck",
+    "test": "corepack pnpm -r --if-present test",
+    "lint": "corepack pnpm -r --if-present lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "oxlint": "1.81.0",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3"
+  }
+}

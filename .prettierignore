@@ -1,0 +1,13 @@
+.next
+coverage
+dist
+node_modules
+pnpm-lock.yaml
+frontend-part/next-env.d.ts
+database-part/legacy-sql
+AGENTS.md
+ARCHITECTURE.md
+ARCHITECTURE-ESSENTIALS.md
+PRD.md
+PRODUCT.md
+docs

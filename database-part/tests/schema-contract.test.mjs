@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const schemaUrl = new URL("../prisma/schema.prisma", import.meta.url);
+const migrationUrl = new URL(
+  "../prisma/migrations/20260902000100_initial/migration.sql",
+  import.meta.url,
+);
+
+test("canonical Prisma schema contains the required marketplace boundaries", async () => {
+  const schema = await readFile(schemaUrl, "utf8");
+
+  for (const model of [
+    "User",
+    "StudentProfile",
+    "LandlordProfile",
+    "LandlordEntitlement",
+    "Institution",
+    "Property",
+    "Listing",
+    "ListingImage",
+    "Amenity",
+    "Favorite",
+    "Inquiry",
+    "Report",
+    "AuditLog",
+    "RefreshSession",
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+  }
+
+  assert.match(schema, /property\s+Property\s+@relation\("PropertyListings"/);
+  assert.match(schema, /Unsupported\("geography\(Point,4326\)"\)/g);
+  assert.match(
+    schema,
+    /DRAFT\s+[\s\S]*PENDING_REVIEW[\s\S]*PUBLISHED[\s\S]*PAUSED[\s\S]*RENTED[\s\S]*REJECTED[\s\S]*ARCHIVED/,
+  );
+});
+
+test("initial migration installs PostGIS and database-enforced invariants", async () => {
+  const migration = await readFile(migrationUrl, "utf8");
+
+  for (const requiredSql of [
+    'CREATE EXTENSION IF NOT EXISTS "postgis"',
+    'CREATE UNIQUE INDEX "users_email_normalized_key"',
+    'USING GIST ("location")',
+    'CONSTRAINT "users_onboarding_role_check"',
+    'CONSTRAINT "landlord_entitlements_trial_window_check"',
+    'CREATE TRIGGER "landlord_entitlements_delete_trigger"',
+    'CREATE TRIGGER "listings_capacity_trigger"',
+    'CREATE TRIGGER "inquiries_valid_listing_trigger"',
+    'FOREIGN KEY ("property_id", "landlord_id")',
+    'PRIMARY KEY ("student_id","listing_id")',
+  ]) {
+    assert.ok(migration.includes(requiredSql), `missing SQL: ${requiredSql}`);
+  }
+});

@@ -1,0 +1,38 @@
+{
+  "name": "@findme/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "corepack pnpm --filter @findme/database generate && nest build",
+    "start": "node dist/main.js",
+    "test": "corepack pnpm run build && node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint src tests",
+    "format:check": "prettier --check src tests nest-cli.json tsconfig.json tsconfig.build.json package.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.0.1",
+    "@nestjs/core": "12.0.1",
+    "@nestjs/platform-express": "12.0.1",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "argon2": "0.45.1",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "cookie": "2.0.1",
+    "dotenv": "17.2.3",
+    "jose": "6.2.10",
+    "pg": "8.16.3",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "12.0.0",
+    "@types/express": "5.0.6",
+    "@types/node": "24.13.3",
+    "@types/pg": "8.15.5",
+    "typescript": "5.9.3"
+  }
+}

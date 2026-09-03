@@ -1,0 +1,457 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../../backend-part/src/generated/prisma"
+  moduleFormat        = "esm"
+  runtime             = "nodejs"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT  @map("student")
+  LANDLORD @map("landlord")
+  ADMIN    @map("admin")
+
+  @@map("user_role")
+}
+
+enum AccountStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  DELETED   @map("deleted")
+
+  @@map("account_status")
+}
+
+enum PreferredLocale {
+  KM @map("km")
+  EN @map("en")
+
+  @@map("preferred_locale")
+}
+
+enum VerificationStatus {
+  UNVERIFIED @map("unverified")
+  PENDING    @map("pending")
+  VERIFIED   @map("verified")
+  REJECTED   @map("rejected")
+
+  @@map("verification_status")
+}
+
+enum EntitlementStatus {
+  TRIALING  @map("trialing")
+  ACTIVE    @map("active")
+  EXPIRED   @map("expired")
+  SUSPENDED @map("suspended")
+  CANCELLED @map("cancelled")
+
+  @@map("entitlement_status")
+}
+
+enum EntitlementSource {
+  TRIAL        @map("trial")
+  ADMIN_GRANT  @map("admin_grant")
+  SUBSCRIPTION @map("subscription")
+
+  @@map("entitlement_source")
+}
+
+enum InstitutionType {
+  UNIVERSITY @map("university")
+  COLLEGE    @map("college")
+  SCHOOL     @map("school")
+  OTHER      @map("other")
+
+  @@map("institution_type")
+}
+
+enum PropertyType {
+  ROOM                 @map("room")
+  STUDIO               @map("studio")
+  APARTMENT            @map("apartment")
+  HOUSE                @map("house")
+  DORM_ROOM            @map("dorm_room")
+  OTHER_STUDENT_RENTAL @map("other_student_rental")
+
+  @@map("property_type")
+}
+
+enum Currency {
+  USD @map("USD")
+  KHR @map("KHR")
+
+  @@map("currency")
+}
+
+enum ListingStatus {
+  DRAFT          @map("draft")
+  PENDING_REVIEW @map("pending_review")
+  PUBLISHED      @map("published")
+  PAUSED         @map("paused")
+  RENTED         @map("rented")
+  REJECTED       @map("rejected")
+  ARCHIVED       @map("archived")
+
+  @@map("listing_status")
+}
+
+enum ImageStatus {
+  UPLOADING @map("uploading")
+  READY     @map("ready")
+  FAILED    @map("failed")
+  REMOVED   @map("removed")
+
+  @@map("image_status")
+}
+
+enum InquiryStatus {
+  NEW       @map("new")
+  READ      @map("read")
+  RESPONDED @map("responded")
+  CLOSED    @map("closed")
+
+  @@map("inquiry_status")
+}
+
+enum ReportReason {
+  INACCURATE      @map("inaccurate")
+  UNAVAILABLE     @map("unavailable")
+  SCAM_SUSPICIOUS @map("scam_suspicious")
+  DUPLICATE       @map("duplicate")
+  INAPPROPRIATE   @map("inappropriate")
+  OTHER           @map("other")
+
+  @@map("report_reason")
+}
+
+enum ReportStatus {
+  OPEN      @map("open")
+  IN_REVIEW @map("in_review")
+  RESOLVED  @map("resolved")
+  DISMISSED @map("dismissed")
+
+  @@map("report_status")
+}
+
+model User {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String?         @unique @db.VarChar(320)
+  phone                 String?         @unique @db.VarChar(32)
+  passwordHash          String          @map("password_hash") @db.VarChar(255)
+  role                  UserRole?
+  accountStatus         AccountStatus   @default(ACTIVE) @map("account_status")
+  preferredLocale       PreferredLocale @default(KM) @map("preferred_locale")
+  onboardingCompletedAt DateTime?       @map("onboarding_completed_at") @db.Timestamptz(3)
+  emailVerifiedAt       DateTime?       @map("email_verified_at") @db.Timestamptz(3)
+  phoneVerifiedAt       DateTime?       @map("phone_verified_at") @db.Timestamptz(3)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime        @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt             DateTime?       @map("deleted_at") @db.Timestamptz(3)
+
+  studentProfile      StudentProfile?
+  landlordProfile     LandlordProfile?
+  landlordEntitlement LandlordEntitlement?
+  properties          Property[]           @relation("LandlordProperties")
+  listings            Listing[]            @relation("LandlordListings")
+  favorites           Favorite[]           @relation("StudentFavorites")
+  studentInquiries    Inquiry[]            @relation("StudentInquiries")
+  landlordInquiries   Inquiry[]            @relation("LandlordInquiries")
+  reportsFiled        Report[]             @relation("ReportsFiled")
+  reportsResolved     Report[]             @relation("ReportsResolved")
+  auditLogs           AuditLog[]           @relation("AuditActor")
+  refreshSessions     RefreshSession[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  userId                 String       @id @map("user_id") @db.Uuid
+  displayName            String       @map("display_name") @db.VarChar(120)
+  institutionId          String?      @map("institution_id") @db.Uuid
+  preferredRadiusMeters  Int?         @map("preferred_radius_meters")
+  preferredMinPrice      Decimal?     @map("preferred_min_price") @db.Decimal(12, 2)
+  preferredMaxPrice      Decimal?     @map("preferred_max_price") @db.Decimal(12, 2)
+  preferredPriceCurrency Currency?    @map("preferred_price_currency")
+  createdAt              DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  user                   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution            Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId])
+  @@map("student_profiles")
+}
+
+model LandlordProfile {
+  userId             String             @id @map("user_id") @db.Uuid
+  displayName        String             @map("display_name") @db.VarChar(120)
+  businessName       String?            @map("business_name") @db.VarChar(160)
+  contactPhone       String             @map("contact_phone") @db.VarChar(32)
+  contactTelegram    String?            @map("contact_telegram") @db.VarChar(80)
+  verificationStatus VerificationStatus @default(UNVERIFIED) @map("verification_status")
+  verifiedAt         DateTime?          @map("verified_at") @db.Timestamptz(3)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @default(now()) @map("updated_at") @db.Timestamptz(3)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("landlord_profiles")
+}
+
+model LandlordEntitlement {
+  landlordId     String            @id @map("landlord_id") @db.Uuid
+  status         EntitlementStatus
+  source         EntitlementSource
+  trialStartedAt DateTime?         @map("trial_started_at") @db.Timestamptz(3)
+  trialEndsAt    DateTime?         @map("trial_ends_at") @db.Timestamptz(3)
+  accessEndsAt   DateTime?         @map("access_ends_at") @db.Timestamptz(3)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  landlord       User              @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+
+  @@index([status, accessEndsAt])
+  @@map("landlord_entitlements")
+}
+
+model Institution {
+  id              String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String                                @unique @db.VarChar(160)
+  nameKm          String                                @map("name_km") @db.VarChar(200)
+  nameEn          String                                @map("name_en") @db.VarChar(200)
+  shortName       String?                               @map("short_name") @db.VarChar(40)
+  type            InstitutionType
+  addressKm       String?                               @map("address_km") @db.VarChar(500)
+  addressEn       String?                               @map("address_en") @db.VarChar(500)
+  city            String                                @default("Phnom Penh") @db.VarChar(120)
+  countryCode     String                                @default("KH") @map("country_code") @db.Char(2)
+  latitude        Decimal                               @db.Decimal(9, 6)
+  longitude       Decimal                               @db.Decimal(9, 6)
+  location        Unsupported("geography(Point,4326)")? @default(dbgenerated())
+  googlePlaceId   String?                               @unique @map("google_place_id") @db.VarChar(255)
+  isActive        Boolean                               @default(true) @map("is_active")
+  createdAt       DateTime                              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime                              @default(now()) @map("updated_at") @db.Timestamptz(3)
+  studentProfiles StudentProfile[]
+
+  @@index([isActive, nameEn])
+  @@index([location], type: Gist, map: "institutions_location_gist_idx")
+  @@map("institutions")
+}
+
+model Property {
+  id            String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  landlordId    String                                @map("landlord_id") @db.Uuid
+  name          String                                @db.VarChar(180)
+  addressLine   String                                @map("address_line") @db.VarChar(500)
+  commune       String?                               @db.VarChar(120)
+  district      String?                               @db.VarChar(120)
+  city          String                                @default("Phnom Penh") @db.VarChar(120)
+  countryCode   String                                @default("KH") @map("country_code") @db.Char(2)
+  latitude      Decimal                               @db.Decimal(9, 6)
+  longitude     Decimal                               @db.Decimal(9, 6)
+  location      Unsupported("geography(Point,4326)")? @default(dbgenerated())
+  googlePlaceId String?                               @map("google_place_id") @db.VarChar(255)
+  totalUnits    Int                                   @map("total_units")
+  createdAt     DateTime                              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime                              @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime?                             @map("deleted_at") @db.Timestamptz(3)
+  landlord      User                                  @relation("LandlordProperties", fields: [landlordId], references: [id], onDelete: Restrict)
+  listings      Listing[]                             @relation("PropertyListings")
+
+  @@unique([id, landlordId])
+  @@index([landlordId, deletedAt])
+  @@index([location], type: Gist, map: "properties_location_gist_idx")
+  @@map("properties")
+}
+
+model Listing {
+  id                      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId              String           @map("property_id") @db.Uuid
+  landlordId              String           @map("landlord_id") @db.Uuid
+  slug                    String           @unique @db.VarChar(180)
+  titleKm                 String?          @map("title_km") @db.VarChar(200)
+  titleEn                 String?          @map("title_en") @db.VarChar(200)
+  descriptionKm           String?          @map("description_km") @db.Text
+  descriptionEn           String?          @map("description_en") @db.Text
+  propertyType            PropertyType     @map("property_type")
+  monthlyPrice            Decimal          @map("monthly_price") @db.Decimal(12, 2)
+  currency                Currency
+  depositAmount           Decimal?         @map("deposit_amount") @db.Decimal(12, 2)
+  utilityNotesKm          String?          @map("utility_notes_km") @db.Text
+  utilityNotesEn          String?          @map("utility_notes_en") @db.Text
+  houseRulesKm            String?          @map("house_rules_km") @db.Text
+  houseRulesEn            String?          @map("house_rules_en") @db.Text
+  bedrooms                Int?
+  bathrooms               Int?
+  furnished               Boolean          @default(false)
+  availableFrom           DateTime?        @map("available_from") @db.Date
+  availableUnits          Int              @map("available_units")
+  availabilityConfirmedAt DateTime?        @map("availability_confirmed_at") @db.Timestamptz(3)
+  status                  ListingStatus    @default(DRAFT)
+  moderationNote          String?          @map("moderation_note") @db.Text
+  publishedAt             DateTime?        @map("published_at") @db.Timestamptz(3)
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime         @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt               DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  property                Property         @relation("PropertyListings", fields: [propertyId, landlordId], references: [id, landlordId], onDelete: Cascade)
+  landlord                User             @relation("LandlordListings", fields: [landlordId], references: [id], onDelete: Restrict)
+  images                  ListingImage[]
+  amenities               ListingAmenity[]
+  favorites               Favorite[]
+  inquiries               Inquiry[]        @relation("ListingInquiries")
+  reports                 Report[]
+
+  @@unique([id, landlordId])
+  @@index([propertyId])
+  @@index([landlordId, status, deletedAt])
+  @@index([status, availableUnits, monthlyPrice])
+  @@map("listings")
+}
+
+model ListingImage {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId  String      @map("listing_id") @db.Uuid
+  storageKey String      @unique @map("storage_key") @db.VarChar(500)
+  publicUrl  String      @map("public_url") @db.VarChar(1000)
+  altTextKm  String?     @map("alt_text_km") @db.VarChar(300)
+  altTextEn  String?     @map("alt_text_en") @db.VarChar(300)
+  width      Int?
+  height     Int?
+  sortOrder  Int         @default(0) @map("sort_order")
+  status     ImageStatus @default(UPLOADING)
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime    @default(now()) @map("updated_at") @db.Timestamptz(3)
+  listing    Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, sortOrder])
+  @@index([listingId, status])
+  @@map("listing_images")
+}
+
+model Amenity {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String           @unique @db.VarChar(80)
+  nameKm    String           @map("name_km") @db.VarChar(120)
+  nameEn    String           @map("name_en") @db.VarChar(120)
+  category  String?          @db.VarChar(80)
+  isActive  Boolean          @default(true) @map("is_active")
+  sortOrder Int              @default(0) @map("sort_order")
+  listings  ListingAmenity[]
+
+  @@index([isActive, sortOrder])
+  @@map("amenities")
+}
+
+model ListingAmenity {
+  listingId String   @map("listing_id") @db.Uuid
+  amenityId String   @map("amenity_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  amenity   Amenity  @relation(fields: [amenityId], references: [id], onDelete: Restrict)
+
+  @@id([listingId, amenityId])
+  @@index([amenityId])
+  @@map("listing_amenities")
+}
+
+model Favorite {
+  studentId String   @map("student_id") @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  student   User     @relation("StudentFavorites", fields: [studentId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, listingId])
+  @@index([listingId])
+  @@map("favorites")
+}
+
+model Inquiry {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId   String        @map("listing_id") @db.Uuid
+  studentId   String        @map("student_id") @db.Uuid
+  landlordId  String        @map("landlord_id") @db.Uuid
+  message     String        @db.Text
+  status      InquiryStatus @default(NEW)
+  readAt      DateTime?     @map("read_at") @db.Timestamptz(3)
+  respondedAt DateTime?     @map("responded_at") @db.Timestamptz(3)
+  closedAt    DateTime?     @map("closed_at") @db.Timestamptz(3)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @default(now()) @map("updated_at") @db.Timestamptz(3)
+  listing     Listing       @relation("ListingInquiries", fields: [listingId, landlordId], references: [id, landlordId], onDelete: Restrict)
+  student     User          @relation("StudentInquiries", fields: [studentId], references: [id], onDelete: Restrict)
+  landlord    User          @relation("LandlordInquiries", fields: [landlordId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, createdAt])
+  @@index([landlordId, status, createdAt])
+  @@index([listingId])
+  @@map("inquiries")
+}
+
+model Report {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId      String       @map("listing_id") @db.Uuid
+  reporterId     String?      @map("reporter_id") @db.Uuid
+  reason         ReportReason
+  details        String?      @db.Text
+  status         ReportStatus @default(OPEN)
+  resolvedById   String?      @map("resolved_by_id") @db.Uuid
+  resolutionNote String?      @map("resolution_note") @db.Text
+  resolvedAt     DateTime?    @map("resolved_at") @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  listing        Listing      @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  reporter       User?        @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
+  resolvedBy     User?        @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([listingId])
+  @@map("reports")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String   @db.VarChar(120)
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?    @db.JsonB
+  ipHash     String?  @map("ip_hash") @db.VarChar(128)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}
+
+model RefreshSession {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(128)
+  userAgent String?   @map("user_agent") @db.VarChar(500)
+  ipHash    String?   @map("ip_hash") @db.VarChar(128)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("refresh_sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(128)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
+}
