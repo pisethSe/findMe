@@ -9,6 +9,14 @@ COPY shared-part/contracts/package.json shared-part/contracts/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS builder
+ARG APP_ENV=production
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api/v1
+ARG NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY
+ARG NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
+ENV APP_ENV=$APP_ENV
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY
+ENV NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=$NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
 COPY frontend-part frontend-part
 COPY shared-part shared-part
 RUN pnpm --filter @findme/frontend build

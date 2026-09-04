@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  resolveGoogleMapsBrowserConfig,
+  type GoogleMapsBrowserConfig,
+} from "../../config/google-maps";
+
 type PreviewState = "fallback" | "loading" | "ready" | "error";
 
 interface PreviewRental {
@@ -41,8 +46,13 @@ const PREVIEW_RENTALS: readonly PreviewRental[] = [
 ] as const;
 
 let mapsLoader: Promise<void> | undefined;
+const GOOGLE_MAPS_LOAD_TIMEOUT_MS = 12_000;
+const googleMapsConfig = resolveGoogleMapsBrowserConfig({
+  apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY,
+  mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
+});
 
-function loadGoogleMaps(apiKey: string): Promise<void> {
+function loadGoogleMaps(config: GoogleMapsBrowserConfig): Promise<void> {
   const googleWindow = window as typeof window & {
     google?: typeof google;
   };
@@ -53,14 +63,33 @@ function loadGoogleMaps(apiKey: string): Promise<void> {
     const callbackName = `__findMeMapsReady${Date.now()}`;
     const callbackHost = window as typeof window & Record<string, unknown>;
     const script = document.createElement("script");
+    const source = new URL("https://maps.googleapis.com/maps/api/js");
+    source.search = new URLSearchParams({
+      key: config.apiKey,
+      v: "weekly",
+      loading: "async",
+      callback: callbackName,
+      auth_referrer_policy: "origin",
+      language: "km",
+      region: "KH",
+      map_ids: config.mapId,
+    }).toString();
+    const timeout = window.setTimeout(() => {
+      delete callbackHost[callbackName];
+      script.remove();
+      mapsLoader = undefined;
+      reject(new Error("Google Maps took too long to load."));
+    }, GOOGLE_MAPS_LOAD_TIMEOUT_MS);
 
     callbackHost[callbackName] = () => {
+      window.clearTimeout(timeout);
       delete callbackHost[callbackName];
       resolve();
     };
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async&callback=${callbackName}`;
+    script.src = source.toString();
     script.async = true;
     script.onerror = () => {
+      window.clearTimeout(timeout);
       delete callbackHost[callbackName];
       mapsLoader = undefined;
       reject(new Error("Google Maps could not load."));
@@ -120,7 +149,6 @@ export function RentalMapPreview() {
   const liveMapRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<PreviewState>("fallback");
   const [motionAllowed, setMotionAllowed] = useState(false);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY;
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -134,19 +162,27 @@ export function RentalMapPreview() {
   useEffect(() => {
     const container = liveMapRef.current;
 
-    if (!container || !apiKey || !motionAllowed) {
+    if (
+      !container ||
+      googleMapsConfig.status === "DISABLED" ||
+      !motionAllowed
+    ) {
       setState("fallback");
+      return;
+    }
+    if (googleMapsConfig.status === "INVALID") {
+      setState("error");
       return;
     }
 
     const mapContainer = container;
-    const mapsApiKey = apiKey;
+    const mapsConfiguration = googleMapsConfig.config;
     let active = true;
     setState("loading");
 
     async function initializeMap() {
       try {
-        await loadGoogleMaps(mapsApiKey);
+        await loadGoogleMaps(mapsConfiguration);
         const [{ Map3DElement, Marker3DInteractiveElement }, { PinElement }] =
           await Promise.all([
             google.maps.importLibrary("maps3d"),
@@ -162,6 +198,7 @@ export function RentalMapPreview() {
           heading: 24,
           mode: "HYBRID",
           gestureHandling: "COOPERATIVE",
+          mapId: mapsConfiguration.mapId,
         });
         map.className = "live-map-element";
 
@@ -200,7 +237,7 @@ export function RentalMapPreview() {
       active = false;
       mapContainer.replaceChildren();
     };
-  }, [apiKey, motionAllowed]);
+  }, [motionAllowed]);
 
   return (
     <section className="map-preview" aria-labelledby="map-preview-title">

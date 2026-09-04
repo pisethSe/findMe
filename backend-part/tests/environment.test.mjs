@@ -5,11 +5,13 @@ import {
   getAppEnvironment,
   getAuthSecret,
   getDatabaseUrl,
+  getGoogleMapsServerKey,
   getWebOrigin,
   parseAccessTokenTtl,
   parseApiPort,
   parsePasswordResetTtlMinutes,
   parseRefreshTokenTtlDays,
+  validateApplicationEnvironment,
   validateAuthEnvironment,
 } from "../dist/config/environment.js";
 
@@ -74,5 +76,43 @@ test("validates authentication secrets and bounded token lifetimes", () => {
         REFRESH_TOKEN_SECRET: "b".repeat(32),
       }),
     /Placeholder authentication secrets/,
+  );
+});
+
+test("requires a safe server-only Google Maps key for deployed environments", () => {
+  assert.equal(getGoogleMapsServerKey(undefined, "local"), null);
+  assert.throws(
+    () => getGoogleMapsServerKey(undefined, "production"),
+    /GOOGLE_MAPS_SERVER_KEY is required/,
+  );
+  assert.throws(
+    () => getGoogleMapsServerKey("replace-with-your-api-key", "staging"),
+    /malformed or still a placeholder/,
+  );
+  assert.equal(
+    getGoogleMapsServerKey(`AIza${"s".repeat(35)}`, "production"),
+    `AIza${"s".repeat(35)}`,
+  );
+});
+
+test("validates Maps configuration as part of application startup", () => {
+  assert.doesNotThrow(() =>
+    validateApplicationEnvironment({
+      APP_ENV: "production",
+      NODE_ENV: "production",
+      JWT_ACCESS_SECRET: "a".repeat(32),
+      REFRESH_TOKEN_SECRET: "b".repeat(32),
+      GOOGLE_MAPS_SERVER_KEY: `AIza${"s".repeat(35)}`,
+    }),
+  );
+  assert.throws(
+    () =>
+      validateApplicationEnvironment({
+        APP_ENV: "production",
+        NODE_ENV: "production",
+        JWT_ACCESS_SECRET: "a".repeat(32),
+        REFRESH_TOKEN_SECRET: "b".repeat(32),
+      }),
+    /GOOGLE_MAPS_SERVER_KEY is required/,
   );
 });

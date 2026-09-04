@@ -12,7 +12,7 @@ import { ApiExceptionFilter } from "./common/http/api-exception.filter.js";
 import {
   getWebOrigin,
   parseApiPort,
-  validateAuthEnvironment,
+  validateApplicationEnvironment,
 } from "./config/environment.js";
 
 function flattenValidationErrors(
@@ -33,7 +33,7 @@ function flattenValidationErrors(
 }
 
 async function bootstrap(): Promise<void> {
-  validateAuthEnvironment();
+  validateApplicationEnvironment();
   const app = await NestFactory.create(AppModule);
   const port = parseApiPort(process.env.PORT);
 

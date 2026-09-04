@@ -193,3 +193,40 @@ export function validateAuthEnvironment(environment = process.env): void {
   parseRefreshTokenTtlDays(environment.REFRESH_TOKEN_TTL_DAYS);
   parsePasswordResetTtlMinutes(environment.PASSWORD_RESET_TTL_MINUTES);
 }
+
+export function getGoogleMapsServerKey(
+  value: string | undefined,
+  appEnvironment: AppEnvironment,
+): string | null {
+  const key = value?.trim() ?? "";
+  if (!key) {
+    if (["staging", "production"].includes(appEnvironment)) {
+      throw new TypeError(
+        "GOOGLE_MAPS_SERVER_KEY is required in staging and production.",
+      );
+    }
+    return null;
+  }
+
+  if (
+    key.length < 20 ||
+    !/^[A-Za-z0-9_-]+$/.test(key) ||
+    /replace-with|change-before|your[-_ ]?(api[-_ ]?)?key/i.test(key)
+  ) {
+    throw new TypeError(
+      "GOOGLE_MAPS_SERVER_KEY is malformed or still a placeholder.",
+    );
+  }
+
+  return key;
+}
+
+export function validateApplicationEnvironment(
+  environment = process.env,
+): void {
+  validateAuthEnvironment(environment);
+  getGoogleMapsServerKey(
+    environment.GOOGLE_MAPS_SERVER_KEY,
+    getAppEnvironment(environment.APP_ENV),
+  );
+}

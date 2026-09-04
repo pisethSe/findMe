@@ -48,6 +48,9 @@ The repository currently includes:
 - a production-building Next.js public landing and demonstration search surface;
 - a progressively enhanced Google Maps 3D landing preview with a stable 2D/list
   fallback, labelled availability states, and reduced-motion handling;
+- repository-wide GitHub Actions checks for formatting, linting, types,
+  PostGIS migrations and integration tests, production builds, and container
+  smoke tests;
 - university-first search/filter domain rules with bilingual demonstration data
   and explicit demo disclaimers.
 
@@ -61,6 +64,14 @@ password-reset workflow are documented in
 Role selection, profile activation, and Landlord trial behavior are documented
 in [Onboarding and landlord access](docs/ONBOARDING.md).
 
+Browser/server credential separation, frontend build arguments, and the cloud
+restriction checklist are documented in
+[Google Maps production setup](docs/GOOGLE-MAPS.md).
+
+The automated checks, local reproduction commands, and branch-protection
+requirements are documented in
+[Continuous integration](docs/CONTINUOUS-INTEGRATION.md).
+
 The complete folder map and ownership rules are documented in
 [Project structure](PROJECT-STRUCTURE.md).
 
@@ -68,7 +79,9 @@ Run the current checks with:
 
 ```bash
 corepack pnpm install
+corepack pnpm run format:check
 corepack pnpm run lint
+corepack pnpm run db:validate
 corepack pnpm run typecheck
 corepack pnpm run test
 corepack pnpm run build
@@ -104,10 +117,12 @@ handlers until the production NestJS data modules replace them:
 - `GET /api/v1/universities`
 - `GET /api/v1/listings?university=rupp&maxRentUsd=100&maxDistanceKm=2`
 
-Set `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` to a referrer-restricted browser key to
-enable the landing page's Google Maps 3D enhancement. Without it, the page uses
-the accessible 2D/list preview. The canonical PostGIS data layer is now wired
-into NestJS. Production search repositories and endpoints remain a later
+Set both `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` and
+`NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` at frontend build time to enable the landing
+page's Google Maps 3D enhancement. Without them, the page uses the accessible
+2D/list preview. Staging and production additionally require the separate
+server-only `GOOGLE_MAPS_SERVER_KEY`. The canonical PostGIS data layer is now
+wired into NestJS. Production search repositories and endpoints remain a later
 implementation phase; the web demo does not query live inventory yet.
 
 The current inventory is demonstration data, not live rental advertising. The

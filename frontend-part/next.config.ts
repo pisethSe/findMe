@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
+import { validateGoogleMapsBuildEnvironment } from "./src/config/google-maps";
+
+validateGoogleMapsBuildEnvironment({
+  APP_ENV: process.env.APP_ENV,
+  NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY:
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY,
+  NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
+});
+
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(import.meta.dirname, ".."),

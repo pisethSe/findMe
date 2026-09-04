@@ -1306,7 +1306,6 @@ JWT_ACCESS_SECRET=
 JWT_ACCESS_TTL=
 REFRESH_TOKEN_SECRET=
 GOOGLE_MAPS_SERVER_KEY=
-LANDLORD_TRIAL_DAYS=7
 
 # media
 S3_ENDPOINT=
@@ -1318,6 +1317,12 @@ CDN_BASE_URL=
 ```
 
 Validate required environment variables at application startup.
+
+`NEXT_PUBLIC_*` values are embedded by Next.js during `next build`; container
+deployments must supply the browser Maps key, map ID, and public API base URL as
+build arguments. `GOOGLE_MAPS_SERVER_KEY` is a backend runtime secret. Staging
+and production reject missing Maps configuration, while local/test may omit it
+to exercise the required 2D/list fallback.
 
 ---
 

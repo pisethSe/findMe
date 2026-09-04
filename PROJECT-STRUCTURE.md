@@ -62,6 +62,13 @@ profile and seven-day trial activation, expiry-aware access policy, and the
 matching responsive onboarding and Landlord access screens. The legacy SQL is
 no longer a migration source.
 
-The remaining Phase 0 foundation work is production Google Maps key setup and
-restriction plus CI checks. Institution and amenity seed data was established
-in Step 2.
+Step 5 adds validated Google Maps browser/server configuration, correct
+build-time injection for public Next.js values, map-ID-aware 3D loading, and a
+production key-restriction runbook. The real staging and production keys still
+require their deployment origins, backend egress IPs, and authorized Google
+Cloud setup. Step 6 adds mandatory GitHub Actions checks for formatting, lint,
+Prisma validation, type-checking, PostGIS migrations and integration tests,
+idempotent reference seeding, production builds, and a full container smoke
+test. This completes the repository foundation slice for Phase 0.
+
+Institution and amenity seed data was established in Step 2.

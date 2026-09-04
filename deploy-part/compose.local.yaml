@@ -5,8 +5,11 @@ services:
     build:
       context: ..
       dockerfile: deploy-part/docker/frontend.Dockerfile
-    environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001/api/v1
+      args:
+        APP_ENV: local
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:3001/api/v1
+        NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY:-}
+        NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: ${NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -29,6 +32,7 @@ services:
       REFRESH_TOKEN_SECRET: local-refresh-secret-change-before-deploying-5678
       REFRESH_TOKEN_TTL_DAYS: 30
       PASSWORD_RESET_TTL_MINUTES: 30
+      GOOGLE_MAPS_SERVER_KEY: ${GOOGLE_MAPS_SERVER_KEY:-}
     ports:
       - "3001:3001"
     healthcheck:
@@ -61,6 +65,10 @@ services:
 
   postgres:
     image: postgis/postgis:17-3.5-alpine
+    # The official Alpine image is currently AMD64-only. Pinning the platform
+    # keeps the same reviewed PostGIS image usable through Docker Desktop's
+    # emulation on Apple Silicon development machines.
+    platform: linux/amd64
     environment:
       POSTGRES_DB: findme
       POSTGRES_USER: findme
