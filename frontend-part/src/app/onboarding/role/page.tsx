@@ -4,7 +4,7 @@ import { OnboardingShell } from "../../../features/onboarding/onboarding-shell";
 import { RoleOnboardingForm } from "../../../features/onboarding/role-onboarding-form";
 
 export const metadata: Metadata = {
-  title: "Choose your account role",
+  title: "ជ្រើសរើសតួនាទីគណនី",
   robots: { index: false, follow: false },
 };
 
@@ -12,9 +12,10 @@ export default function RoleOnboardingPage() {
   return (
     <OnboardingShell
       currentStep={1}
-      title="Choose how you use FindMe"
+      title="តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?"
+      titleLang="km"
       titleKm="ជ្រើសរើសរបៀបប្រើ FindMe"
-      description="Your role keeps student discovery separate from rental management and determines which protected tools your account can use."
+      description="ជ្រើសរើសតួនាទីរបស់អ្នក ដើម្បីស្វែងរកបន្ទប់ជួលដោយឥតគិតថ្លៃ ឬគ្រប់គ្រងបន្ទប់ជួលរបស់អ្នក។"
     >
       <RoleOnboardingForm />
     </OnboardingShell>

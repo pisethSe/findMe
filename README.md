@@ -5,7 +5,8 @@ move to Phnom Penh discover affordable rooms and houses near their university,
 understand the real monthly cost, and contact a verified property owner with
 more confidence.
 
-The product is in MVP foundation implementation. The governing documents are:
+The product has completed its MVP foundation and Phase 1 rental-supply API
+foundation. The governing documents are:
 
 - [Product requirements](PRD.md)
 - [System architecture](ARCHITECTURE.md)
@@ -40,6 +41,9 @@ The repository currently includes:
   reusable role guards;
 - one-time Student/Landlord role onboarding, atomic profile activation, and a
   server-timed seven-day Landlord entitlement with expiry-aware capabilities;
+- authenticated landlord Property/Listing creation and management APIs with
+  server-derived ownership, lifecycle commands, availability constraints,
+  contact preferences, and trial enforcement;
 - Docker assets for the frontend, backend, local PostgreSQL/PostGIS, and Redis;
 - domain rules for transparent multi-currency rental costs, publish readiness,
   availability freshness, listing state transitions, and explainable ranking;
@@ -63,6 +67,9 @@ password-reset workflow are documented in
 
 Role selection, profile activation, and Landlord trial behavior are documented
 in [Onboarding and landlord access](docs/ONBOARDING.md).
+
+Landlord listing endpoints, validation, ownership, lifecycle, and entitlement
+behavior are documented in [Rental supply API](docs/RENTAL-SUPPLY.md).
 
 Browser/server credential separation, frontend build arguments, and the cloud
 restriction checklist are documented in
@@ -109,6 +116,15 @@ The NestJS API exposes:
 - `POST /api/v1/me/onboarding/role`
 - `POST /api/v1/landlord/onboarding`
 - `GET /api/v1/landlord/entitlement`
+- `POST /api/v1/landlord/listings`
+- `GET /api/v1/landlord/listings`
+- `GET /api/v1/landlord/listings/:id`
+- `PATCH /api/v1/landlord/listings/:id`
+- `PATCH /api/v1/landlord/listings/:id/availability`
+- `POST /api/v1/landlord/listings/:id/submit`
+- `POST /api/v1/landlord/listings/:id/pause`
+- `POST /api/v1/landlord/listings/:id/mark-rented`
+- `DELETE /api/v1/landlord/listings/:id` (archives)
 
 The current frontend demonstration still exposes temporary Next.js route
 handlers until the production NestJS data modules replace them:

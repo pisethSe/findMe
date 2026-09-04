@@ -4,6 +4,10 @@ This directory is the canonical FindMe database package. It contains the
 Prisma 7 data model, the reviewed PostgreSQL/PostGIS migration, deterministic
 reference-data seed, and database contract/invariant tests.
 
+The migration history also includes the Phase 1 per-listing contact preference.
+Actual phone and Telegram values remain in the landlord profile; serializers
+control whether a selected channel is safe to expose.
+
 Local commands load connection values from the repository-root `.env`. This
 file is ignored by Git; do not duplicate or commit database credentials inside
 individual workspace packages.

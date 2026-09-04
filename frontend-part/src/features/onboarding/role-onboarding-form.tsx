@@ -47,7 +47,7 @@ export function RoleOnboardingForm() {
           router.replace("/login");
           return;
         }
-        setError("We could not check your account. Try again.");
+        setError("មិនអាចពិនិត្យគណនីរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។");
         setLoading(false);
       });
 
@@ -59,7 +59,7 @@ export function RoleOnboardingForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!role) {
-      setError("Choose Student or Landlord to continue.");
+      setError("សូមជ្រើសរើសសិស្ស/និស្សិត ឬម្ចាស់ផ្ទះជួល ដើម្បីបន្ត។");
       return;
     }
 
@@ -79,7 +79,7 @@ export function RoleOnboardingForm() {
       setError(
         caught instanceof AuthApiError
           ? caught.message
-          : "Check your connection and try again.",
+          : "សូមពិនិត្យការតភ្ជាប់អ៊ីនធឺណិត ហើយព្យាយាមម្តងទៀត។",
       );
     } finally {
       setPending(false);
@@ -89,7 +89,7 @@ export function RoleOnboardingForm() {
   if (loading) {
     return (
       <div className="onboarding-loading" aria-busy="true" aria-live="polite">
-        <p>Checking your account…</p>
+        <p lang="km">កំពុងពិនិត្យគណនីរបស់អ្នក…</p>
         <div className="skeleton onboarding-choice-skeleton" />
         <div className="skeleton onboarding-choice-skeleton" />
       </div>
@@ -99,13 +99,13 @@ export function RoleOnboardingForm() {
   if (error && !ready) {
     return (
       <div className="onboarding-error" role="alert">
-        <h3>Account check failed</h3>
+        <h3 lang="km">មិនអាចពិនិត្យគណនីបានទេ</h3>
         <p>{error}</p>
         <button
           type="button"
           onClick={() => setLoadAttempt((value) => value + 1)}
         >
-          Try again
+          ព្យាយាមម្តងទៀត
         </button>
       </div>
     );
@@ -114,7 +114,7 @@ export function RoleOnboardingForm() {
   return (
     <form className="auth-form onboarding-form" onSubmit={handleSubmit}>
       <fieldset className="role-options" disabled={pending}>
-        <legend>How will you use FindMe?</legend>
+        <legend lang="km">សូមជ្រើសរើសតួនាទីមួយ</legend>
         <label className="role-option" data-selected={role === "STUDENT"}>
           <input
             type="radio"
@@ -124,10 +124,10 @@ export function RoleOnboardingForm() {
             onChange={() => setRole("STUDENT")}
           />
           <span>
-            <strong>Student</strong>
-            <small>
-              Search near your university, compare rooms, and save suitable
-              rentals.
+            <strong lang="km">សិស្ស/និស្សិត</strong>
+            <small lang="km">
+              ស្វែងរកបន្ទប់នៅជិតសាលា ឬសាកលវិទ្យាល័យ ប្រៀបធៀប
+              និងរក្សាទុកបន្ទប់ដែលអ្នកពេញចិត្ត។
             </small>
           </span>
         </label>
@@ -140,9 +140,10 @@ export function RoleOnboardingForm() {
             onChange={() => setRole("LANDLORD")}
           />
           <span>
-            <strong>Landlord</strong>
-            <small>
-              Add and maintain accurate rental supply for nearby students.
+            <strong lang="km">ម្ចាស់ផ្ទះជួល</strong>
+            <small lang="km">
+              ដាក់បន្ទប់ជួល កែប្រែព័ត៌មាន និងគ្រប់គ្រងបន្ទប់ទំនេរសម្រាប់សិស្ស
+              និងនិស្សិត។
             </small>
           </span>
         </label>
@@ -150,7 +151,9 @@ export function RoleOnboardingForm() {
 
       {role === "STUDENT" ? (
         <div className="form-field onboarding-profile-field">
-          <label htmlFor="student-display-name">Your display name</label>
+          <label htmlFor="student-display-name" lang="km">
+            ឈ្មោះដែលអ្នកចង់បង្ហាញ
+          </label>
           <input
             id="student-display-name"
             name="displayName"
@@ -160,17 +163,18 @@ export function RoleOnboardingForm() {
             maxLength={120}
             required
           />
-          <p className="field-help">
-            Used on your private account. It is not shown with your saved
-            rentals.
+          <p className="field-help" lang="km">
+            ឈ្មោះនេះប្រើសម្រាប់គណនីឯកជនរបស់អ្នក
+            ហើយមិនបង្ហាញជាមួយបន្ទប់ដែលអ្នកបានរក្សាទុកទេ។
           </p>
         </div>
       ) : null}
 
       {role === "LANDLORD" ? (
-        <p className="trial-note">
-          Your one-time seven-day trial starts only after you complete the
-          landlord profile on the next step. No payment card is required.
+        <p className="trial-note" lang="km">
+          ការសាកល្បងឥតគិតថ្លៃរយៈពេល 7 ថ្ងៃរបស់អ្នក
+          ចាប់ផ្តើមតែបន្ទាប់ពីអ្នកបំពេញព័ត៌មានម្ចាស់ផ្ទះជួលនៅជំហានបន្ទាប់។
+          មិនត្រូវការកាតបង់ប្រាក់ទេ។
         </p>
       ) : null}
 
@@ -182,16 +186,16 @@ export function RoleOnboardingForm() {
 
       <button className="auth-submit" type="submit" disabled={pending || !role}>
         {pending
-          ? "Saving your choice…"
+          ? "កំពុងរក្សាទុកជម្រើស…"
           : role === "LANDLORD"
-            ? "Continue as landlord"
+            ? "បន្តជាម្ចាស់ផ្ទះជួល"
             : role === "STUDENT"
-              ? "Finish student setup"
-              : "Choose a role to continue"}
+              ? "បន្តជាសិស្ស/និស្សិត"
+              : "ជ្រើសរើសតួនាទីដើម្បីបន្ត"}
       </button>
-      <p className="role-commitment">
-        This choice controls account permissions and cannot be switched through
-        self-service onboarding.
+      <p className="role-commitment" lang="km">
+        ជម្រើសនេះកំណត់សិទ្ធិគណនីរបស់អ្នក
+        ហើយមិនអាចប្តូរដោយខ្លួនឯងបន្ទាប់ពីបញ្ចប់បានទេ។
       </p>
     </form>
   );

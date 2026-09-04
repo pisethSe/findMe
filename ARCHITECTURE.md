@@ -504,6 +504,7 @@ Indexes:
 | `available_from`            | date nullable        |                                                                                    |
 | `available_units`           | int                  | current rentable count; `0 <= available_units <= property.total_units`             |
 | `availability_confirmed_at` | timestamptz nullable | stale-listing signal                                                               |
+| `contact_preference`        | enum                 | in-app only, phone, Telegram, or phone/Telegram; profile channel must exist        |
 | `status`                    | enum                 | `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, `PAUSED`, `RENTED`, `REJECTED`, `ARCHIVED` |
 | `moderation_note`           | text nullable        | never public by default                                                            |
 | `published_at`              | timestamptz nullable |                                                                                    |
@@ -772,8 +773,15 @@ PATCH  /landlord/listings/:id/availability
 POST   /landlord/listings/:id/submit
 POST   /landlord/listings/:id/pause
 POST   /landlord/listings/:id/mark-rented
-DELETE /landlord/listings/:id
+DELETE /landlord/listings/:id          # domain archive; does not erase history
 ```
+
+All landlord listing routes derive ownership from the authenticated principal.
+Creation atomically writes one `Property` and its initial `Listing`. Metadata
+updates are allowed only in editable non-review states; status changes use the
+named commands above. Active entitlement is required for creation, submission,
+and availability increases, while availability decreases and owned reads remain
+available after expiry.
 
 Suggested search query example:
 
@@ -1094,11 +1102,31 @@ After authentication, the server-provided onboarding state determines routing:
 no role -> /onboarding/role
 STUDENT -> /search (or saved institution)
 LANDLORD, incomplete profile -> /onboarding/landlord
-LANDLORD, complete profile -> /landlord
+LANDLORD, profile just completed -> /landlord/listings/new
+LANDLORD, returning with complete profile -> /landlord
 ADMIN -> /admin
 ```
 
+The role-selection page is Khmer-first and asks `តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?`. Its primary choices are `សិស្ស/និស្សិត` and `ម្ចាស់ផ្ទះជួល`; concise English text may support the Khmer labels.
+
+Completing the landlord profile activates the one-time trial and returns a one-use success destination for the guided first-rental flow. Ordinary onboarding-state reads continue to return `/landlord` for a completed landlord, so abandoning the first-rental form does not trap a returning user in onboarding. The destination is presentation guidance only; every listing write still enforces the landlord role, ownership, valid state, and entitlement on the backend.
+
 The client may optimistically navigate only after the server accepts the role command. It must never infer authority from a query string, local storage, or a hidden control.
+
+### 18.2 Guided first-rental and dashboard composition
+
+The first-rental wizard creates one `Property` and its initial `Listing` without hiding the domain separation. It collects rental/property name, rental type, location/map pin, total and available units, monthly price/currency, deposit, amenities, description, house rules, contact preference, and ordered photos. Location and availability edits update a private marker preview immediately; no draft or pending data enters public search.
+
+The landlord dashboard is a task surface, not an analytics-heavy SaaS template. Its initial hierarchy is:
+
+1. trial/access state and exact end date;
+2. primary “Add rental” action;
+3. owned rentals with publication state and available/total units;
+4. quick availability controls;
+5. recent inquiries;
+6. basic views/inquiry counts only when real metrics exist.
+
+The dashboard defines loading, empty, API-error, expired-access, and mobile states. An expired landlord keeps read access to existing rentals and inquiries; restricted actions display the server-derived reason and next supported action.
 
 ---
 
@@ -1135,6 +1163,15 @@ same NestJS search service
 ```
 
 The map and cards must use the same result IDs so selection stays synchronized.
+
+### 19.1 Published listing freshness
+
+“Real time on the map” means two separate behaviors:
+
+- **editing preview:** the landlord sees local form changes reflected immediately in a private map preview;
+- **public discovery:** after moderation/publication commits, the API invalidates the listing detail and relevant public-search cache generation. Visible search pages refetch while the tab is active at a bounded interval of no more than 60 seconds, as well as after institution, filter, or viewport changes.
+
+MVP does not need WebSockets or continuous location tracking. A newly returned marker may use a 150–250 ms selection/appearance transition. With `prefers-reduced-motion`, the marker changes instantly. Cards remain the complete fallback when map loading or refresh fails.
 
 ---
 

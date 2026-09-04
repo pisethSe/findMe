@@ -6,6 +6,7 @@ import { BrandMark } from "../landing/brand-mark";
 interface OnboardingShellProps {
   currentStep: 1 | 2;
   title: string;
+  titleLang?: "en" | "km";
   titleKm: string;
   description: string;
   children: ReactNode;
@@ -14,6 +15,7 @@ interface OnboardingShellProps {
 export function OnboardingShell({
   currentStep,
   title,
+  titleLang = "en",
   titleKm,
   description,
   children,
@@ -63,7 +65,9 @@ export function OnboardingShell({
         >
           <div className="auth-form-heading onboarding-form-heading">
             <p>Step {currentStep} of 2</p>
-            <h2 id="onboarding-title">{title}</h2>
+            <h2 id="onboarding-title" lang={titleLang}>
+              {title}
+            </h2>
           </div>
           {children}
         </section>

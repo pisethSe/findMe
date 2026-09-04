@@ -61,6 +61,7 @@ inspection, or contacts an owner. Browsing must remain available without login.
 ### Owner experience
 
 - Phone-based sign-in and basic owner profile.
+- One-time seven-day, no-card trial starting when the owner profile is successfully activated; the server owns and enforces its timestamps.
 - Guided listing creation with an exact map pin, university proximity preview,
   photos, price breakdown, facilities, property rules, and availability.
 - Listing status: draft, pending verification, active, paused, rented, rejected,
@@ -110,9 +111,12 @@ freshness, or relevance thresholds.
 
 ## Business model
 
-Students search and contact owners for free. During validation, landlords also
-list for free to solve the supply problem. After liquidity is established,
-potential revenue streams are:
+Students search and contact owners for free. Landlords receive one seven-day,
+no-card trial for listing and management tools. The course MVP demonstrates
+trial enforcement but does not process payments; after expiry, existing data
+remains readable while restricted supply actions require an audited access
+grant or a future paid entitlement. After liquidity is established, potential
+revenue streams are:
 
 - owner subscription for multiple active listings and management tools;
 - clearly labelled promoted placement within relevant results;

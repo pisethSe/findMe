@@ -7,14 +7,15 @@ it does not persist or infer role, onboarding completion, or entitlement state.
 ## Flow
 
 1. Registration creates an account without a product role.
-2. `POST /api/v1/me/onboarding/role` accepts only `STUDENT` or `LANDLORD`.
+2. The role screen asks in Khmer `តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?`; `POST /api/v1/me/onboarding/role` accepts only `STUDENT` or `LANDLORD`.
 3. Student selection creates the required Student profile in the same database
    transaction and routes to `/search`.
 4. Landlord selection routes to `/onboarding/landlord` without starting access.
 5. `POST /api/v1/landlord/onboarding` creates the Landlord profile and its
    entitlement atomically. The server records one seven-day trial using its own
    clock.
-6. Returning users read `GET /api/v1/me/onboarding` and follow its `nextPath`.
+6. In Phase 1, successful first-time Landlord activation continues directly to `/landlord/listings/new` so the owner can enter the rental name/type, map location, unit availability, price, facilities, description, contact preference, and photos.
+7. Returning users read `GET /api/v1/me/onboarding` and follow its normal `nextPath`; completed Landlords go to `/landlord` and are not forced back into the first-rental form.
 
 Role selection is idempotent for the existing choice. It cannot assign `ADMIN`
 or switch an established role. Repeating Landlord onboarding returns the
@@ -60,3 +61,6 @@ Direct visits restore the refresh session, request current onboarding state,
 and redirect unauthenticated users to `/login`. Loading, connection-error,
 validation-error, success, mobile, and keyboard states are defined without
 using client storage as an authorization source.
+
+The first-rental continuation described above is Phase 1 scope. Until that
+route exists, the completed Phase 0 flow safely lands on `/landlord`.

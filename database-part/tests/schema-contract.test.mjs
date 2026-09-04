@@ -7,6 +7,10 @@ const migrationUrl = new URL(
   "../prisma/migrations/20260902000100_initial/migration.sql",
   import.meta.url,
 );
+const listingContactMigrationUrl = new URL(
+  "../prisma/migrations/20260904000100_listing_contact_preference/migration.sql",
+  import.meta.url,
+);
 
 test("canonical Prisma schema contains the required marketplace boundaries", async () => {
   const schema = await readFile(schemaUrl, "utf8");
@@ -36,6 +40,11 @@ test("canonical Prisma schema contains the required marketplace boundaries", asy
     schema,
     /DRAFT\s+[\s\S]*PENDING_REVIEW[\s\S]*PUBLISHED[\s\S]*PAUSED[\s\S]*RENTED[\s\S]*REJECTED[\s\S]*ARCHIVED/,
   );
+  assert.match(schema, /enum ContactPreference \{/);
+  assert.match(
+    schema,
+    /contactPreference\s+ContactPreference\s+@default\(IN_APP_ONLY\)/,
+  );
 });
 
 test("initial migration installs PostGIS and database-enforced invariants", async () => {
@@ -55,4 +64,13 @@ test("initial migration installs PostGIS and database-enforced invariants", asyn
   ]) {
     assert.ok(migration.includes(requiredSql), `missing SQL: ${requiredSql}`);
   }
+});
+
+test("listing contact migration adds a private-first contact policy", async () => {
+  const migration = await readFile(listingContactMigrationUrl, "utf8");
+  assert.match(migration, /CREATE TYPE "contact_preference" AS ENUM/);
+  assert.match(
+    migration,
+    /ADD COLUMN "contact_preference" "contact_preference" NOT NULL DEFAULT 'in_app_only'/,
+  );
 });

@@ -72,3 +72,14 @@ idempotent reference seeding, production builds, and a full container smoke
 test. This completes the repository foundation slice for Phase 0.
 
 Institution and amenity seed data was established in Step 2.
+
+## Phase 1 status
+
+Step 1 adds the authoritative rental-supply module. It creates a Property and
+its first Listing atomically, exposes owned and paginated Landlord listing
+APIs, validates amenities and contact preferences, enforces lifecycle commands,
+and applies the existing seven-day entitlement policy to creation, submission,
+and inventory increases. PostgreSQL remains a second enforcement layer for
+landlord ownership and unit capacity. The guided listing UI, dashboard data
+surface, media flow, moderation/publication, and public map-search freshness are
+the remaining Phase 1 steps.

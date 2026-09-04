@@ -204,7 +204,16 @@ Landing/onboarding rules:
 - 3D maps must fall back to a usable 2D map/list when unsupported, slow, failed, or reduced motion is requested;
 - green available and red unavailable markers also require a label/icon/shape because color alone is insufficient;
 - the vertical phrase loop has fixed layout, a static accessible equivalent, no repetitive live announcements, and a reduced-motion state;
-- after authentication, incomplete users go to `/onboarding/role`; completed users route by server-provided role/profile state.
+- after authentication, incomplete users go to `/onboarding/role`; the role question and primary choices are Khmer-first (`តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?`);
+- completed students route to discovery; a newly activated landlord continues to the guided first-rental form, while returning landlords route to the dashboard, all from server-provided role/profile state.
+
+Rental publishing and map freshness rules:
+
+- form edits may update a private live map preview, but drafts and pending listings never appear in public search;
+- only backend-authorized `PUBLISHED` listings with available inventory appear by default for students;
+- after a publication or availability transaction commits, invalidate/version relevant public caches;
+- visible student search views refetch on a bounded interval, targeting published map/list freshness within 60 seconds under normal conditions; MVP does not require WebSockets;
+- animate only the new/selected marker with restrained motion, and use an instant non-motion state when reduced motion is requested.
 
 ---
 

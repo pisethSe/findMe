@@ -164,11 +164,13 @@ The landing map is a product preview. Actual public search defaults to valid pub
 ### 7.2 New account chooses a role
 
 1. After registration, or after sign-in when no product role has been selected, the user is sent to `/onboarding/role`.
-2. The user chooses **Student** or **Landlord**. `ADMIN` is never offered as a self-service choice.
+2. The page asks in Khmer **“តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?”** and offers **“សិស្ស/និស្សិត”** and **“ម្ចាស់ផ្ទះជួល”** as the two primary choices. Short English supporting text may be shown, but Khmer is the primary onboarding language. `ADMIN` is never offered as a self-service choice.
 3. The server validates and stores the role through a single-use onboarding action.
 4. A student continues to institution-centered, free rental discovery.
-5. A landlord completes a basic profile and starts a seven-day trial when landlord onboarding is successfully activated.
-6. Returning users with a completed role skip this step and go to the correct product area.
+5. A landlord completes a basic contact/profile step and starts a seven-day trial when landlord onboarding is successfully activated.
+6. On that successful first-time landlord path, the product continues directly to a guided first-rental form rather than leaving the landlord at an empty dashboard.
+7. The first-rental form captures at least the rental/property name, room or rental type, location/map pin, total rooms or units, currently available rooms or units, monthly price/currency, amenities, description, contact preference, and photos.
+8. Returning users with a completed role skip role selection and go to the correct product area. Returning landlords are not forced back through the first-rental form.
 
 ### 7.3 Student finds a rental near a university
 
@@ -191,15 +193,15 @@ The landing map is a product preview. Actual public search defaults to valid pub
 
 ### 7.5 Landlord creates a listing
 
-1. Landlord creates an account and completes profile information.
-2. Landlord opens the landlord dashboard.
-3. Landlord selects “Add listing.”
-4. Landlord enters rental type, title, description, monthly price, deposit, facilities, availability, and house rules.
-5. Landlord searches the address or moves a Google Maps marker to the correct property location.
-6. Landlord uploads photos.
-7. Landlord previews the listing.
-8. Landlord submits/publishes it according to moderation rules.
-9. Students can discover it after it is approved/published.
+1. A newly activated landlord continues directly to the first-rental wizard. A returning landlord may start the same flow from “Add rental” in the dashboard.
+2. Landlord enters the rental/property name, rental type, description, monthly price, currency, deposit, facilities, total rooms/units, currently available rooms/units, contact preference, and house rules.
+3. Landlord searches the address or moves a Google Maps marker to the correct property location.
+4. As the location and availability fields change, the wizard shows an immediate private map preview of the marker and availability state. This preview is not a public listing.
+5. Landlord uploads and orders photos.
+6. Landlord reviews and saves a draft or submits it for moderation/publication.
+7. Students can discover the listing only after the backend marks it `PUBLISHED` and it has available inventory.
+8. After publication commits, public search caches are invalidated/versioned and active search views refresh on a short, bounded interval so the new or updated marker appears without a deployment or manual page reload.
+9. A newly published or selected marker may use a short restrained transition. Reduced-motion users receive an instant state change, and map animation is never required to understand the listing.
 
 ### 7.6 Landlord handles an inquiry
 
@@ -242,6 +244,7 @@ Priority definitions:
 | AUTH-10 | `ADMIN` cannot be selected or submitted through self-service onboarding. | P0 |
 | AUTH-11 | The backend, not the client, is authoritative for role assignment and onboarding completion. | P0 |
 | AUTH-12 | Returning users with completed onboarding are routed to their role-appropriate area. | P0 |
+| AUTH-13 | The role-selection question and primary option labels are Khmer-first, using the approved copy in journey 7.2, with English as optional supporting text. | P0 |
 
 ### 8.2 Educational institutions
 
@@ -269,6 +272,7 @@ Priority definitions:
 | LIST-10 | Landlord can duplicate a listing as a starting point for another unit. | P2 |
 | LIST-11 | A landlord can record total room/unit count and currently available room/unit count for a property or offer. | P0 |
 | LIST-12 | Available count must be between zero and total count; a zero count prevents the offer from appearing as available in default student search. | P0 |
+| LIST-13 | After first-time landlord profile activation, the UI continues directly to the guided first-rental form; returning landlords use the dashboard “Add rental” action. | P0 |
 
 ### 8.4 Maps and location
 
@@ -287,6 +291,8 @@ Priority definitions:
 | MAP-11 | The student search experience may use a 3D map on capable devices, while preserving synchronized rental cards and a usable 2D fallback. | P0 |
 | MAP-12 | Available and unavailable marker states use text/icon/shape as well as green/red color. | P0 |
 | MAP-13 | Reduced-motion, low-power, unsupported, slow-network, or map-error states use a static/2D/list fallback without blocking discovery. | P0 |
+| MAP-14 | The landlord form displays a private live marker preview while location and availability are edited; draft or pending data never enters public student search. | P0 |
+| MAP-15 | After a listing becomes published, cache invalidation and bounded visible-page refetching make it appear in matching student map/list results within 60 seconds under normal service conditions. WebSockets are not required for MVP. | P0 |
 
 ### 8.5 Search and filters
 
@@ -335,6 +341,7 @@ Priority definitions:
 | LND-05 | Landlord verification state is visible. | P1 |
 | LND-06 | Dashboard displays total and currently available rooms/units and allows the landlord to update availability. | P0 |
 | LND-07 | Dashboard displays the landlord trial state and exact end date. | P0 |
+| LND-08 | The first-use dashboard is clean and task-focused: trial status, “Add rental,” owned rental rows/cards with status and available/total units, quick availability actions, and recent inquiries. Empty, loading, error, expired-trial, and mobile states are explicit. | P0 |
 
 ### 8.9 Landlord trial and entitlements
 
@@ -640,13 +647,11 @@ Free discovery for students remains a core principle unless product strategy cha
 
 ### Phase 1 — Rental supply
 
-- landlord dashboard;
-- property/listing CRUD;
-- map picker;
-- photo uploads;
-- amenities;
-- moderation/publishing;
-- seven-day landlord trial enforcement and expiry behavior.
+1. **Supply foundation:** property/listing repositories, validated APIs, ownership rules, availability invariants, entitlement guards, and state transitions.
+2. **Guided first rental:** continue a newly activated landlord into a mobile-friendly rental form with name/type, location and private live map preview, unit counts, price, amenities, description, contact preference, and photos.
+3. **Clean landlord dashboard:** show trial status, owned rentals, publication state, available/total rooms, quick availability management, recent inquiries, and a clear “Add rental” action.
+4. **Publication and map freshness:** moderation/publishing, after-commit cache invalidation, and visible student search refresh so published inventory reaches matching map/list results within the defined freshness target.
+5. **Expiry behavior:** enforce the seven-day landlord trial on every restricted supply action and pause trial listings after expiry without deleting landlord data.
 
 ### Phase 2 — Student discovery
 
@@ -686,9 +691,11 @@ The MVP is ready for launch only when all of the following are true:
 - The landing page presents the exact approved Khmer headline, a stable accessible phrase loop, and a map preview with a working 2D/list fallback.
 - Available and unavailable preview markers are distinguishable without relying on color alone.
 - A newly authenticated user can choose only Student or Landlord; the API rejects self-service `ADMIN` assignment.
+- The role-selection question and primary Student/Landlord choices are presented in Khmer.
 - A returning user with a completed role does not repeat role onboarding.
 - Student discovery remains free.
 - A new landlord receives exactly one server-timed seven-day trial starting at successful landlord onboarding.
+- A newly activated landlord continues to the guided first-rental form; returning landlords land on the dashboard.
 - After trial expiry, landlord data remains intact while restricted publishing actions are rejected and trial listings are paused according to policy.
 - Distance filtering returns correct results using stored coordinates.
 - A student can switch between/use synchronized map and list results.
@@ -698,6 +705,8 @@ The MVP is ready for launch only when all of the following are true:
 - A signed-in student can send a valid inquiry.
 - A landlord can create a complete listing, choose its location on Google Maps, upload photos, edit it, and change availability.
 - A landlord can record total rooms/units and update the currently available count within valid bounds.
+- A landlord sees a private live marker preview while editing, and a published listing reaches matching active student map/list results within 60 seconds under normal service conditions.
+- The landlord dashboard exposes trial status, owned rentals, room availability, management actions, and recent inquiries with usable empty/error/mobile states.
 - A landlord cannot edit another landlord’s listing.
 - An admin can moderate listings and manage reports.
 - Draft, paused, rejected, archived, and unavailable listings obey the defined public-visibility rules.

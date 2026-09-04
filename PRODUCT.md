@@ -15,6 +15,11 @@ Penh, use FindMe on mobile devices to find affordable rentals near their school,
 university, or college. Landlords maintain accurate rental supply, and platform
 administrators moderate users, listings, institutions, and reports.
 
+Student discovery is free. A new landlord receives one server-timed seven-day,
+no-card trial. After Khmer-first role selection and a short owner profile, the
+first-use path continues into a guided rental form; returning owners use a
+clean dashboard for listings, room availability, trial status, and inquiries.
+
 ## Product Purpose
 
 FindMe makes student accommodation easier to discover by starting with the

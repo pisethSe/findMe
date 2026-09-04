@@ -87,6 +87,15 @@ enum Currency {
   @@map("currency")
 }
 
+enum ContactPreference {
+  IN_APP_ONLY       @map("in_app_only")
+  PHONE             @map("phone")
+  TELEGRAM          @map("telegram")
+  PHONE_OR_TELEGRAM @map("phone_or_telegram")
+
+  @@map("contact_preference")
+}
+
 enum ListingStatus {
   DRAFT          @map("draft")
   PENDING_REVIEW @map("pending_review")
@@ -268,40 +277,41 @@ model Property {
 }
 
 model Listing {
-  id                      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  propertyId              String           @map("property_id") @db.Uuid
-  landlordId              String           @map("landlord_id") @db.Uuid
-  slug                    String           @unique @db.VarChar(180)
-  titleKm                 String?          @map("title_km") @db.VarChar(200)
-  titleEn                 String?          @map("title_en") @db.VarChar(200)
-  descriptionKm           String?          @map("description_km") @db.Text
-  descriptionEn           String?          @map("description_en") @db.Text
-  propertyType            PropertyType     @map("property_type")
-  monthlyPrice            Decimal          @map("monthly_price") @db.Decimal(12, 2)
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId              String            @map("property_id") @db.Uuid
+  landlordId              String            @map("landlord_id") @db.Uuid
+  slug                    String            @unique @db.VarChar(180)
+  titleKm                 String?           @map("title_km") @db.VarChar(200)
+  titleEn                 String?           @map("title_en") @db.VarChar(200)
+  descriptionKm           String?           @map("description_km") @db.Text
+  descriptionEn           String?           @map("description_en") @db.Text
+  propertyType            PropertyType      @map("property_type")
+  monthlyPrice            Decimal           @map("monthly_price") @db.Decimal(12, 2)
   currency                Currency
-  depositAmount           Decimal?         @map("deposit_amount") @db.Decimal(12, 2)
-  utilityNotesKm          String?          @map("utility_notes_km") @db.Text
-  utilityNotesEn          String?          @map("utility_notes_en") @db.Text
-  houseRulesKm            String?          @map("house_rules_km") @db.Text
-  houseRulesEn            String?          @map("house_rules_en") @db.Text
+  depositAmount           Decimal?          @map("deposit_amount") @db.Decimal(12, 2)
+  utilityNotesKm          String?           @map("utility_notes_km") @db.Text
+  utilityNotesEn          String?           @map("utility_notes_en") @db.Text
+  houseRulesKm            String?           @map("house_rules_km") @db.Text
+  houseRulesEn            String?           @map("house_rules_en") @db.Text
   bedrooms                Int?
   bathrooms               Int?
-  furnished               Boolean          @default(false)
-  availableFrom           DateTime?        @map("available_from") @db.Date
-  availableUnits          Int              @map("available_units")
-  availabilityConfirmedAt DateTime?        @map("availability_confirmed_at") @db.Timestamptz(3)
-  status                  ListingStatus    @default(DRAFT)
-  moderationNote          String?          @map("moderation_note") @db.Text
-  publishedAt             DateTime?        @map("published_at") @db.Timestamptz(3)
-  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt               DateTime         @default(now()) @map("updated_at") @db.Timestamptz(3)
-  deletedAt               DateTime?        @map("deleted_at") @db.Timestamptz(3)
-  property                Property         @relation("PropertyListings", fields: [propertyId, landlordId], references: [id, landlordId], onDelete: Cascade)
-  landlord                User             @relation("LandlordListings", fields: [landlordId], references: [id], onDelete: Restrict)
+  furnished               Boolean           @default(false)
+  availableFrom           DateTime?         @map("available_from") @db.Date
+  availableUnits          Int               @map("available_units")
+  availabilityConfirmedAt DateTime?         @map("availability_confirmed_at") @db.Timestamptz(3)
+  contactPreference       ContactPreference @default(IN_APP_ONLY) @map("contact_preference")
+  status                  ListingStatus     @default(DRAFT)
+  moderationNote          String?           @map("moderation_note") @db.Text
+  publishedAt             DateTime?         @map("published_at") @db.Timestamptz(3)
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt               DateTime?         @map("deleted_at") @db.Timestamptz(3)
+  property                Property          @relation("PropertyListings", fields: [propertyId, landlordId], references: [id, landlordId], onDelete: Cascade)
+  landlord                User              @relation("LandlordListings", fields: [landlordId], references: [id], onDelete: Restrict)
   images                  ListingImage[]
   amenities               ListingAmenity[]
   favorites               Favorite[]
-  inquiries               Inquiry[]        @relation("ListingInquiries")
+  inquiries               Inquiry[]         @relation("ListingInquiries")
   reports                 Report[]
 
   @@unique([id, landlordId])
