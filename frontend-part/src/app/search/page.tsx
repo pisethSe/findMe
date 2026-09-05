@@ -2,6 +2,7 @@ import type { PropertyType } from "@findme/contracts";
 import type { Metadata } from "next";
 
 import { PublishedRentalSearch } from "../../features/search/published-rental-search";
+import { parseSearchMapState } from "../../features/search/search-url-state";
 
 export const metadata: Metadata = {
   title: "Browse nearby rentals",
@@ -58,13 +59,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     9_999_999_999.99,
   );
   const parsedMaxDistance = parseBoundedPositive(requestedMaxDistance, 20);
+  const searchMapState = parseSearchMapState(params);
   const invalidFilters =
     !validInstitutionSlug ||
     (requestedPropertyType !== undefined &&
       requestedPropertyType !== "" &&
       propertyType === undefined) ||
     (requestedMaxRent !== undefined && parsedMaxRent === undefined) ||
-    (requestedMaxDistance !== undefined && parsedMaxDistance === undefined);
+    (requestedMaxDistance !== undefined && parsedMaxDistance === undefined) ||
+    searchMapState.invalid;
 
   return (
     <PublishedRentalSearch
@@ -74,6 +77,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       maxRentUsd={parsedMaxRent ?? 300}
       maxDistanceKm={parsedMaxDistance ?? 5}
       {...(propertyType ? { propertyType } : {})}
+      initialPage={searchMapState.page}
+      initialViewport={searchMapState.viewport}
       invalidFilters={invalidFilters}
     />
   );

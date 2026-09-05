@@ -36,6 +36,10 @@ export function buildInstitutionSearchHref(
   );
   params.delete("university");
   params.delete("page");
+  params.delete("north");
+  params.delete("south");
+  params.delete("east");
+  params.delete("west");
   params.set("institution", institutionSlug);
   return `/search?${params.toString()}`;
 }

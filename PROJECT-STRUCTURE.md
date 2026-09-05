@@ -135,3 +135,25 @@ non-published, deleted, unavailable, or future inventory out of default
 results. Applied filters are returned in safe shared metadata, Redis keys use
 the normalized input, and the frontend API client validates the runtime
 response before rendering it.
+
+Step 3 completes the synchronized student map/list surface. Google Maps remains
+a dedicated client enhancement while every result stays available as a rental
+card. User-initiated pan and zoom changes are debounced before the current
+viewport is sent to the same PostGIS search endpoint, superseded requests are
+cancelled, and the effective bounds and page are restored from the URL. Card
+selection focuses the matching labelled marker; marker selection returns focus
+to the matching card. The UI includes an institution marker, available-rental
+labels beyond color, full-radius reset, bounded pagination, refresh feedback,
+mobile list/map switching, and usable loading, empty, API-error, map-error, and
+Maps-disabled states.
+
+Step 4 makes 3D a bounded progressive enhancement instead of a dependency. The
+landing preview waits until it is near the viewport and the device passes
+motion, connection, power, and hardware-rendering checks before loading one
+short, interruptible Google Maps 3D scene. Search keeps the existing 2D map as
+the PostGIS viewport-search controller and offers 3D exploration only after an
+explicit student action. Search markers use the current API result page and
+stay synchronized with cards by listing ID. Missing configuration, reduced
+motion, data-saving preferences, slow connections, low-power devices, missing
+WebGL, timeouts, and provider errors all retain a usable 2D map or complete
+rental list.

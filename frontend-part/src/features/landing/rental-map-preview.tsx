@@ -4,8 +4,18 @@ import { useEffect, useRef, useState } from "react";
 
 import { resolveGoogleMapsBrowserConfig } from "../../config/google-maps";
 import { loadGoogleMaps } from "../../lib/maps/google-maps-loader";
+import {
+  map3DFallbackLabel,
+  map3DFallbackMessage,
+} from "../../lib/maps/map-3d-capability";
+import {
+  AVAILABLE_3D_GLYPH_SRC,
+  UNAVAILABLE_3D_GLYPH_SRC,
+} from "../../lib/maps/map-3d-scene";
+import { useMap3DCapability } from "../../lib/maps/use-map-3d-capability";
+import { createMap3DSession } from "../../lib/maps/map-3d-session";
 
-type PreviewState = "fallback" | "loading" | "ready" | "error";
+type PreviewState = "fallback" | "waiting" | "loading" | "ready" | "error";
 
 interface PreviewRental {
   id: string;
@@ -15,6 +25,9 @@ interface PreviewRental {
   position: google.maps.LatLngAltitudeLiteral;
   fallbackPosition: { left: string; top: string };
 }
+
+const PREVIEW_CENTER = { lat: 11.5718, lng: 104.8948, altitude: 30 };
+const RUPP_POSITION = { lat: 11.5684, lng: 104.8903, altitude: 12 };
 
 const PREVIEW_RENTALS: readonly PreviewRental[] = [
   {
@@ -51,12 +64,7 @@ const googleMapsConfig = resolveGoogleMapsBrowserConfig({
 function StaticMapFallback() {
   return (
     <div className="map-fallback" aria-hidden="true">
-      <svg
-        className="map-streets"
-        viewBox="0 0 720 640"
-        role="img"
-        aria-label="Simplified street map near Royal University of Phnom Penh"
-      >
+      <svg className="map-streets" viewBox="0 0 720 640">
         <rect width="720" height="640" />
         <path d="M-30 440 C130 360 245 390 390 305 S625 165 760 185" />
         <path d="M155 -40 C185 125 225 235 330 330 S510 500 545 680" />
@@ -81,9 +89,7 @@ function StaticMapFallback() {
           style={rental.fallbackPosition}
           key={rental.id}
         >
-          <span className="fallback-pin-icon" aria-hidden="true">
-            {rental.available ? "✓" : "×"}
-          </span>
+          <span className="fallback-pin-icon" aria-hidden="true" />
           <span>
             {rental.available ? `Available · ${rental.price}` : "Unavailable"}
           </span>
@@ -94,125 +100,276 @@ function StaticMapFallback() {
 }
 
 export function RentalMapPreview() {
+  const previewRef = useRef<HTMLElement>(null);
   const liveMapRef = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<PreviewState>("fallback");
-  const [motionAllowed, setMotionAllowed] = useState(false);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const [state, setState] = useState<PreviewState>("waiting");
+  const [enteredViewport, setEnteredViewport] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const capability = useMap3DCapability(googleMapsConfig.status);
 
   useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const applyPreference = () => setMotionAllowed(!query.matches);
-
-    applyPreference();
-    query.addEventListener("change", applyPreference);
-    return () => query.removeEventListener("change", applyPreference);
-  }, []);
+    const preview = previewRef.current;
+    if (!preview || enteredViewport) return;
+    if (!("IntersectionObserver" in window)) {
+      setEnteredViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setEnteredViewport(true);
+        observer.disconnect();
+      },
+      { rootMargin: "180px" },
+    );
+    observer.observe(preview);
+    return () => observer.disconnect();
+  }, [enteredViewport]);
 
   useEffect(() => {
     const container = liveMapRef.current;
-
-    if (
-      !container ||
-      googleMapsConfig.status === "DISABLED" ||
-      !motionAllowed
-    ) {
+    if (!container || capability.status === "checking") return;
+    if (capability.status === "fallback") {
+      setState("fallback");
+      container.replaceChildren();
+      return;
+    }
+    if (!enteredViewport) {
+      setState("waiting");
+      return;
+    }
+    if (googleMapsConfig.status !== "READY") {
       setState("fallback");
       return;
     }
-    if (googleMapsConfig.status === "INVALID") {
-      setState("error");
-      return;
-    }
 
-    const mapContainer = container;
+    const liveMapContainer = container;
     const mapsConfiguration = googleMapsConfig.config;
-    let active = true;
+    let map: google.maps.maps3d.Map3DElement | null = null;
+    let animationFrame: number | null = null;
+    let userInteracted = false;
+    let revealScene: (() => void) | null = null;
+    let visibilityObserver: IntersectionObserver | null = null;
+    const session = createMap3DSession({
+      onReady: () => revealScene?.(),
+      onUnavailable: () => {
+        const mapHadFocus = liveMapContainer.contains(document.activeElement);
+        setState("error");
+        if (mapHadFocus) {
+          animationFrame = window.requestAnimationFrame(() =>
+            retryButtonRef.current?.focus(),
+          );
+        }
+      },
+    });
     setState("loading");
 
     async function initializeMap() {
       try {
         await loadGoogleMaps(mapsConfiguration);
-        const [{ Map3DElement, Marker3DInteractiveElement }, { PinElement }] =
+        if (!session.isActive()) return;
+        const [{ Map3DElement, Marker3DElement }, { PinElement }] =
           await Promise.all([
             google.maps.importLibrary("maps3d"),
             google.maps.importLibrary("marker"),
           ]);
+        if (!session.isActive()) return;
 
-        if (!active) return;
-
-        const map = new Map3DElement({
-          center: { lat: 11.5718, lng: 104.8948, altitude: 30 },
+        map = new Map3DElement({
+          center: PREVIEW_CENTER,
+          bounds: {
+            north: 11.591,
+            south: 11.554,
+            east: 104.914,
+            west: 104.876,
+          },
           range: 2_400,
           tilt: 58,
           heading: 24,
+          fov: 42,
           mode: "HYBRID",
           gestureHandling: "COOPERATIVE",
+          defaultUIHidden: true,
+          description:
+            "Three-dimensional rental demonstration near Royal University of Phnom Penh.",
           mapId: mapsConfiguration.mapId,
         });
         map.className = "live-map-element";
 
-        for (const rental of PREVIEW_RENTALS) {
-          const label = rental.available
-            ? `Available, ${rental.price}. ${rental.title}`
-            : `Unavailable. ${rental.title}`;
-          const pin = new PinElement({
-            background: rental.available
-              ? "oklch(0.48 0.13 142)"
-              : "oklch(0.48 0.18 28)",
-            borderColor: "oklch(1 0 0)",
-            glyphColor: "oklch(1 0 0)",
-            glyphText: rental.available ? "✓" : "×",
-            scale: 1.2,
+        const stopAnimation = () => {
+          userInteracted = true;
+          map?.stopCameraAnimation();
+        };
+        const handleVisibility = () => {
+          if (document.hidden) stopAnimation();
+        };
+        map.addEventListener("pointerdown", stopAnimation, {
+          capture: true,
+          signal: session.signal,
+        });
+        map.addEventListener("wheel", stopAnimation, {
+          passive: true,
+          capture: true,
+          signal: session.signal,
+        });
+        map.addEventListener("keydown", stopAnimation, {
+          capture: true,
+          signal: session.signal,
+        });
+        document.addEventListener("visibilitychange", handleVisibility, {
+          signal: session.signal,
+        });
+        if ("IntersectionObserver" in window) {
+          visibilityObserver = new IntersectionObserver(([entry]) => {
+            if (!entry?.isIntersecting) stopAnimation();
           });
-          const marker = new Marker3DInteractiveElement({
-            position: rental.position,
-            title: label,
-            label,
-          });
-          marker.append(pin);
-          map.append(marker);
+          visibilityObserver.observe(liveMapContainer);
         }
 
-        mapContainer.replaceChildren(map);
-        setState("ready");
+        revealScene = () => {
+          if (!map) return;
+
+          const institutionPin = new PinElement({
+            background: "oklch(0.24 0.035 118)",
+            borderColor: "oklch(1 0 0)",
+            glyphColor: "oklch(1 0 0)",
+            glyphText: "U",
+            scale: 1.1,
+          });
+          const institutionMarker = new Marker3DElement({
+            position: RUPP_POSITION,
+            label: "Royal University of Phnom Penh",
+            sizePreserved: true,
+            zIndex: 20,
+          });
+          institutionMarker.append(institutionPin);
+          map.append(institutionMarker);
+
+          PREVIEW_RENTALS.forEach((rental, index) => {
+            if (!map) return;
+            const label = rental.available
+              ? `Available, ${rental.price}. ${rental.title}`
+              : `Unavailable. ${rental.title}`;
+            const pin = new PinElement({
+              background: rental.available
+                ? "oklch(0.48 0.13 142)"
+                : "oklch(0.48 0.18 28)",
+              borderColor: "oklch(1 0 0)",
+              glyphSrc: rental.available
+                ? AVAILABLE_3D_GLYPH_SRC
+                : UNAVAILABLE_3D_GLYPH_SRC,
+              scale: 1.2,
+            });
+            const marker = new Marker3DElement({
+              position: rental.position,
+              label,
+              collisionBehavior: "REQUIRED",
+              collisionPriority: rental.available ? 12 : 8,
+              drawsWhenOccluded: true,
+              sizePreserved: true,
+            });
+            marker.className = "preview-3d-pin";
+            marker.style.setProperty("--pin-delay", `${index * 70}ms`);
+            marker.append(pin);
+            map.append(marker);
+          });
+
+          setState("ready");
+          animationFrame = window.requestAnimationFrame(() => {
+            if (
+              !session.isActive() ||
+              !map ||
+              userInteracted ||
+              document.hidden
+            )
+              return;
+            try {
+              map.flyCameraTo({
+                endCamera: {
+                  center: { lat: 11.573, lng: 104.8955, altitude: 30 },
+                  range: 2_250,
+                  tilt: 60,
+                  heading: 34,
+                },
+                durationMillis: 1_800,
+              });
+            } catch {
+              session.fail();
+            }
+          });
+        };
+        session.attach(map);
+        liveMapContainer.replaceChildren(map);
       } catch {
-        if (active) setState("error");
+        session.fail();
       }
     }
 
     void initializeMap();
-
     return () => {
-      active = false;
-      mapContainer.replaceChildren();
+      if (liveMapContainer.contains(document.activeElement)) {
+        previewRef.current?.focus({ preventScroll: true });
+      }
+      visibilityObserver?.disconnect();
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+      session.dispose();
+      liveMapContainer.replaceChildren();
     };
-  }, [motionAllowed]);
+  }, [capability.status, enteredViewport, loadAttempt]);
+
+  const modeLabel =
+    state === "ready"
+      ? "3D map"
+      : capability.status === "fallback"
+        ? map3DFallbackLabel(capability.reason)
+        : state === "loading"
+          ? "Preparing 3D"
+          : "2D preview";
 
   return (
-    <section className="map-preview" aria-labelledby="map-preview-title">
+    <section
+      ref={previewRef}
+      className="map-preview"
+      tabIndex={-1}
+      aria-labelledby="map-preview-title"
+    >
       <div className="map-preview-heading">
         <div>
           <p id="map-preview-title">Rental preview near RUPP</p>
           <span>Demonstration locations, not live advertising</span>
         </div>
-        <span className="preview-mode">
-          {state === "ready" ? "3D map" : "2D preview"}
-        </span>
+        <span className="preview-mode">{modeLabel}</span>
       </div>
       <div className="map-canvas">
         <StaticMapFallback />
         <div
           className={`live-map ${state === "ready" ? "is-ready" : ""}`}
           ref={liveMapRef}
+          inert={state !== "ready"}
           aria-hidden={state !== "ready"}
         />
         {state === "loading" ? (
           <p className="map-status" role="status">
-            Loading the 3D map…
+            Preparing the 3D map…
           </p>
-        ) : null}
-        {state === "error" ? (
+        ) : state === "error" ? (
+          <div className="map-status map-status-action">
+            <span role="status">
+              3D map unavailable. The 2D preview remains ready.
+            </span>
+            <button
+              ref={retryButtonRef}
+              type="button"
+              onClick={() => setLoadAttempt((current) => current + 1)}
+            >
+              Try 3D again
+            </button>
+          </div>
+        ) : capability.status === "fallback" &&
+          capability.reason !== "MAPS_UNAVAILABLE" ? (
           <p className="map-status" role="status">
-            3D map unavailable. Showing the 2D rental preview.
+            {map3DFallbackMessage(capability.reason)}
           </p>
         ) : null}
       </div>
@@ -222,9 +379,7 @@ export function RentalMapPreview() {
             <span
               className={`availability-symbol ${rental.available ? "is-available" : "is-unavailable"}`}
               aria-hidden="true"
-            >
-              {rental.available ? "✓" : "×"}
-            </span>
+            />
             <span>
               <strong>{rental.title}</strong>
               <small>

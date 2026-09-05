@@ -1,9 +1,11 @@
 # Student discovery
 
-Phase 2 Steps 1 and 2 make an educational institution the required starting
-point for student rental discovery and provide the authoritative rental-search
-API around that origin. PostgreSQL remains authoritative for institution
-identity, active state, rental availability, and coordinates.
+Phase 2 Steps 1 through 4 make an educational institution the required starting
+point for student rental discovery, provide the authoritative rental-search API
+around that origin, connect the response to a synchronized map/list interface,
+and progressively enhance capable devices with bounded 3D views. PostgreSQL
+remains authoritative for institution identity, active state, rental
+availability, and coordinates.
 
 ## Public institution search
 
@@ -120,3 +122,78 @@ markers, including the selected institution distance, general location,
 availability date and confirmation time, active amenities, and primary image.
 It does not expose the street address, landlord identity/contact details,
 moderation notes, storage keys, or other private fields.
+
+## Synchronized map and list
+
+The search page renders one API result page into both rental cards and Google
+Maps markers. The institution has its own labelled origin marker. Every rental
+marker includes a visible availability check and price, while the selected
+marker also changes shape/outline and displays a selected label. Selecting a
+card focuses its marker and opens the map on a small phone; selecting a marker
+returns to and focuses the matching card. Both directions use listing IDs, and
+reduced-motion users receive an instant handoff.
+
+Map movement is treated as a new server search, not browser-side filtering.
+User pan, zoom, touch, and keyboard map movement wait for a 450 ms quiet period,
+then send `north`, `south`, `east`, and `west` to the existing PostGIS endpoint.
+An in-flight search is aborted when a newer institution, filter, page, viewport,
+or visibility refresh supersedes it. Programmatic fit and card-focus movement do
+not create new viewport searches.
+
+Effective viewport coordinates and result pages are written to the URL, so the
+state can be shared and restored. Map moves replace the current history entry;
+explicit page moves create history entries. Changing institutions, submitting
+the main filters, clearing the map area, or resetting filters removes stale map
+bounds and returns to page one. Each result page contains at most 12 cards and
+markers, with accurate visible/total counts and bounded previous/next controls.
+
+On phones, the list is the default and a full-width List/Map control exposes one
+view at a time. Google Maps being disabled, slow, misconfigured, or unavailable
+never hides the cards. The map panel explains the fallback and retains a way to
+clear a shared viewport. Loading keeps stable map/list dimensions; empty states
+offer full-radius and filter-reset recovery; failed background refreshes retain
+the last complete result page.
+
+## Progressive 3D enhancement
+
+The landing map starts as a stable, labelled 2D preview and keeps its dimensions
+while enhancements initialize. It loads Google Maps 3D only when the preview is
+near the viewport and the browser has complete Maps configuration, hardware
+WebGL, sufficient device capacity, no data-saving preference, and a suitable
+connection. Once the scene reports a steady render, a bounded set of institution
+and rental markers is added. The single 1.8-second camera move stops immediately
+on pointer, wheel, keyboard, or page-visibility interaction. Rental state uses a
+check or cross and an explicit label in addition to green or red.
+
+Student search remains a 2D PostGIS viewport-search experience by default. A
+student can explicitly select “3D explore” to render only the current paginated
+API results, then select the same listing IDs used by the cards and 2D markers.
+The 2D map remains mounted for an instant return and is the only map mode that
+changes geographic search bounds. Card-to-map focus in 3D uses one finite,
+interruptible camera movement and never becomes continuous tracking.
+
+Scene initialization is independent of the 45-second inventory refresh, so
+unchanged results do not recreate the map, reset its camera, or repeat a focus
+animation. Changed result coordinates update the existing scene, with framing
+that accounts for the full supported 20km radius and the panel's aspect ratio.
+Search creates at most 24 rental markers (the current page size is 12), plus
+the institution marker. An off-screen search panel releases its 3D scene.
+
+One 15-second deadline covers the Google script, library downloads, and first
+steady render. A timeout, provider error, or lost rendering context disposes
+the failed scene and returns to the fallback. Cleanup cancels timers, removes
+listeners, and stops camera motion. The hidden 2D map and loading 3D host are
+inert, and fallback transitions preserve keyboard focus where possible.
+
+Reduced-motion, data-saving, slow-connection, low-power, or unsupported devices
+do not download the 3D scene. Missing configuration, provider errors, invalid
+map IDs, and render timeouts also return to the stable 2D surface. The complete
+rental list is never removed, and search never depends on 3D support.
+
+### Verification status
+
+Automated coverage checks capability policy, portrait/distant-result camera
+framing, initial-render readiness, load timeouts, provider/context errors, and
+cleanup. Frontend type-checking, linting, tests, and the production build pass.
+The live Google Maps rendering and manual phone/tablet/desktop checks remain
+unverified because no connected browser was available during this implementation.

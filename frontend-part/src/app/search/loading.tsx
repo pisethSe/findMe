@@ -17,10 +17,16 @@ export default function SearchLoading() {
       </section>
       <section className="search-loading-results">
         <p>Loading nearby rooms…</p>
-        <div className="loading-card-grid" aria-hidden="true">
-          <div className="skeleton loading-card" />
-          <div className="skeleton loading-card" />
-          <div className="skeleton loading-card" />
+        <div
+          className="published-search-layout search-results-loading"
+          aria-hidden="true"
+        >
+          <div className="skeleton loading-map" />
+          <div className="loading-card-grid">
+            <div className="skeleton loading-card" />
+            <div className="skeleton loading-card" />
+            <div className="skeleton loading-card" />
+          </div>
         </div>
       </section>
     </main>

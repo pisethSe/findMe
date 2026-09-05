@@ -5,6 +5,7 @@ import type {
   PropertyType,
   PublicListingDto,
   PublicListingSearchPage,
+  SearchViewport,
 } from "@findme/contracts";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,8 +34,16 @@ import {
 import {
   resultScrollBehavior,
   type MobileResultsView,
+  visibleResultRange,
   viewAfterResultSelection,
 } from "./search-ui-state";
+import {
+  buildSearchMapHref,
+  parseSearchMapState,
+  searchViewportsEqual,
+} from "./search-url-state";
+
+const RESULT_PAGE_SIZE = 12;
 
 const PROPERTY_TYPE_OPTIONS: ReadonlyArray<{
   value: PropertyType;
@@ -57,6 +66,8 @@ interface PublishedRentalSearchProps {
   maxRentUsd: number;
   maxDistanceKm: number;
   propertyType?: PropertyType;
+  initialPage: number;
+  initialViewport: SearchViewport | null;
   invalidFilters: boolean;
 }
 
@@ -65,6 +76,8 @@ export function PublishedRentalSearch({
   maxRentUsd,
   maxDistanceKm,
   propertyType,
+  initialPage,
+  initialViewport,
   invalidFilters,
 }: PublishedRentalSearchProps) {
   const router = useRouter();
@@ -85,9 +98,40 @@ export function PublishedRentalSearch({
   const [selectedListingId, setSelectedListingId] = useState<string | null>(
     null,
   );
+  const [focusListingId, setFocusListingId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<MobileResultsView>("list");
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [viewport, setViewport] = useState<SearchViewport | null>(
+    initialViewport,
+  );
   const searchAbortRef = useRef<AbortController | null>(null);
   const resolvedInstitutionSlugRef = useRef<string | null>(null);
+  const pageRef = useRef<PublicListingSearchPage | null>(null);
+  const searchScopeRef = useRef<string | null>(null);
+  const serverStateKey = `${institutionSlug}:${maxRentUsd}:${maxDistanceKm}:${propertyType ?? "all"}:${initialPage}:${JSON.stringify(initialViewport)}`;
+  const serverStateKeyRef = useRef(serverStateKey);
+
+  useEffect(() => {
+    if (serverStateKeyRef.current === serverStateKey) return;
+    serverStateKeyRef.current = serverStateKey;
+    setCurrentPage(initialPage);
+    setViewport(initialViewport);
+    setFocusListingId(null);
+  }, [initialPage, initialViewport, serverStateKey]);
+
+  useEffect(() => {
+    const restoreHistoryState = () => {
+      const params = Object.fromEntries(
+        new URLSearchParams(window.location.search).entries(),
+      );
+      const restored = parseSearchMapState(params);
+      setCurrentPage(restored.page);
+      setViewport(restored.viewport);
+      setFocusListingId(null);
+    };
+    window.addEventListener("popstate", restoreHistoryState);
+    return () => window.removeEventListener("popstate", restoreHistoryState);
+  }, []);
 
   useEffect(() => {
     if (resolvedInstitutionSlugRef.current === institutionSlug) return;
@@ -98,6 +142,10 @@ export function PublishedRentalSearch({
     setInstitution(null);
     setSelectionValid(false);
     setPage(null);
+    pageRef.current = null;
+    searchScopeRef.current = null;
+    setSelectedListingId(null);
+    setFocusListingId(null);
     setRequestedInstitutionMissing(false);
 
     async function resolveInstitution() {
@@ -149,6 +197,7 @@ export function PublishedRentalSearch({
       if (background) setRefreshing(true);
       else {
         setPage(null);
+        pageRef.current = null;
         setSearchError(null);
       }
       setRefreshError(null);
@@ -161,14 +210,23 @@ export function PublishedRentalSearch({
             maxPrice: maxRentUsd,
             currency: "USD",
             ...(propertyType ? { propertyType } : {}),
+            ...(viewport ? { viewport } : {}),
+            page: currentPage,
+            pageSize: RESULT_PAGE_SIZE,
           },
           controller.signal,
         );
+        pageRef.current = result;
         setPage(result);
         setSelectedListingId((current) =>
           current && result.data.some((listing) => listing.id === current)
             ? current
             : (result.data[0]?.id ?? null),
+        );
+        setFocusListingId((current) =>
+          current && result.data.some((listing) => listing.id === current)
+            ? current
+            : null,
         );
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -176,18 +234,40 @@ export function PublishedRentalSearch({
           error instanceof Error
             ? error.message
             : "FindMe could not load current rentals.";
-        if (background) setRefreshError(message);
-        else setSearchError(message);
+        if (background) {
+          const displayedPage = pageRef.current;
+          setRefreshError(message);
+          if (
+            displayedPage &&
+            (displayedPage.meta.page !== currentPage ||
+              !searchViewportsEqual(displayedPage.meta.viewport, viewport))
+          ) {
+            window.history.replaceState(
+              null,
+              "",
+              buildSearchMapHref(window.location.search, {
+                page: displayedPage.meta.page,
+                viewport: displayedPage.meta.viewport,
+              }),
+            );
+            setCurrentPage(displayedPage.meta.page);
+            setViewport(displayedPage.meta.viewport);
+          }
+        } else setSearchError(message);
       } finally {
         if (!controller.signal.aborted) setRefreshing(false);
       }
     },
-    [maxDistanceKm, maxRentUsd, propertyType],
+    [currentPage, maxDistanceKm, maxRentUsd, propertyType, viewport],
   );
 
   useEffect(() => {
     if (!institution) return;
-    void loadResults(institution, false);
+    const scope = `${institution.id}:${maxDistanceKm}:${maxRentUsd}:${propertyType ?? "all"}`;
+    const foreground =
+      searchScopeRef.current !== scope || pageRef.current === null;
+    searchScopeRef.current = scope;
+    void loadResults(institution, !foreground);
 
     const refreshWhenVisible = () => {
       if (shouldRefreshVisibleSearch(document.visibilityState)) {
@@ -208,22 +288,91 @@ export function PublishedRentalSearch({
 
   const selectFromMap = useCallback((listingId: string) => {
     setSelectedListingId(listingId);
+    setFocusListingId(null);
     setMobileView(viewAfterResultSelection("marker"));
     window.requestAnimationFrame(() => {
       const prefersReducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
-      document.getElementById(`rental-${listingId}`)?.scrollIntoView({
+      const card = document.getElementById(`rental-${listingId}`);
+      card?.scrollIntoView({
         behavior: resultScrollBehavior(prefersReducedMotion),
         block: "nearest",
       });
+      card?.focus({ preventScroll: true });
     });
   }, []);
 
   const selectFromCard = useCallback((listingId: string) => {
     setSelectedListingId(listingId);
+    setFocusListingId(listingId);
     setMobileView(viewAfterResultSelection("card"));
+    window.requestAnimationFrame(() => {
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      document.getElementById("rental-map")?.scrollIntoView({
+        behavior: resultScrollBehavior(prefersReducedMotion),
+        block: "start",
+      });
+    });
   }, []);
+
+  const updateViewport = useCallback(
+    (nextViewport: SearchViewport) => {
+      if (searchViewportsEqual(viewport, nextViewport)) return;
+      window.history.replaceState(
+        null,
+        "",
+        buildSearchMapHref(window.location.search, {
+          page: 1,
+          viewport: nextViewport,
+        }),
+      );
+      setCurrentPage(1);
+      setViewport(nextViewport);
+      setFocusListingId(null);
+    },
+    [viewport],
+  );
+
+  const clearViewport = useCallback(() => {
+    window.history.replaceState(
+      null,
+      "",
+      buildSearchMapHref(window.location.search, {
+        page: 1,
+        viewport: null,
+      }),
+    );
+    setCurrentPage(1);
+    setViewport(null);
+    setFocusListingId(null);
+  }, []);
+
+  const changePage = useCallback(
+    (nextPage: number) => {
+      if (refreshing || nextPage === currentPage || nextPage < 1) return;
+      window.history.pushState(
+        null,
+        "",
+        buildSearchMapHref(window.location.search, {
+          page: nextPage,
+          viewport,
+        }),
+      );
+      setCurrentPage(nextPage);
+      setSelectedListingId(null);
+      setFocusListingId(null);
+      window.requestAnimationFrame(() => {
+        document.getElementById("results-title")?.scrollIntoView({
+          behavior: "auto",
+          block: "start",
+        });
+      });
+    },
+    [currentPage, refreshing, viewport],
+  );
 
   const updateSelectionValidity = useCallback((valid: boolean) => {
     setSelectionValid(valid);
@@ -261,6 +410,24 @@ export function PublishedRentalSearch({
   }, []);
 
   const warning = invalidFilters || requestedInstitutionMissing;
+  const resultRange = page
+    ? visibleResultRange(page.meta.page, page.meta.pageSize, page.meta.total)
+    : { first: 0, last: 0 };
+
+  useEffect(() => {
+    if (!page) return;
+    const finalPage = Math.max(page.meta.totalPages, 1);
+    if (currentPage <= finalPage) return;
+    window.history.replaceState(
+      null,
+      "",
+      buildSearchMapHref(window.location.search, {
+        page: finalPage,
+        viewport,
+      }),
+    );
+    setCurrentPage(finalPage);
+  }, [currentPage, page, viewport]);
 
   return (
     <main className="search-page" lang="en">
@@ -389,7 +556,11 @@ export function PublishedRentalSearch({
           </div>
         </section>
       ) : page ? (
-        <section className="search-results" aria-labelledby="results-title">
+        <section
+          className="search-results"
+          aria-labelledby="results-title"
+          aria-busy={refreshing}
+        >
           <div className="results-heading">
             <div>
               <h2 id="results-title">
@@ -397,24 +568,37 @@ export function PublishedRentalSearch({
                 found
               </h2>
               <p>
-                Within {formatDistance(page.meta.radiusMeters)} · last checked{" "}
+                {page.meta.total > 0
+                  ? `Showing ${resultRange.first}–${resultRange.last} · `
+                  : ""}
+                {viewport ? "inside this map area" : "within the full radius"}
+                {" · "}
+                {formatDistance(page.meta.radiusMeters)} from{" "}
+                {page.meta.institution.shortName ??
+                  page.meta.institution.nameEn}
+                {" · checked "}
                 <time dateTime={page.meta.refreshedAt}>
                   {formatTime(page.meta.refreshedAt)}
                 </time>
-                {refreshing ? " · checking for updates" : ""}
               </p>
             </div>
-            <div className="mobile-result-switch" aria-label="Results view">
+            <div
+              className="mobile-result-switch"
+              role="group"
+              aria-label="Results view"
+            >
               <button
                 type="button"
                 aria-pressed={mobileView === "list"}
+                aria-controls="rental-list"
                 onClick={() => setMobileView("list")}
               >
-                List
+                List ({page.data.length})
               </button>
               <button
                 type="button"
                 aria-pressed={mobileView === "map"}
+                aria-controls="rental-map"
                 onClick={() => setMobileView("map")}
               >
                 Map
@@ -424,6 +608,14 @@ export function PublishedRentalSearch({
           {refreshError ? (
             <p className="search-refresh-warning" role="status">
               Refresh failed. Showing the last complete results. {refreshError}
+            </p>
+          ) : refreshing ? (
+            <p className="search-update-status" role="status">
+              {viewport
+                ? "Updating rentals in the visible map area…"
+                : currentPage > 1
+                  ? `Loading results page ${currentPage}…`
+                  : "Checking for newly published rentals…"}
             </p>
           ) : null}
 
@@ -435,31 +627,78 @@ export function PublishedRentalSearch({
               institution={page.meta.institution}
               listings={page.data}
               selectedListingId={selectedListingId}
+              focusListingId={focusListingId}
+              viewport={viewport}
+              active={mobileView === "map"}
+              updating={refreshing}
               onSelectListing={selectFromMap}
+              onViewportChange={updateViewport}
+              onClearViewport={clearViewport}
             />
-            <div className="published-list-region">
+            <div id="rental-list" className="published-list-region">
               {page.data.length > 0 ? (
-                <ul className="rental-results published-rental-results">
-                  {page.data.map((listing) => (
-                    <RentalCard
-                      key={listing.id}
-                      listing={listing}
-                      institution={page.meta.institution}
-                      selected={listing.id === selectedListingId}
-                      onSelect={() => selectFromCard(listing.id)}
-                    />
-                  ))}
-                </ul>
+                <>
+                  <ul className="rental-results published-rental-results">
+                    {page.data.map((listing) => (
+                      <RentalCard
+                        key={listing.id}
+                        listing={listing}
+                        institution={page.meta.institution}
+                        selected={listing.id === selectedListingId}
+                        onSelect={() => selectFromCard(listing.id)}
+                      />
+                    ))}
+                  </ul>
+                  {page.meta.totalPages > 1 ? (
+                    <nav
+                      className="search-pagination"
+                      aria-label="Rental result pages"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => changePage(page.meta.page - 1)}
+                        disabled={page.meta.page <= 1 || refreshing}
+                      >
+                        Previous
+                      </button>
+                      <p>
+                        Page <strong>{page.meta.page}</strong> of{" "}
+                        {page.meta.totalPages}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => changePage(page.meta.page + 1)}
+                        disabled={
+                          page.meta.page >= page.meta.totalPages || refreshing
+                        }
+                      >
+                        Next
+                      </button>
+                    </nav>
+                  ) : null}
+                </>
               ) : (
                 <div className="empty-results">
-                  <h3>No published rentals match these filters.</h3>
+                  <h3>
+                    {viewport
+                      ? "No rentals are visible in this map area."
+                      : "No published rentals match these filters."}
+                  </h3>
                   <p>
-                    Try increasing the distance or monthly budget. Newly
-                    approved rentals will appear while this page is open.
+                    {viewport
+                      ? "Show the full search radius, or move back toward the institution and try again."
+                      : "Try increasing the distance or monthly budget. Newly approved rentals will appear while this page is open."}
                   </p>
-                  <Link href={`/search?institution=${institution.slug}`}>
-                    Reset filters
-                  </Link>
+                  <div className="empty-results-actions">
+                    {viewport ? (
+                      <button type="button" onClick={clearViewport}>
+                        Show full radius
+                      </button>
+                    ) : null}
+                    <Link href={`/search?institution=${institution.slug}`}>
+                      Reset filters
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -487,7 +726,7 @@ function RentalCard({
       .filter(Boolean)
       .join(", ") || listing.location.city;
   return (
-    <li id={`rental-${listing.id}`} data-selected={selected}>
+    <li id={`rental-${listing.id}`} data-selected={selected} tabIndex={-1}>
       {listing.primaryImage ? (
         <div className="rental-card-photo">
           <Image
@@ -512,7 +751,8 @@ function RentalCard({
             {formatPrice(listing.monthlyPrice, listing.currency)}/month
           </strong>
           <span className="available-label">
-            <span aria-hidden="true">✓</span> {listing.availableUnits} available
+            <span className="availability-check" aria-hidden="true" />
+            {listing.availableUnits} available
           </span>
         </div>
         <h3 lang={listing.titleEn ? "en" : "km"}>{title}</h3>
@@ -533,7 +773,12 @@ function RentalCard({
           <small>
             Last confirmed {formatDate(listing.availabilityConfirmedAt)}
           </small>
-          <button type="button" aria-pressed={selected} onClick={onSelect}>
+          <button
+            type="button"
+            aria-pressed={selected}
+            aria-controls="rental-map"
+            onClick={onSelect}
+          >
             {selected ? "Shown on map" : "Show on map"}
           </button>
         </div>
@@ -545,10 +790,16 @@ function RentalCard({
 function SearchLoading() {
   return (
     <section className="search-results" aria-busy="true" aria-live="polite">
-      <p>Loading current published rentals…</p>
-      <div className="loading-card-grid">
-        <div className="skeleton loading-card" />
-        <div className="skeleton loading-card" />
+      <p className="search-loading-message">
+        Loading current published rentals…
+      </p>
+      <div className="published-search-layout search-results-loading">
+        <div className="skeleton loading-map" aria-hidden="true" />
+        <div className="loading-card-grid" aria-hidden="true">
+          <div className="skeleton loading-card" />
+          <div className="skeleton loading-card" />
+          <div className="skeleton loading-card" />
+        </div>
       </div>
     </section>
   );

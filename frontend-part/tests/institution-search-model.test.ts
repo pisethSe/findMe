@@ -35,7 +35,7 @@ test("institution picker keyboard navigation wraps in both directions", () => {
 
 test("selected institution persists canonically while preserving filters", () => {
   const href = buildInstitutionSearchHref(
-    "?university=legacy&page=3&maxRentUsd=140&propertyType=ROOM",
+    "?university=legacy&page=3&maxRentUsd=140&propertyType=ROOM&north=11.6&south=11.5&east=105&west=104.8",
     institution.slug,
   );
   const url = new URL(href, "https://findme.test");
@@ -44,6 +44,10 @@ test("selected institution persists canonically while preserving filters", () =>
   assert.equal(url.searchParams.get("institution"), institution.slug);
   assert.equal(url.searchParams.get("university"), null);
   assert.equal(url.searchParams.get("page"), null);
+  assert.equal(url.searchParams.get("north"), null);
+  assert.equal(url.searchParams.get("south"), null);
+  assert.equal(url.searchParams.get("east"), null);
+  assert.equal(url.searchParams.get("west"), null);
   assert.equal(url.searchParams.get("maxRentUsd"), "140");
   assert.equal(url.searchParams.get("propertyType"), "ROOM");
 });

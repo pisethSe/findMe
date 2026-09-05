@@ -5,8 +5,8 @@ move to Phnom Penh discover affordable rooms and houses near their university,
 understand the real monthly cost, and contact a verified property owner with
 more confidence.
 
-The product has completed its MVP foundation, all five Phase 1 rental supply
-steps, and the first two Phase 2 student-discovery steps. The governing
+The repository implements its MVP foundation, all five Phase 1 rental supply
+steps, and the first four Phase 2 student-discovery steps. The governing
 documents are:
 
 - [Product requirements](PRD.md)
@@ -61,6 +61,9 @@ The repository currently includes:
 - a validated public rental-search API with indexed PostGIS radius and viewport
   filtering, availability dates, price/currency, property-type and amenity
   filters, stable sorting, pagination, cache normalization, and safe DTOs;
+- a synchronized student map/list interface with debounced server-side viewport
+  searches, institution and availability-labelled markers, two-way card/marker
+  focus, shareable map state, paginated results, and a mobile list-first switch;
 - Redis generation-based public-search caching with post-commit invalidation
   and a 30-second cache TTL that keeps PostgreSQL authoritative;
 - retry-safe landlord entitlement expiry that atomically records the transition,
@@ -75,8 +78,10 @@ The repository currently includes:
   paid promotion cannot bypass organic eligibility;
 - a production-building Next.js public landing and live published-rental search
   surface;
-- a progressively enhanced Google Maps 3D landing preview with a stable 2D/list
-  fallback, labelled availability states, and reduced-motion handling;
+- progressively enhanced Google Maps 3D landing and search views with explicit
+  search opt-in, synchronized rental selection, bounded markers and camera
+  motion, and stable 2D/list fallbacks for reduced-motion, data-saving,
+  low-power, unsupported, slow-network, and map-error conditions;
 - repository-wide GitHub Actions checks for formatting, linting, types,
   PostGIS migrations and integration tests, production builds, and container
   smoke tests;
@@ -175,10 +180,11 @@ API:
 
 Set both `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` and
 `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` at frontend build time to enable the landing
-page's Google Maps 3D enhancement and Landlord location picker. The browser key
-must allow Maps JavaScript API and Places API (New). Without those values, the
-landing page uses the accessible 2D/list preview and the rental form retains its
-manual coordinate fallback. Staging and production additionally require the
+and search Google Maps enhancements and Landlord location picker. The browser
+key must allow Maps JavaScript API and Places API (New). Without those values,
+the landing page uses the accessible 2D/list preview, student search keeps its
+complete rental list, and the rental form retains its manual coordinate
+fallback. Staging and production additionally require the
 separate server-only `GOOGLE_MAPS_SERVER_KEY` and complete S3-compatible media
 configuration. Pass the public `CDN_BASE_URL` to both the backend runtime and
 frontend build so Next.js can strictly allow and responsively optimize only
