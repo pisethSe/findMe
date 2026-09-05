@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
-import { LandlordWorkspace } from "../../../features/landlord/landlord-workspace";
+import { LandlordAccessPage } from "../../../features/landlord/landlord-access-page";
 
 export const metadata: Metadata = {
-  title: "Landlord trial",
+  title: "Landlord access",
   robots: { index: false, follow: false },
 };
 
 export default function LandlordTrialPage() {
-  return <LandlordWorkspace />;
+  return <LandlordAccessPage />;
 }

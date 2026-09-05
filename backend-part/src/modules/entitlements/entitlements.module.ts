@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AuthModule } from "../auth/auth.module.js";
+import { EntitlementExpiryScheduler } from "./entitlement-expiry.scheduler.js";
 import { EntitlementsController } from "./entitlements.controller.js";
 import { EntitlementsRepository } from "./entitlements.repository.js";
 import { EntitlementsService } from "./entitlements.service.js";
@@ -8,7 +9,11 @@ import { EntitlementsService } from "./entitlements.service.js";
 @Module({
   imports: [AuthModule],
   controllers: [EntitlementsController],
-  providers: [EntitlementsRepository, EntitlementsService],
+  providers: [
+    EntitlementsRepository,
+    EntitlementsService,
+    EntitlementExpiryScheduler,
+  ],
   exports: [EntitlementsService],
 })
 export class EntitlementsModule {}

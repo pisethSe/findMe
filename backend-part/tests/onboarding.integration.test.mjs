@@ -192,6 +192,10 @@ test(
       );
       assert.equal(activated.response.status, 200);
       assert.equal(activated.body.data.onboarding.nextPath, "/landlord");
+      assert.equal(
+        activated.body.data.successNextPath,
+        "/landlord/listings/new",
+      );
       assert.equal(activated.body.data.profile.contactPhone, "012345678");
       assert.equal(activated.body.data.profile.contactTelegram, "@dara_rooms");
       assert.equal(
@@ -230,6 +234,7 @@ test(
         repeatedActivation.body.data.entitlement.trialEndsAt,
         activated.body.data.entitlement.trialEndsAt,
       );
+      assert.equal(repeatedActivation.body.data.successNextPath, "/landlord");
       const durableLandlordState = await database.query(
         `SELECT
            (SELECT COUNT(*)::int FROM landlord_profiles WHERE user_id = u.id) AS profile_count,

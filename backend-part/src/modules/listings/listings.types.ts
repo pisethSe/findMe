@@ -54,6 +54,16 @@ export interface LandlordListingRecord {
       sortOrder: number;
     };
   }>;
+  images: Array<{
+    id: string;
+    publicUrl: string;
+    altTextKm: string | null;
+    altTextEn: string | null;
+    width: number | null;
+    height: number | null;
+    sortOrder: number;
+    status: "UPLOADING" | "READY" | "FAILED" | "REMOVED";
+  }>;
 }
 
 export interface CreateLandlordListingInput {
@@ -98,32 +108,32 @@ export interface UpdateLandlordListingInput {
   property?: {
     name?: string;
     addressLine?: string;
-    commune?: string;
-    district?: string;
+    commune?: string | null;
+    district?: string | null;
     city?: string;
     countryCode?: "KH";
     latitude?: number;
     longitude?: number;
-    googlePlaceId?: string;
+    googlePlaceId?: string | null;
     totalUnits?: number;
   };
   listing: {
-    titleKm?: string;
-    titleEn?: string;
-    descriptionKm?: string;
-    descriptionEn?: string;
+    titleKm?: string | null;
+    titleEn?: string | null;
+    descriptionKm?: string | null;
+    descriptionEn?: string | null;
     propertyType?: PropertyType;
     monthlyPrice?: number;
     currency?: Currency;
-    depositAmount?: number;
-    utilityNotesKm?: string;
-    utilityNotesEn?: string;
-    houseRulesKm?: string;
-    houseRulesEn?: string;
-    bedrooms?: number;
-    bathrooms?: number;
+    depositAmount?: number | null;
+    utilityNotesKm?: string | null;
+    utilityNotesEn?: string | null;
+    houseRulesKm?: string | null;
+    houseRulesEn?: string | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
     furnished?: boolean;
-    availableFrom?: Date;
+    availableFrom?: Date | null;
     contactPreference?: ContactPreference;
   };
   amenityIds?: string[];
@@ -174,5 +184,15 @@ export interface LandlordListingDto {
     nameKm: string;
     nameEn: string;
     category: string | null;
+  }>;
+  images: Array<{
+    id: string;
+    publicUrl: string;
+    altTextKm: string | null;
+    altTextEn: string | null;
+    width: number | null;
+    height: number | null;
+    sortOrder: number;
+    status: "UPLOADING" | "READY" | "FAILED" | "REMOVED";
   }>;
 }

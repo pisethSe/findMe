@@ -8,7 +8,7 @@ import type {
   UpdateLandlordListingInput,
 } from "./listings.types.js";
 
-const landlordListingSelect = {
+export const landlordListingSelect = {
   id: true,
   slug: true,
   titleKm: true,
@@ -62,6 +62,19 @@ const landlordListingSelect = {
         },
       },
     },
+  },
+  images: {
+    select: {
+      id: true,
+      publicUrl: true,
+      altTextKm: true,
+      altTextEn: true,
+      width: true,
+      height: true,
+      sortOrder: true,
+      status: true,
+    },
+    orderBy: { sortOrder: "asc" },
   },
 } as const;
 

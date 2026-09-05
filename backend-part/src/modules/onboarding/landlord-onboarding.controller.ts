@@ -28,6 +28,7 @@ export class LandlordOnboardingController {
     return {
       data: {
         onboarding: result.onboarding,
+        successNextPath: result.successNextPath,
         profile: result.activation.profile,
         entitlement: result.activation.entitlement,
       },

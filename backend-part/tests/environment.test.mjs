@@ -6,6 +6,8 @@ import {
   getAuthSecret,
   getDatabaseUrl,
   getGoogleMapsServerKey,
+  getObjectStorageConfig,
+  getRedisUrl,
   getWebOrigin,
   parseAccessTokenTtl,
   parseApiPort,
@@ -28,6 +30,19 @@ test("accepts only explicit PostgreSQL database URLs", () => {
   assert.throws(() => getDatabaseUrl(undefined), /DATABASE_URL/);
   assert.throws(() => getDatabaseUrl("redis://localhost:6379"), /postgres/i);
   assert.throws(() => getDatabaseUrl("not a url"), /DATABASE_URL/);
+});
+
+test("validates optional local and required deployed Redis URLs", () => {
+  assert.equal(getRedisUrl(undefined, "local"), null);
+  assert.equal(
+    getRedisUrl("rediss://cache.example.test:6380", "production"),
+    "rediss://cache.example.test:6380",
+  );
+  assert.throws(() => getRedisUrl(undefined, "production"), /REDIS_URL/);
+  assert.throws(
+    () => getRedisUrl("https://cache.example.test", "local"),
+    /redis or rediss/,
+  );
 });
 
 test("rejects malformed ports and browser origins", () => {
@@ -64,6 +79,7 @@ test("validates authentication secrets and bounded token lifetimes", () => {
         NODE_ENV: "production",
         JWT_ACCESS_SECRET: "a".repeat(32),
         REFRESH_TOKEN_SECRET: "b".repeat(32),
+        REDIS_URL: "rediss://cache.example.test:6380",
       }),
     /APP_ENV must be explicit/,
   );
@@ -95,6 +111,38 @@ test("requires a safe server-only Google Maps key for deployed environments", ()
   );
 });
 
+test("accepts complete object storage configuration and rejects partial deployment setup", () => {
+  assert.equal(getObjectStorageConfig({}, "local"), null);
+  assert.throws(
+    () => getObjectStorageConfig({ S3_BUCKET: "findme-media" }, "local"),
+    /incomplete/,
+  );
+  assert.throws(() => getObjectStorageConfig({}, "production"), /S3_REGION/);
+  assert.deepEqual(
+    getObjectStorageConfig(
+      {
+        S3_ENDPOINT: "https://storage.example.test",
+        S3_REGION: "auto",
+        S3_BUCKET: "findme-media",
+        S3_ACCESS_KEY_ID: "access-key",
+        S3_SECRET_ACCESS_KEY: "secret-key",
+        CDN_BASE_URL: "https://cdn.example.test/",
+        S3_FORCE_PATH_STYLE: "true",
+      },
+      "production",
+    ),
+    {
+      endpoint: "https://storage.example.test",
+      region: "auto",
+      bucket: "findme-media",
+      accessKeyId: "access-key",
+      secretAccessKey: "secret-key",
+      cdnBaseUrl: "https://cdn.example.test",
+      forcePathStyle: true,
+    },
+  );
+});
+
 test("validates Maps configuration as part of application startup", () => {
   assert.doesNotThrow(() =>
     validateApplicationEnvironment({
@@ -102,7 +150,13 @@ test("validates Maps configuration as part of application startup", () => {
       NODE_ENV: "production",
       JWT_ACCESS_SECRET: "a".repeat(32),
       REFRESH_TOKEN_SECRET: "b".repeat(32),
+      REDIS_URL: "rediss://cache.example.test:6380",
       GOOGLE_MAPS_SERVER_KEY: `AIza${"s".repeat(35)}`,
+      S3_REGION: "auto",
+      S3_BUCKET: "findme-media",
+      S3_ACCESS_KEY_ID: "access-key",
+      S3_SECRET_ACCESS_KEY: "secret-key",
+      CDN_BASE_URL: "https://cdn.example.test",
     }),
   );
   assert.throws(
@@ -112,6 +166,7 @@ test("validates Maps configuration as part of application startup", () => {
         NODE_ENV: "production",
         JWT_ACCESS_SECRET: "a".repeat(32),
         REFRESH_TOKEN_SECRET: "b".repeat(32),
+        REDIS_URL: "rediss://cache.example.test:6380",
       }),
     /GOOGLE_MAPS_SERVER_KEY is required/,
   );

@@ -318,6 +318,7 @@ model Listing {
   @@index([propertyId])
   @@index([landlordId, status, deletedAt])
   @@index([status, availableUnits, monthlyPrice])
+  @@index([status, publishedAt(sort: Desc), id], map: "listings_publication_feed_idx")
   @@map("listings")
 }
 
@@ -397,6 +398,7 @@ model Inquiry {
 
   @@index([studentId, createdAt])
   @@index([landlordId, status, createdAt])
+  @@index([landlordId, createdAt(sort: Desc), id(sort: Desc)], map: "inquiries_landlord_created_id_idx")
   @@index([listingId])
   @@map("inquiries")
 }

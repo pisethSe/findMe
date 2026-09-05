@@ -45,13 +45,13 @@ export class UpdatePropertyDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  commune?: string;
+  commune?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  district?: string;
+  district?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
@@ -82,7 +82,7 @@ export class UpdatePropertyDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  googlePlaceId?: string;
+  googlePlaceId?: string | null;
 
   @Type(() => Number)
   @IsOptional()
@@ -102,25 +102,25 @@ export class UpdateListingDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
-  titleKm?: string;
+  titleKm?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(200)
-  titleEn?: string;
+  titleEn?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(10_000)
-  descriptionKm?: string;
+  descriptionKm?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(10_000)
-  descriptionEn?: string;
+  descriptionEn?: string | null;
 
   @IsOptional()
   @IsEnum(PropertyType)
@@ -142,45 +142,45 @@ export class UpdateListingDto {
   @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
   @Max(9_999_999_999.99)
-  depositAmount?: number;
+  depositAmount?: number | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(10_000)
-  utilityNotesKm?: string;
+  utilityNotesKm?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(10_000)
-  utilityNotesEn?: string;
+  utilityNotesEn?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(10_000)
-  houseRulesKm?: string;
+  houseRulesKm?: string | null;
 
   @Transform(trimOptional)
   @IsOptional()
   @IsString()
   @MaxLength(10_000)
-  houseRulesEn?: string;
+  houseRulesEn?: string | null;
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(100)
-  bedrooms?: number;
+  bedrooms?: number | null;
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(100)
-  bathrooms?: number;
+  bathrooms?: number | null;
 
   @IsOptional()
   @IsBoolean()
@@ -190,7 +190,7 @@ export class UpdateListingDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, {
     message: "Available-from date must use YYYY-MM-DD.",
   })
-  availableFrom?: string;
+  availableFrom?: string | null;
 
   @IsOptional()
   @IsEnum(ContactPreference)

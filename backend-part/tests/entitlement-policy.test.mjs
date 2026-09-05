@@ -59,16 +59,25 @@ test("allows an open-ended active grant and denies expired supply writes", async
   assert.equal(openEnded.isAccessActive, true);
   assert.equal(openEnded.remainingDays, null);
 
-  const service = new EntitlementsService({
-    findCurrent: async () => ({
-      landlordId: "00000000-0000-4000-8000-000000000201",
-      status: "EXPIRED",
-      source: "TRIAL",
-      trialStartedAt: new Date("2026-08-20T00:00:00.000Z"),
-      trialEndsAt: new Date("2026-08-27T00:00:00.000Z"),
-      accessEndsAt: new Date("2026-08-27T00:00:00.000Z"),
-    }),
-  });
+  const service = new EntitlementsService(
+    {
+      expireIfDue: async () => ({
+        entitlement: {
+          landlordId: "00000000-0000-4000-8000-000000000201",
+          status: "EXPIRED",
+          source: "TRIAL",
+          trialStartedAt: new Date("2026-08-20T00:00:00.000Z"),
+          trialEndsAt: new Date("2026-08-27T00:00:00.000Z"),
+          accessEndsAt: new Date("2026-08-27T00:00:00.000Z"),
+        },
+        expired: false,
+        pausedListings: [],
+      }),
+    },
+    {
+      invalidatePublishedListings: async () => undefined,
+    },
+  );
 
   await assert.rejects(
     service.assertRestrictedSupplyActionAllowed(
@@ -77,4 +86,73 @@ test("allows an open-ended active grant and denies expired supply writes", async
     ),
     (error) => error.getResponse().code === "LANDLORD_ENTITLEMENT_REQUIRED",
   );
+});
+
+test("invalidates paused listing caches only after an atomic expiry result", async () => {
+  const events = [];
+  const service = new EntitlementsService(
+    {
+      expireIfDue: async () => {
+        events.push("transaction-committed");
+        return {
+          entitlement: {
+            landlordId: "00000000-0000-4000-8000-000000000202",
+            status: "EXPIRED",
+            source: "TRIAL",
+            trialStartedAt: new Date("2026-08-20T00:00:00.000Z"),
+            trialEndsAt: new Date("2026-08-27T00:00:00.000Z"),
+            accessEndsAt: new Date("2026-08-27T00:00:00.000Z"),
+          },
+          expired: true,
+          pausedListings: [{ id: "listing-one", slug: "listing-one" }],
+        };
+      },
+    },
+    {
+      invalidatePublishedListings: async (listings) => {
+        events.push(`cache-invalidated:${listings.length}`);
+      },
+    },
+  );
+
+  const entitlement = await service.getCurrent(
+    "00000000-0000-4000-8000-000000000202",
+  );
+  assert.equal(entitlement.status, "EXPIRED");
+  assert.deepEqual(events, ["transaction-committed", "cache-invalidated:1"]);
+});
+
+test("sweeps due entitlements in batches and counts only successful transitions", async () => {
+  const dueBatches = [
+    ["00000000-0000-4000-8000-000000000211", "already-expired"],
+    [],
+  ];
+  const invalidated = [];
+  const service = new EntitlementsService(
+    {
+      listDueLandlordIds: async () => dueBatches.shift() ?? [],
+      expireIfDue: async (landlordId) =>
+        landlordId === "already-expired"
+          ? { entitlement: null, expired: false, pausedListings: [] }
+          : {
+              entitlement: null,
+              expired: true,
+              pausedListings: [
+                { id: "listing-one", slug: "one" },
+                { id: "listing-two", slug: "two" },
+              ],
+            },
+    },
+    {
+      invalidatePublishedListings: async (listings) => {
+        invalidated.push(...listings);
+      },
+    },
+  );
+
+  assert.deepEqual(await service.sweepExpiredEntitlements(now), {
+    expiredLandlords: 1,
+    pausedListings: 2,
+  });
+  assert.equal(invalidated.length, 2);
 });

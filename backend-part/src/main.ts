@@ -37,6 +37,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const port = parseApiPort(process.env.PORT);
 
+  app.enableShutdownHooks();
   app.setGlobalPrefix("api/v1");
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(

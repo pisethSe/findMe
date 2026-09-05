@@ -94,6 +94,7 @@ jobs:
           NEXT_PUBLIC_API_BASE_URL: https://api.example.test/api/v1
           NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY: ci_browser_key_12345678901234567890
           NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: ci_map_id_123456
+          CDN_BASE_URL: https://media.example.test/findme
         run: pnpm run build
 
   containers:

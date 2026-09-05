@@ -16,13 +16,13 @@ Use different keys for the two trust boundaries:
 
 | Credential | Application restriction | Initial API restriction | Delivery |
 | --- | --- | --- | --- |
-| `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` | Websites/HTTP referrers | Maps JavaScript API | Next.js build argument; visible in browser code by design |
+| `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` | Websites/HTTP referrers | Maps JavaScript API + Places API (New) | Next.js build argument; visible in browser code by design |
 | `GOOGLE_MAPS_SERVER_KEY` | Public egress IP addresses/CIDR | Geocoding API when server geocoding is enabled | Backend runtime secret only |
 
 Do not authorize server APIs such as Geocoding or Routes on the browser key.
-Add Places API (New) to the appropriate key only when the implemented Places
-client requires it. Add Routes API to the server key only when the P1 routes
-feature is implemented.
+The guided landlord location picker now uses Places API (New), so the browser
+key requires it alongside Maps JavaScript API. Add Routes API to the server key
+only when the P1 routes feature is implemented.
 
 ## Google Cloud checklist
 
@@ -31,15 +31,15 @@ with separate keys, quotas, data, and deployment configuration.
 
 1. Select the target Google Cloud project and attach an approved billing
    account.
-2. Enable Maps JavaScript API. Enable Geocoding API only when the backend uses
-   it, and enable Places API (New) or Routes API only for implemented features.
+2. Enable Maps JavaScript API and Places API (New). Enable Geocoding API only
+   when the backend uses it, and Routes API only for implemented features.
 3. Create a JavaScript map ID in Maps Management and associate the intended 3D
    style. The map ID and browser key must belong to the same project.
 4. Create the browser key with both restrictions:
    - application restriction: Websites;
    - allowed referrers: the exact HTTPS staging/production origins, both the
      bare origin and its `/*` path form where required;
-   - API restriction: Maps JavaScript API only for the current implementation.
+   - API restriction: Maps JavaScript API and Places API (New).
 5. Create the server key with both restrictions:
    - application restriction: the backend's stable public egress IP addresses
      or CIDR ranges. Private IPs and localhost are not valid restrictions;
@@ -96,11 +96,14 @@ Before production release:
    frontend build, and a missing server key must stop backend startup.
 4. Open the deployed landing page from every allowed origin and confirm the 3D
    preview uses the configured map ID.
-5. Open the same bundle from an unlisted origin and confirm Google rejects the
+5. Open `/landlord/listings/new` with an authorized Landlord and confirm address
+   autocomplete, map click, and keyboard-draggable marker changes update the
+   private coordinates.
+6. Open the same bundle from an unlisted origin and confirm Google rejects the
    request while FindMe retains its labelled 2D/list fallback.
-6. Test reduced motion and a blocked Maps request. Discovery and rental status
+7. Test reduced motion and a blocked Maps request. Discovery and rental status
    must remain understandable without 3D rendering or color alone.
-7. Review Google Maps metrics by credential and verify that traffic appears
+8. Review Google Maps metrics by credential and verify that traffic appears
    only on the intended key and API.
 
 Current official references:

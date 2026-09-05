@@ -52,6 +52,7 @@ export interface LandlordEntitlement {
 
 export interface LandlordOnboardingResult {
   onboarding: OnboardingState;
+  successNextPath: "/landlord/listings/new" | "/landlord";
   profile: {
     userId: string;
     displayName: string;
@@ -74,6 +75,11 @@ interface ApiEnvelope<TData> {
   data: TData;
 }
 
+export interface ApiPageEnvelope<TData, TMeta> {
+  data: TData;
+  meta: TMeta;
+}
+
 interface ErrorEnvelope {
   error?: {
     code?: string;
@@ -83,13 +89,18 @@ interface ErrorEnvelope {
 }
 
 export class AuthApiError extends Error {
+  readonly code: string;
+  readonly fields: ReadonlyArray<{ field: string; message: string }>;
+
   constructor(
     message: string,
-    readonly code: string,
-    readonly fields: ReadonlyArray<{ field: string; message: string }>,
+    code: string,
+    fields: ReadonlyArray<{ field: string; message: string }>,
   ) {
     super(message);
     this.name = "AuthApiError";
+    this.code = code;
+    this.fields = fields;
   }
 }
 
@@ -215,13 +226,36 @@ export async function getPostAuthenticationPath(): Promise<
   return (await getOnboardingState()).nextPath;
 }
 
-async function authorizedRequest<TData>(
+export async function authorizedRequest<TData>(
   path: string,
-  options: { method: "GET" | "POST"; body?: object },
+  options: {
+    method: "GET" | "POST" | "PATCH" | "DELETE";
+    body?: object;
+  },
+): Promise<TData> {
+  return withAuthorization((accessToken) =>
+    request<TData>(path, { ...options, accessToken }),
+  );
+}
+
+export async function authorizedPageRequest<TData, TMeta>(
+  path: string,
+  options: {
+    method: "GET" | "POST" | "PATCH" | "DELETE";
+    body?: object;
+  },
+): Promise<ApiPageEnvelope<TData, TMeta>> {
+  return withAuthorization((accessToken) =>
+    requestPage<TData, TMeta>(path, { ...options, accessToken }),
+  );
+}
+
+async function withAuthorization<TData>(
+  operation: (accessToken: string) => Promise<TData>,
 ): Promise<TData> {
   const accessToken = await ensureAccessToken();
   try {
-    return await request<TData>(path, { ...options, accessToken });
+    return await operation(accessToken);
   } catch (error) {
     if (
       !(error instanceof AuthApiError) ||
@@ -232,10 +266,7 @@ async function authorizedRequest<TData>(
 
     clearAccessToken();
     const session = await refreshSession();
-    return request<TData>(path, {
-      ...options,
-      accessToken: session.accessToken,
-    });
+    return operation(session.accessToken);
   }
 }
 
@@ -247,7 +278,7 @@ async function ensureAccessToken(): Promise<string> {
 async function request<TData>(
   path: string,
   options: {
-    method: "GET" | "POST";
+    method: "GET" | "POST" | "PATCH" | "DELETE";
     body?: object;
     accessToken?: string;
   },
@@ -276,6 +307,40 @@ async function request<TData>(
   }
 
   return payload.data;
+}
+
+async function requestPage<TData, TMeta>(
+  path: string,
+  options: {
+    method: "GET" | "POST" | "PATCH" | "DELETE";
+    body?: object;
+    accessToken?: string;
+  },
+): Promise<ApiPageEnvelope<TData, TMeta>> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: options.method,
+    credentials: "include",
+    headers: {
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...(options.accessToken
+        ? { authorization: `Bearer ${options.accessToken}` }
+        : {}),
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+  });
+  const payload = (await response.json().catch(() => ({}))) as
+    ApiPageEnvelope<TData, TMeta> | ErrorEnvelope;
+
+  if (!response.ok || !("data" in payload) || !("meta" in payload)) {
+    const error = "error" in payload ? payload.error : undefined;
+    throw new AuthApiError(
+      error?.message ?? "FindMe could not complete the request.",
+      error?.code ?? "REQUEST_FAILED",
+      error?.fields ?? [],
+    );
+  }
+
+  return payload;
 }
 
 function getApiBaseUrl(): string {

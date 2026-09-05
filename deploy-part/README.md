@@ -8,6 +8,10 @@ two-application modular monolith:
 - PostgreSQL/PostGIS: durable local database substitute for Neon
 - Redis: disposable cache and rate-limit infrastructure
 
+`REDIS_URL` is required by backend startup in staging and production. Public
+search uses Redis only for 30-second response caching and a generation counter;
+PostgreSQL remains the source of truth, and local/test can run without Redis.
+
 The official PostGIS Alpine image is currently AMD64-only, so Compose selects
 `linux/amd64` explicitly. Docker Desktop uses emulation for this one local
 service on Apple Silicon; application images continue to build for the host
@@ -23,6 +27,14 @@ Optional local Google Maps values are passed from the shell into the frontend
 build and backend runtime. Production key creation, restriction, and
 verification are documented in
 [Google Maps production setup](../docs/GOOGLE-MAPS.md).
+
+The backend also accepts the S3-compatible listing-media variables documented
+in [Rental supply](../docs/RENTAL-SUPPLY.md). They may be empty in local/test to
+exercise the recoverable photo-storage error state, but staging and production
+must provide a complete set. Configure bucket CORS for signed browser `PUT`
+requests from the exact frontend origin. The frontend image optimizer also
+receives `CDN_BASE_URL` as a build argument so it permits only that configured
+origin and path.
 
 The Phase 0 CI workflow also builds this stack, waits for its health checks,
 and probes the frontend and backend before every change can merge. See

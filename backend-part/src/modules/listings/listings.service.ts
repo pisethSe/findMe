@@ -11,6 +11,7 @@ import {
   ListingStatus,
 } from "../../generated/prisma/client.js";
 import { EntitlementsService } from "../entitlements/entitlements.service.js";
+import { PublicCacheService } from "../public-cache/public-cache.service.js";
 import type { CreateListingDto } from "./dto/create-listing.dto.js";
 import type { ListLandlordListingsDto } from "./dto/list-landlord-listings.dto.js";
 import type { UpdateAvailabilityDto } from "./dto/update-availability.dto.js";
@@ -34,6 +35,7 @@ export class ListingsService {
   constructor(
     private readonly repository: ListingsRepository,
     private readonly entitlements: EntitlementsService,
+    private readonly publicCache: PublicCacheService,
   ) {}
 
   async create(
@@ -145,7 +147,7 @@ export class ListingsService {
     listingId: string,
     input: UpdateListingDto,
   ): Promise<LandlordListingDto> {
-    assertNoNullValues(input);
+    assertValidUpdateNulls(input);
     if (!hasUpdateFields(input)) {
       throw new BadRequestException({
         code: "LISTING_UPDATE_EMPTY",
@@ -154,6 +156,10 @@ export class ListingsService {
     }
 
     const current = await this.requireOwned(listingId, landlordId);
+    requireTitle(
+      input.titleKm === undefined ? current.titleKm : input.titleKm,
+      input.titleEn === undefined ? current.titleEn : input.titleEn,
+    );
     if (!canEditListing(current.status)) {
       throw invalidState(current.status, "EDIT");
     }
@@ -187,6 +193,9 @@ export class ListingsService {
       updateInput,
     );
     if (!updated) throw concurrentChange();
+    if (current.status === ListingStatus.PUBLISHED) {
+      await this.publicCache.invalidatePublishedListing(updated);
+    }
     return toLandlordListingDto(updated);
   }
 
@@ -221,6 +230,9 @@ export class ListingsService {
       },
     );
     if (!updated) throw concurrentChange();
+    if (current.status === ListingStatus.PUBLISHED) {
+      await this.publicCache.invalidatePublishedListing(updated);
+    }
     return toLandlordListingDto(updated);
   }
 
@@ -293,6 +305,9 @@ export class ListingsService {
       { status, ...extra },
     );
     if (!updated) throw concurrentChange();
+    if (current.status === ListingStatus.PUBLISHED) {
+      await this.publicCache.invalidatePublishedListing(updated);
+    }
     return toLandlordListingDto(updated);
   }
 
@@ -364,7 +379,11 @@ function toUpdateInput(input: UpdateListingDto): UpdateLandlordListingInput {
     ...(property ? { property: { ...property } } : {}),
     listing: {
       ...listingFields,
-      ...(availableFrom ? { availableFrom: parseDateOnly(availableFrom) } : {}),
+      ...(availableFrom !== undefined
+        ? {
+            availableFrom: availableFrom ? parseDateOnly(availableFrom) : null,
+          }
+        : {}),
     },
     ...(amenityIds ? { amenityIds } : {}),
   };
@@ -380,7 +399,7 @@ function hasUpdateFields(input: UpdateListingDto): boolean {
   );
 }
 
-function requireTitle(titleKm?: string, titleEn?: string): void {
+function requireTitle(titleKm?: string | null, titleEn?: string | null): void {
   if (titleKm || titleEn) return;
   throw new BadRequestException({
     code: "LISTING_TITLE_REQUIRED",
@@ -390,6 +409,45 @@ function requireTitle(titleKm?: string, titleEn?: string): void {
       { field: "titleEn", message: "Provide at least one listing title." },
     ],
   });
+}
+
+const nullableUpdatePaths = new Set([
+  "property.commune",
+  "property.district",
+  "property.googlePlaceId",
+  "titleKm",
+  "titleEn",
+  "descriptionKm",
+  "descriptionEn",
+  "depositAmount",
+  "utilityNotesKm",
+  "utilityNotesEn",
+  "houseRulesKm",
+  "houseRulesEn",
+  "bedrooms",
+  "bathrooms",
+  "availableFrom",
+]);
+
+function assertValidUpdateNulls(value: object, parentPath = ""): void {
+  for (const [key, nested] of Object.entries(value)) {
+    const path = parentPath ? `${parentPath}.${key}` : key;
+    if (nested === null) {
+      if (nullableUpdatePaths.has(path)) continue;
+      throw new BadRequestException({
+        code: "LISTING_NULL_FIELD_INVALID",
+        message: "Required listing fields cannot be cleared.",
+        fields: [{ field: path, message: "Enter a valid value." }],
+      });
+    }
+    if (
+      typeof nested === "object" &&
+      !Array.isArray(nested) &&
+      !(nested instanceof Date)
+    ) {
+      assertValidUpdateNulls(nested, path);
+    }
+  }
 }
 
 function assertNoNullValues(value: object, parentPath = ""): void {
@@ -532,5 +590,6 @@ export function toLandlordListingDto(
           left.sortOrder - right.sortOrder || left.key.localeCompare(right.key),
       )
       .map(({ sortOrder: _sortOrder, ...amenity }) => amenity),
+    images: listing.images.map((image) => ({ ...image })),
   };
 }

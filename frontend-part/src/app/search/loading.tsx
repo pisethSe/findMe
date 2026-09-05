@@ -1,6 +1,11 @@
 export default function SearchLoading() {
   return (
-    <main className="search-page" aria-busy="true" aria-label="Loading rentals">
+    <main
+      className="search-page"
+      lang="en"
+      aria-busy="true"
+      aria-label="Loading rentals"
+    >
       <div className="search-loading-header" />
       <section className="search-loading-layout">
         <div>

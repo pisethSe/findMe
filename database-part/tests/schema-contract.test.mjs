@@ -11,6 +11,14 @@ const listingContactMigrationUrl = new URL(
   "../prisma/migrations/20260904000100_listing_contact_preference/migration.sql",
   import.meta.url,
 );
+const landlordInquiryIndexMigrationUrl = new URL(
+  "../prisma/migrations/20260904000200_landlord_inquiry_feed_index/migration.sql",
+  import.meta.url,
+);
+const publicationFeedIndexMigrationUrl = new URL(
+  "../prisma/migrations/20260904000300_publication_feed_index/migration.sql",
+  import.meta.url,
+);
 
 test("canonical Prisma schema contains the required marketplace boundaries", async () => {
   const schema = await readFile(schemaUrl, "utf8");
@@ -72,5 +80,21 @@ test("listing contact migration adds a private-first contact policy", async () =
   assert.match(
     migration,
     /ADD COLUMN "contact_preference" "contact_preference" NOT NULL DEFAULT 'in_app_only'/,
+  );
+});
+
+test("landlord inquiry feed migration matches its filter and ordering", async () => {
+  const migration = await readFile(landlordInquiryIndexMigrationUrl, "utf8");
+  assert.match(
+    migration,
+    /ON "inquiries" \("landlord_id", "created_at" DESC, "id" DESC\)/,
+  );
+});
+
+test("publication feed migration supports published search ordering", async () => {
+  const migration = await readFile(publicationFeedIndexMigrationUrl, "utf8");
+  assert.match(
+    migration,
+    /ON "listings" \("status", "published_at" DESC, "id"\)/,
   );
 });

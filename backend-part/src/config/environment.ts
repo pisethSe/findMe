@@ -14,6 +14,16 @@ const MINIMUM_SECRET_LENGTH = 32;
 
 export type AppEnvironment = "local" | "test" | "staging" | "production";
 
+export interface ObjectStorageConfig {
+  endpoint?: string;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  cdnBaseUrl: string;
+  forcePathStyle: boolean;
+}
+
 export function getDatabaseUrl(value: string | undefined): string {
   const databaseUrl = value?.trim();
   if (!databaseUrl) {
@@ -65,6 +75,30 @@ export function getWebOrigin(value: string | undefined): string {
   }
 
   return origin;
+}
+
+export function getRedisUrl(
+  value: string | undefined,
+  appEnvironment: AppEnvironment,
+): string | null {
+  const redisUrl = value?.trim() ?? "";
+  if (!redisUrl) {
+    if (["staging", "production"].includes(appEnvironment)) {
+      throw new TypeError("REDIS_URL is required in staging and production.");
+    }
+    return null;
+  }
+
+  try {
+    const parsed = new URL(redisUrl);
+    if (!["redis:", "rediss:"].includes(parsed.protocol)) {
+      throw new Error("unsupported protocol");
+    }
+  } catch {
+    throw new TypeError("REDIS_URL must be a valid redis or rediss URL.");
+  }
+
+  return redisUrl;
 }
 
 export function getAppEnvironment(value: string | undefined): AppEnvironment {
@@ -221,12 +255,80 @@ export function getGoogleMapsServerKey(
   return key;
 }
 
+export function getObjectStorageConfig(
+  environment: NodeJS.ProcessEnv,
+  appEnvironment: AppEnvironment,
+): ObjectStorageConfig | null {
+  const values = {
+    endpoint: environment.S3_ENDPOINT?.trim() ?? "",
+    region: environment.S3_REGION?.trim() ?? "",
+    bucket: environment.S3_BUCKET?.trim() ?? "",
+    accessKeyId: environment.S3_ACCESS_KEY_ID?.trim() ?? "",
+    secretAccessKey: environment.S3_SECRET_ACCESS_KEY?.trim() ?? "",
+    cdnBaseUrl: environment.CDN_BASE_URL?.trim().replace(/\/$/, "") ?? "",
+  };
+  const required = [
+    values.region,
+    values.bucket,
+    values.accessKeyId,
+    values.secretAccessKey,
+    values.cdnBaseUrl,
+  ];
+  const configuredCount = required.filter(Boolean).length;
+
+  if (configuredCount === 0) {
+    if (["staging", "production"].includes(appEnvironment)) {
+      throw new TypeError(
+        "S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and CDN_BASE_URL are required in staging and production.",
+      );
+    }
+    return null;
+  }
+  if (configuredCount !== required.length) {
+    throw new TypeError(
+      "Object storage configuration is incomplete. Set S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and CDN_BASE_URL together.",
+    );
+  }
+
+  if (values.endpoint) assertHttpUrl("S3_ENDPOINT", values.endpoint);
+  assertHttpUrl("CDN_BASE_URL", values.cdnBaseUrl);
+
+  const forcePathStyleValue = environment.S3_FORCE_PATH_STYLE?.trim();
+  if (
+    forcePathStyleValue &&
+    !["true", "false"].includes(forcePathStyleValue.toLowerCase())
+  ) {
+    throw new TypeError("S3_FORCE_PATH_STYLE must be true or false.");
+  }
+
+  return {
+    ...(values.endpoint ? { endpoint: values.endpoint } : {}),
+    region: values.region,
+    bucket: values.bucket,
+    accessKeyId: values.accessKeyId,
+    secretAccessKey: values.secretAccessKey,
+    cdnBaseUrl: values.cdnBaseUrl,
+    forcePathStyle: forcePathStyleValue?.toLowerCase() === "true",
+  };
+}
+
+function assertHttpUrl(name: string, value: string): void {
+  try {
+    const parsed = new URL(value);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error("unsupported protocol");
+    }
+  } catch {
+    throw new TypeError(`${name} must be an absolute HTTP or HTTPS URL.`);
+  }
+}
+
 export function validateApplicationEnvironment(
   environment = process.env,
 ): void {
   validateAuthEnvironment(environment);
-  getGoogleMapsServerKey(
-    environment.GOOGLE_MAPS_SERVER_KEY,
-    getAppEnvironment(environment.APP_ENV),
-  );
+  const appEnvironment = getAppEnvironment(environment.APP_ENV);
+  getRedisUrl(environment.REDIS_URL, appEnvironment);
+  getGoogleMapsServerKey(environment.GOOGLE_MAPS_SERVER_KEY, appEnvironment);
+  getObjectStorageConfig(environment, appEnvironment);
 }

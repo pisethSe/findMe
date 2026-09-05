@@ -61,6 +61,13 @@ test(
         [amenityId, amenityKey],
       );
 
+      const amenities = await api(baseUrl, "GET", "/amenities");
+      assert.equal(amenities.response.status, 200);
+      assert.equal(
+        amenities.body.data.some((amenity) => amenity.id === amenityId),
+        true,
+      );
+
       const unauthenticated = await api(baseUrl, "POST", "/landlord/listings", {
         body: validListingInput(amenityId),
       });
@@ -132,6 +139,7 @@ test(
       assert.equal(created.body.data.property.totalUnits, 3);
       assert.equal(created.body.data.contactPreference, "PHONE_OR_TELEGRAM");
       assert.equal(created.body.data.amenities[0].id, amenityId);
+      assert.deepEqual(created.body.data.images, []);
       assert.equal("moderationNote" in created.body.data, false);
       const listingId = created.body.data.id;
 
@@ -244,6 +252,49 @@ test(
       assert.equal(updated.response.status, 200);
       assert.equal(updated.body.data.titleEn, "Updated student room");
       assert.equal(updated.body.data.property.totalUnits, 4);
+
+      const clearedOptionalFields = await api(
+        baseUrl,
+        "PATCH",
+        `/landlord/listings/${listingId}`,
+        {
+          headers: activeHeaders,
+          body: {
+            titleKm: null,
+            depositAmount: null,
+            bedrooms: null,
+            availableFrom: null,
+            property: { district: null, googlePlaceId: null },
+          },
+        },
+      );
+      assert.equal(clearedOptionalFields.response.status, 200);
+      assert.equal(clearedOptionalFields.body.data.titleKm, null);
+      assert.equal(clearedOptionalFields.body.data.depositAmount, null);
+      assert.equal(clearedOptionalFields.body.data.bedrooms, null);
+      assert.equal(clearedOptionalFields.body.data.availableFrom, null);
+      assert.equal(clearedOptionalFields.body.data.property.district, null);
+
+      const clearedRequiredField = await api(
+        baseUrl,
+        "PATCH",
+        `/landlord/listings/${listingId}`,
+        { headers: activeHeaders, body: { monthlyPrice: null } },
+      );
+      assert.equal(clearedRequiredField.response.status, 400);
+      assert.equal(
+        clearedRequiredField.body.error.code,
+        "LISTING_NULL_FIELD_INVALID",
+      );
+
+      const clearedAllTitles = await api(
+        baseUrl,
+        "PATCH",
+        `/landlord/listings/${listingId}`,
+        { headers: activeHeaders, body: { titleEn: null } },
+      );
+      assert.equal(clearedAllTitles.response.status, 400);
+      assert.equal(clearedAllTitles.body.error.code, "LISTING_TITLE_REQUIRED");
 
       const invalidStatusInjection = await api(
         baseUrl,
@@ -380,6 +431,8 @@ test(
       );
       const expiredPropertyId = randomUUID();
       const expiredListingId = randomUUID();
+      const expiredDraftListingId = randomUUID();
+      const expiredInquiryId = randomUUID();
       await database.query(
         `INSERT INTO properties (
            id, landlord_id, name, address_line, latitude, longitude, total_units
@@ -389,13 +442,41 @@ test(
       await database.query(
         `INSERT INTO listings (
            id, property_id, landlord_id, slug, title_en, property_type,
-           monthly_price, currency, available_units
-         ) VALUES ($1, $2, $3, $4, 'Retained room', 'room', 90, 'USD', 1)`,
+           monthly_price, currency, available_units, status, published_at,
+           availability_confirmed_at
+         ) VALUES ($1, $2, $3, $4, 'Retained room', 'room', 90, 'USD', 1,
+                   'published', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [
           expiredListingId,
           expiredPropertyId,
           expiredUserId,
           `expired-${randomUUID()}`,
+        ],
+      );
+      await database.query(
+        `INSERT INTO listings (
+           id, property_id, landlord_id, slug, title_en, property_type,
+           monthly_price, currency, available_units
+         ) VALUES ($1, $2, $3, $4, 'Retained draft', 'room', 80, 'USD', 1)`,
+        [
+          expiredDraftListingId,
+          expiredPropertyId,
+          expiredUserId,
+          `expired-draft-${randomUUID()}`,
+        ],
+      );
+      const studentUser = await database.query(
+        "SELECT id FROM users WHERE email = $1",
+        [studentEmail],
+      );
+      await database.query(
+        `INSERT INTO inquiries (id, listing_id, student_id, landlord_id, message)
+         VALUES ($1, $2, $3, $4, 'Is this retained after trial expiry?')`,
+        [
+          expiredInquiryId,
+          expiredListingId,
+          studentUser.rows[0].id,
+          expiredUserId,
         ],
       );
 
@@ -416,6 +497,40 @@ test(
       );
       assert.equal(expiredRead.response.status, 200);
       assert.equal(expiredRead.body.data.titleEn, "Retained room");
+      assert.equal(expiredRead.body.data.status, "PAUSED");
+      const expiryState = await database.query(
+        `SELECT
+           (SELECT status FROM landlord_entitlements WHERE landlord_id = $1) AS entitlement_status,
+           (SELECT status FROM listings WHERE id = $2) AS draft_status,
+           (SELECT count(*)::int FROM inquiries WHERE id = $3) AS inquiry_count,
+           (SELECT count(*)::int FROM properties WHERE id = $4) AS property_count,
+           (SELECT count(*)::int FROM audit_logs
+              WHERE entity_id = $1 AND action = 'LANDLORD_ENTITLEMENT_EXPIRED') AS audit_count`,
+        [
+          expiredUserId,
+          expiredDraftListingId,
+          expiredInquiryId,
+          expiredPropertyId,
+        ],
+      );
+      assert.deepEqual(expiryState.rows[0], {
+        entitlement_status: "expired",
+        draft_status: "draft",
+        inquiry_count: 1,
+        property_count: 1,
+        audit_count: 1,
+      });
+      const expiredSubmit = await api(
+        baseUrl,
+        "POST",
+        `/landlord/listings/${expiredDraftListingId}/submit`,
+        { headers: expiredHeaders, body: {} },
+      );
+      assert.equal(expiredSubmit.response.status, 403);
+      assert.equal(
+        expiredSubmit.body.error.code,
+        "LANDLORD_ENTITLEMENT_REQUIRED",
+      );
       const safeMetadataEdit = await api(
         baseUrl,
         "PATCH",
@@ -441,7 +556,27 @@ test(
         expiredIncrease.body.error.code,
         "LANDLORD_ENTITLEMENT_REQUIRED",
       );
+      const expiryAudit = await database.query(
+        `SELECT count(*)::int AS count
+         FROM audit_logs
+         WHERE entity_id = $1 AND action = 'LANDLORD_ENTITLEMENT_EXPIRED'`,
+        [expiredUserId],
+      );
+      assert.equal(expiryAudit.rows[0].count, 1);
     } finally {
+      await database.query(
+        `DELETE FROM inquiries
+         WHERE landlord_id IN (SELECT id FROM users WHERE email = ANY($1::text[]))`,
+        [
+          [
+            activeEmail,
+            otherEmail,
+            incompleteEmail,
+            expiredEmail,
+            studentEmail,
+          ],
+        ],
+      );
       await database.query(
         `DELETE FROM listings
          WHERE landlord_id IN (SELECT id FROM users WHERE email = ANY($1::text[]))`,
@@ -472,6 +607,19 @@ test(
         `UPDATE users
          SET account_status = 'deleted', deleted_at = CURRENT_TIMESTAMP
          WHERE email = ANY($1::text[])`,
+        [
+          [
+            activeEmail,
+            otherEmail,
+            incompleteEmail,
+            expiredEmail,
+            studentEmail,
+          ],
+        ],
+      );
+      await database.query(
+        `DELETE FROM audit_logs
+         WHERE entity_id IN (SELECT id FROM users WHERE email = ANY($1::text[]))`,
         [
           [
             activeEmail,

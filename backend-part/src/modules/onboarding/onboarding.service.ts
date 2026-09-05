@@ -103,6 +103,7 @@ export class OnboardingService {
   ): Promise<{
     onboarding: OnboardingState;
     activation: LandlordActivationRecord;
+    successNextPath: "/landlord/listings/new" | "/landlord";
   }> {
     if (principal.role !== UserRole.LANDLORD) {
       throw new ForbiddenException({
@@ -153,6 +154,8 @@ export class OnboardingService {
     return {
       onboarding: toOnboardingState(user),
       activation: result.activation,
+      successNextPath:
+        result.outcome === "ACTIVATED" ? "/landlord/listings/new" : "/landlord",
     };
   }
 }

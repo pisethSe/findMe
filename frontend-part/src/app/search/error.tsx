@@ -17,7 +17,7 @@ export default function SearchError({ error, reset }: SearchErrorProps) {
   }, [error]);
 
   return (
-    <main className="route-error">
+    <main className="route-error" lang="en">
       <div>
         <p className="hero-context">Search unavailable</p>
         <h1>We couldn’t load nearby rooms.</h1>

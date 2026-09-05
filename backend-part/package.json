@@ -13,6 +13,8 @@
     "format:check": "prettier --check src tests nest-cli.json tsconfig.json tsconfig.build.json package.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1125.0",
+    "@aws-sdk/s3-request-presigner": "^3.1125.0",
     "@nestjs/common": "12.0.1",
     "@nestjs/core": "12.0.1",
     "@nestjs/platform-express": "12.0.1",
@@ -25,6 +27,7 @@
     "dotenv": "17.2.3",
     "jose": "6.2.10",
     "pg": "8.16.3",
+    "redis": "^6.2.1",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },

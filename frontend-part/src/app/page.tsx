@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandMark } from "../features/landing/brand-mark";
 import { PhraseLoop } from "../features/landing/phrase-loop";
 import { RentalMapPreview } from "../features/landing/rental-map-preview";
+import { InstitutionStartForm } from "../features/search/institution-start-form";
 
 export default function HomePage() {
   return (
@@ -12,7 +13,10 @@ export default function HomePage() {
         <nav aria-label="Main navigation">
           <Link href="#how-it-works">How it works</Link>
           <Link href="/login">Sign in</Link>
-          <Link className="nav-action" href="/search?university=rupp">
+          <Link
+            className="nav-action"
+            href="/search?institution=royal-university-of-phnom-penh"
+          >
             Browse rentals
           </Link>
         </nav>
@@ -28,23 +32,9 @@ export default function HomePage() {
           </p>
           <PhraseLoop />
 
-          <form className="institution-search" action="/search" method="get">
-            <label htmlFor="university">Start with your university</label>
-            <div className="institution-search-row">
-              <select id="university" name="university" defaultValue="rupp">
-                <option value="rupp">
-                  Royal University of Phnom Penh (RUPP)
-                </option>
-                <option value="itc">
-                  Institute of Technology of Cambodia (ITC)
-                </option>
-              </select>
-              <button type="submit">Find nearby rooms</button>
-            </div>
-          </form>
+          <InstitutionStartForm />
           <p className="demo-note">
-            Current results use clearly labelled demonstration inventory while
-            the production data service is being connected.
+            Search active Phnom Penh institutions by Khmer or English name.
           </p>
         </div>
 

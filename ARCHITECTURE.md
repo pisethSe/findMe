@@ -754,7 +754,8 @@ The role action is idempotent for the same completed choice and rejects attempts
 ### 9.2 Institutions
 
 ```text
-GET    /institutions?query=...
+GET    /institutions?query=...&limit=20
+GET    /institutions?slug=...&limit=1
 GET    /institutions/:id
 POST   /admin/institutions
 PATCH  /admin/institutions/:id
@@ -786,8 +787,12 @@ available after expiry.
 Suggested search query example:
 
 ```text
-GET /api/v1/listings/search?institutionId=...&radiusMeters=3000&maxPrice=150&currency=USD&propertyType=ROOM&amenities=wifi,ac&sort=distance
+GET /api/v1/listings/search?institutionId=...&radiusMeters=3000&maxPrice=150&currency=USD&propertyTypes=ROOM,STUDIO&amenities=wifi,ac&availableBy=2026-09-15&sort=distance&page=1&pageSize=20
 ```
+
+Optional viewport filtering uses `north`, `south`, `east`, and `west` together.
+The institution radius remains the search origin, and the viewport further
+narrows the same published candidate set for map movement.
 
 ### 9.4 Favorites
 

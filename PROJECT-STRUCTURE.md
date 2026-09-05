@@ -80,6 +80,58 @@ its first Listing atomically, exposes owned and paginated Landlord listing
 APIs, validates amenities and contact preferences, enforces lifecycle commands,
 and applies the existing seven-day entitlement policy to creation, submission,
 and inventory increases. PostgreSQL remains a second enforcement layer for
-landlord ownership and unit capacity. The guided listing UI, dashboard data
-surface, media flow, moderation/publication, and public map-search freshness are
-the remaining Phase 1 steps.
+landlord ownership and unit capacity.
+
+Step 2 adds the guided `/landlord/listings/new` workflow, the one-time
+post-onboarding continuation into that route, a private location/availability
+preview with a manual-coordinate fallback, active amenity reads, ordered photo
+selection, and ownership-scoped signed object-storage uploads. Draft creation
+and review submission call the authoritative NestJS listing commands.
+
+Step 3 replaces the placeholder landlord workspace with a responsive,
+task-focused dashboard. It composes server-evaluated trial status, paginated
+owned rentals, publication state, available/total rooms, valid lifecycle
+commands, editable owned-rental routes, and the five most recent
+ownership-scoped inquiries. The dashboard
+keeps read and safe reduction actions available after access ends while
+disabling restricted supply actions from server-provided capabilities.
+
+Step 4 adds the Admin-only pending-listing queue, audited approval/rejection,
+publication-readiness and active-entitlement checks, server-side PostGIS
+institution-radius search, and Redis generation invalidation after public state
+transactions commit. The student `/search` page now renders synchronized live
+cards and 2D markers, keeps cards usable if Maps fails, and refetches every 45
+seconds only while the tab is visible. Automatic expiry pausing remains Phase 1
+Step 5 scope rather than being coupled to moderation.
+
+Step 5 completes the Phase 1 supply lifecycle. A retry-safe application runner
+finds due entitlements every minute, atomically marks each entitlement expired,
+pauses its published listings, and records one audit event. The same command is
+invoked before entitlement reads and restricted writes, so correctness does not
+depend on scheduler timing. Cache invalidation happens only after commit, while
+properties, drafts, photos, inquiries, and audit history remain intact. The
+dashboard refreshes against authoritative entitlement state, and
+`/landlord/trial` provides dedicated active, expired, suspended, loading, and
+error states with truthful MVP next actions.
+
+## Phase 2 status
+
+Step 1 adds active-institution discovery in Khmer and English. The public
+NestJS endpoint validates bounded name, slug, and result-limit inputs and never
+returns inactive institutions. The landing and `/search` pages use an
+accessible keyboard-operated institution picker, resolve canonical slugs from
+server data, preserve the selected institution and filters in the URL, and
+provide loading, empty, invalid-selection, and retry states on mobile and
+desktop. See `docs/STUDENT-DISCOVERY.md` for the public contract and UI state
+behavior.
+
+Step 2 completes the public rental-search API contract. A normalized service
+policy validates currency-aware price ranges, single or multiple property
+types, AND-matched amenity keys, real availability dates, complete ordered map
+bounds, stable sorts, and bounded offset pagination. The dedicated repository
+applies both institution radius and optional viewport filters in PostgreSQL
+with PostGIS, defaults availability to the current Phnom Penh date, and keeps
+non-published, deleted, unavailable, or future inventory out of default
+results. Applied filters are returned in safe shared metadata, Redis keys use
+the normalized input, and the frontend API client validates the runtime
+response before rendering it.

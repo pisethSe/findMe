@@ -61,14 +61,14 @@ export function LandlordOnboardingForm() {
     const contactTelegram = optionalValue(formData.get("contactTelegram"));
 
     try {
-      setResult(
-        await completeLandlordOnboarding({
-          displayName: String(formData.get("displayName") ?? ""),
-          ...(businessName ? { businessName } : {}),
-          contactPhone: String(formData.get("contactPhone") ?? ""),
-          ...(contactTelegram ? { contactTelegram } : {}),
-        }),
-      );
+      const completed = await completeLandlordOnboarding({
+        displayName: String(formData.get("displayName") ?? ""),
+        ...(businessName ? { businessName } : {}),
+        contactPhone: String(formData.get("contactPhone") ?? ""),
+        ...(contactTelegram ? { contactTelegram } : {}),
+      });
+      setResult(completed);
+      router.replace(completed.successNextPath);
     } catch (caught) {
       setError(
         caught instanceof AuthApiError
@@ -122,8 +122,10 @@ export function LandlordOnboardingForm() {
           . Your profile and future rental data remain available after the
           trial.
         </p>
-        <Link className="auth-secondary-action" href="/landlord">
-          Open landlord workspace
+        <Link className="auth-secondary-action" href={result.successNextPath}>
+          {result.successNextPath === "/landlord/listings/new"
+            ? "Add your first rental"
+            : "Open landlord workspace"}
         </Link>
       </div>
     );

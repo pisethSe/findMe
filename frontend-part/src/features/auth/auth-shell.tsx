@@ -20,7 +20,9 @@ export function AuthShell({
     <main className="auth-page">
       <header className="auth-header">
         <BrandMark />
-        <Link href="/search?university=rupp">Browse rentals</Link>
+        <Link href="/search?institution=royal-university-of-phnom-penh">
+          Browse rentals
+        </Link>
       </header>
 
       <div className="auth-layout">

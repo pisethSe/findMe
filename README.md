@@ -5,8 +5,9 @@ move to Phnom Penh discover affordable rooms and houses near their university,
 understand the real monthly cost, and contact a verified property owner with
 more confidence.
 
-The product has completed its MVP foundation and Phase 1 rental-supply API
-foundation. The governing documents are:
+The product has completed its MVP foundation, all five Phase 1 rental supply
+steps, and the first two Phase 2 student-discovery steps. The governing
+documents are:
 
 - [Product requirements](PRD.md)
 - [System architecture](ARCHITECTURE.md)
@@ -44,12 +45,36 @@ The repository currently includes:
 - authenticated landlord Property/Listing creation and management APIs with
   server-derived ownership, lifecycle commands, availability constraints,
   contact preferences, and trial enforcement;
+- a guided, mobile-first first-rental workflow backed by the live NestJS API,
+  with private map/availability preview, active amenities, ordered photos, and
+  draft or review submission;
+- a task-focused landlord dashboard backed by owned listing and inquiry data,
+  with exact access timing, publication states, quick availability updates,
+  lifecycle actions, and explicit loading, empty, error, expired, and mobile
+  states;
+- a protected moderation queue with audited approval/rejection, publication
+  readiness and entitlement checks, and backend-only status transitions;
+- a production PostGIS feed for published, available rentals plus a responsive
+  student map/list that refreshes every 45 seconds while visible;
+- bilingual active-institution search and canonical URL-persisted selection on
+  the landing and student search surfaces;
+- a validated public rental-search API with indexed PostGIS radius and viewport
+  filtering, availability dates, price/currency, property-type and amenity
+  filters, stable sorting, pagination, cache normalization, and safe DTOs;
+- Redis generation-based public-search caching with post-commit invalidation
+  and a 30-second cache TTL that keeps PostgreSQL authoritative;
+- retry-safe landlord entitlement expiry that atomically records the transition,
+  pauses published rentals without deleting supply or inquiry data, and runs
+  both at write/read enforcement time and on a one-minute application schedule;
+- signed S3-compatible listing-photo uploads with ownership checks, size/type
+  validation, byte-signature verification, and PostgreSQL media metadata;
 - Docker assets for the frontend, backend, local PostgreSQL/PostGIS, and Redis;
 - domain rules for transparent multi-currency rental costs, publish readiness,
   availability freshness, listing state transitions, and explainable ranking;
 - automated tests proving that stale or unapproved listings are hidden and that
   paid promotion cannot bypass organic eligibility;
-- a production-building Next.js public landing and demonstration search surface;
+- a production-building Next.js public landing and live published-rental search
+  surface;
 - a progressively enhanced Google Maps 3D landing preview with a stable 2D/list
   fallback, labelled availability states, and reduced-motion handling;
 - repository-wide GitHub Actions checks for formatting, linting, types,
@@ -70,6 +95,9 @@ in [Onboarding and landlord access](docs/ONBOARDING.md).
 
 Landlord listing endpoints, validation, ownership, lifecycle, and entitlement
 behavior are documented in [Rental supply API](docs/RENTAL-SUPPLY.md).
+
+Institution search, selection, URL behavior, and student-facing states are
+documented in [Student discovery](docs/STUDENT-DISCOVERY.md).
 
 Browser/server credential separation, frontend build arguments, and the cloud
 restriction checklist are documented in
@@ -116,6 +144,11 @@ The NestJS API exposes:
 - `POST /api/v1/me/onboarding/role`
 - `POST /api/v1/landlord/onboarding`
 - `GET /api/v1/landlord/entitlement`
+- `GET /api/v1/landlord/inquiries`
+- `GET /api/v1/amenities`
+- `GET /api/v1/institutions?query=:name&limit=20`
+- `GET /api/v1/institutions?slug=:slug&limit=1`
+- `GET /api/v1/listings/search?institutionId=:id&radiusMeters=5000&sort=distance`
 - `POST /api/v1/landlord/listings`
 - `GET /api/v1/landlord/listings`
 - `GET /api/v1/landlord/listings/:id`
@@ -125,9 +158,16 @@ The NestJS API exposes:
 - `POST /api/v1/landlord/listings/:id/pause`
 - `POST /api/v1/landlord/listings/:id/mark-rented`
 - `DELETE /api/v1/landlord/listings/:id` (archives)
+- `POST /api/v1/media/upload-intents`
+- `POST /api/v1/media/:id/finalize`
+- `DELETE /api/v1/media/:id`
+- `GET /api/v1/admin/listings/pending`
+- `POST /api/v1/admin/listings/:id/approve`
+- `POST /api/v1/admin/listings/:id/reject`
 
-The current frontend demonstration still exposes temporary Next.js route
-handlers until the production NestJS data modules replace them:
+The frontend retains the earlier temporary demonstration route handlers for
+the Phase 0 contract tests, but `/search` now reads the NestJS public discovery
+API:
 
 - `GET /api/health`
 - `GET /api/v1/universities`
@@ -135,13 +175,20 @@ handlers until the production NestJS data modules replace them:
 
 Set both `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` and
 `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` at frontend build time to enable the landing
-page's Google Maps 3D enhancement. Without them, the page uses the accessible
-2D/list preview. Staging and production additionally require the separate
-server-only `GOOGLE_MAPS_SERVER_KEY`. The canonical PostGIS data layer is now
-wired into NestJS. Production search repositories and endpoints remain a later
-implementation phase; the web demo does not query live inventory yet.
+page's Google Maps 3D enhancement and Landlord location picker. The browser key
+must allow Maps JavaScript API and Places API (New). Without those values, the
+landing page uses the accessible 2D/list preview and the rental form retains its
+manual coordinate fallback. Staging and production additionally require the
+separate server-only `GOOGLE_MAPS_SERVER_KEY` and complete S3-compatible media
+configuration. Pass the public `CDN_BASE_URL` to both the backend runtime and
+frontend build so Next.js can strictly allow and responsively optimize only
+server-issued rental images. Staging and production also require `REDIS_URL`;
+local/test may omit it and public search safely queries PostgreSQL without a
+cache. The canonical PostGIS data layer and moderated publication feed are now
+wired into NestJS.
 
-The current inventory is demonstration data, not live rental advertising. The
-SQL under `database-part/legacy-sql` is an earlier model and remains quarantined
-for historical reference. New environments must use the Prisma migrations under
+The legacy Next.js route handlers still return demonstration data for Phase 0
+contract coverage; `/search` never reads them. The SQL under
+`database-part/legacy-sql` is an earlier model and remains quarantined for
+historical reference. New environments must use the Prisma migrations under
 `database-part/prisma/migrations`.
