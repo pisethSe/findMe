@@ -18,7 +18,10 @@ minimum supported Node.js 24 release. It must complete all of these checks:
 6. run the reference seed twice to prove it remains idempotent;
 7. run all unit and integration tests with `TEST_DATABASE_URL` present, so the
    database-backed suites cannot be skipped;
-8. build the applications with production-mode environment validation enabled.
+8. run deterministic Chromium checks for responsive student discovery with a
+   dedicated fixture API, including compact filters, list/map fallback, and
+   rental-detail layouts;
+9. build the applications with production-mode environment validation enabled.
 
 The Maps values used by the production build are synthetic configuration
 fixtures. CI never needs or receives deployable Google Maps credentials.
@@ -57,6 +60,18 @@ corepack pnpm run db:seed
 corepack pnpm run test
 ```
 
+The browser checks also run independently of the database:
+
+```bash
+corepack pnpm --filter @findme/frontend exec playwright install chromium
+corepack pnpm --filter @findme/frontend run test:browser
+```
+
+They reserve ports 3100 and 3102 and use the Next.js development lock. Stop an
+existing frontend dev server before running them. CI installs Chromium system
+dependencies with `playwright install --with-deps chromium`. Test-only public
+API records and images are isolated under `frontend-part/tests/browser`.
+
 Never point `TEST_DATABASE_URL` at staging or production. Integration tests
 create and update records and are only safe against disposable test data.
 
@@ -80,3 +95,11 @@ Repository administrators should require both workflow jobs before merging to
 The workflow has read-only repository permissions, does not persist checkout
 credentials, cancels superseded runs for the same branch or pull request, and
 pins third-party actions to reviewed commit SHAs.
+
+## Inquiry verification
+
+The verification job also provisions Redis 7 and sets `TEST_REDIS_URL` for real
+inquiry limiter tests (committed-ID uniqueness, rolling limits, and TTLs).
+PostGIS integration tests prove that inquiry submission remains limited and
+idempotent when Redis is unavailable. Browser checks include the student form,
+private student/landlord inboxes, status actions and responsive layouts.

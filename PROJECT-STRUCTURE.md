@@ -157,3 +157,53 @@ stay synchronized with cards by listing ID. Missing configuration, reduced
 motion, data-saving preferences, slow connections, low-power devices, missing
 WebGL, timeouts, and provider errors all retain a usable 2D map or complete
 rental list.
+
+Step 5 adds distance presets and custom 0.1–20 km filtering with exact
+integer-metre conversion, shared-URL validation, and labelled straight-line
+distances. The empty-results recovery widens the radius without dropping the
+institution, budget, or rental type, and clears the old map area and result
+page. PostGIS remains the only geographic filter and distance source. Tests
+cover both radius limits, metre-level boundaries, malformed inputs, and the
+intersection of a radius with map bounds. Connected Chrome checks cover phone,
+tablet, desktop, validation, keyboard focus, empty recovery and history; a
+back-forward-cache distance-draft restoration issue was corrected.
+
+Step 6 adds `/rentals/[slug]` and the uncached public
+`GET /api/v1/listings/:slug` detail contract. Dedicated discovery repository and
+service code enforce public visibility, order ready photos, calculate optional
+institution distance in PostGIS, and expose only opted-in contact channels.
+The `features/rentals` UI shows photos, costs, amenities, bilingual descriptions,
+rules, availability, and location with recoverable error/unavailable states.
+Search cards retain institution and full internal return-search context.
+Server rendering supports an internal API origin, per-listing metadata, and
+bounded visible-page freshness. Favorites follow in Phase 3 Step 1; inquiries follow in Step 2.
+
+Step 7 completes the responsive student-discovery composition: an always-visible
+institution picker, compact applied-filter summary and native filter dialog
+through 960 px, list-first phone/tablet results, and an unchanged desktop
+map/list split. Touch controls, input text sizes, long bilingual content,
+keyboard list scrolling, map fallback focus, and short landscape layouts are
+covered by deterministic Playwright tests in `frontend-part/tests/browser`.
+The fixtures run only in the dedicated test servers. See
+`docs/STUDENT-DISCOVERY.md` for interaction details and the browser command.
+
+## Phase 3 engagement and safety
+
+Step 1 implements student favorites. `backend-part/src/modules/favorites` owns
+the authenticated, role-checked `/api/v1/me/favorites` list/save/remove API.
+PostgreSQL enforces uniqueness, and a student/date/listing index supports stable
+pagination. The repository explicitly serializes eligible public summaries and
+returns a redacted, removable entry when a saved rental is withdrawn.
+
+`frontend-part/src/features/favorites` contains the typed client, batched save
+state, shared controls, and the private `/favorites` page. Search and public
+detail remain browsable without signing in. Auth returns are restricted to
+student routes and preserve the server's onboarding and role destination.
+See [Student favorites](docs/FAVORITES.md) for the contract and verification.
+
+Step 2 completes `backend-part/src/modules/inquiries` with validated student
+submission/history and landlord status updates. PostgreSQL stores inquiry
+history and retry keys and enforces submission limits during Redis outages.
+`frontend-part/src/features/inquiries` contains the rental form, runtime-checked
+API client, and private `/inquiries` and `/landlord/inquiries` screens.
+See [Inquiries](docs/INQUIRIES.md) for privacy, pagination, status and rate rules.

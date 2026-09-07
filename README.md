@@ -6,7 +6,8 @@ understand the real monthly cost, and contact a verified property owner with
 more confidence.
 
 The repository implements its MVP foundation, all five Phase 1 rental supply
-steps, and the first four Phase 2 student-discovery steps. The governing
+steps, all seven Phase 2 student-discovery steps, and Phase 3 Steps 1–2
+(private student favorites and inquiries). The governing
 documents are:
 
 - [Product requirements](PRD.md)
@@ -64,6 +65,11 @@ The repository currently includes:
 - a synchronized student map/list interface with debounced server-side viewport
   searches, institution and availability-labelled markers, two-way card/marker
   focus, shareable map state, paginated results, and a mobile list-first switch;
+- private student favorites with idempotent save/remove APIs, search and detail
+  controls, and a paginated saved-rentals page that safely handles withdrawn rooms;
+- private inquiry submission and student/landlord inboxes, forward-only status
+  updates, durable retry protection, and Redis-backed spam limits with a
+  PostgreSQL fallback;
 - Redis generation-based public-search caching with post-commit invalidation
   and a 30-second cache TTL that keeps PostgreSQL authoritative;
 - retry-safe landlord entitlement expiry that atomically records the transition,
@@ -87,6 +93,10 @@ The repository currently includes:
   smoke tests;
 - university-first search/filter domain rules with bilingual demonstration data
   and explicit demo disclaimers.
+
+Student save/remove behavior, authorization, and API pagination are documented in
+[Student favorites](docs/FAVORITES.md). Inquiry contracts, status handling and
+rate limits are documented in [Inquiries](docs/INQUIRIES.md).
 
 Rental data ownership and the landlord publication flow are documented in
 [Rental data sourcing](docs/DATA-SOURCING.md).
@@ -192,6 +202,15 @@ server-issued rental images. Staging and production also require `REDIS_URL`;
 local/test may omit it and public search safely queries PostgreSQL without a
 cache. The canonical PostGIS data layer and moderated publication feed are now
 wired into NestJS.
+
+Rental cards open `/rentals/[slug]`, backed by the public, uncached
+`GET /api/v1/listings/:slug` endpoint. It shows real rental details and only the
+landlord's permitted public contact channels. Set server-runtime `SITE_URL` to
+the public website origin for canonical links and social metadata. Set
+`API_INTERNAL_BASE_URL` when the Next.js server reaches NestJS at a different
+origin than browsers (for Docker, `http://backend:3001/api/v1`). The internal
+origin is never used by browser requests. See `docs/STUDENT-DISCOVERY.md` for
+visibility, privacy, freshness, and QA details.
 
 The legacy Next.js route handlers still return demonstration data for Phase 0
 contract coverage; `/search` never reads them. The SQL under

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-05T17:15:00.000Z",
+  "title": "FindMe frontend design",
+  "extensions": {
+    "breakpoints": [
+      { "name": "rental-single-column", "value": "800px" },
+      { "name": "rental-small-phone", "value": "400px" }
+    ],
+    "motion": [],
+    "shadows": []
+  },
+  "components": [
+    {
+      "name": "Contact action",
+      "kind": "button",
+      "refersTo": "contact-action",
+      "description": "A permitted public contact channel, shown as a native link.",
+      "html": "<a class=\"ds-contact\" href=\"#\">Contact action</a>",
+      "css": ".ds-contact{display:flex;align-items:center;justify-content:center;min-height:48px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--primary-strong);color:var(--bg);font-weight:600;text-underline-offset:4px}.ds-contact:hover{background:var(--ink)}.ds-contact:focus-visible{outline:3px solid var(--focus);outline-offset:3px}"
+    },
+    {
+      "name": "Photo control",
+      "kind": "button",
+      "description": "Used for previous, next, and retry actions.",
+      "html": "<button class=\"ds-photo-control\">Retry photo</button>",
+      "css": ".ds-photo-control{min-height:44px;padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}.ds-photo-control:hover:not(:disabled){background:var(--surface-strong);border-color:var(--primary-strong)}.ds-photo-control:disabled{background:var(--surface);color:var(--muted);cursor:not-allowed}.ds-photo-control:focus-visible{outline:3px solid var(--focus);outline-offset:3px}"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "description": "Existing labelled form-field primitive.",
+      "html": "<label class=\"ds-field\">Field label<input placeholder=\"Enter a value\" /></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:7px;font-weight:700}.ds-field input{width:100%;box-sizing:border-box;min-height:50px;padding:10px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--ink);background:var(--bg);font:inherit}.ds-field input:hover{border-color:var(--primary)}.ds-field input::placeholder{color:var(--muted);opacity:1}.ds-field input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.ds-field input:disabled{color:var(--muted);background:var(--surface);cursor:not-allowed}"
+    },
+    {
+      "name": "Return navigation",
+      "kind": "nav",
+      "description": "Underlined internal navigation retaining the search context.",
+      "html": "<a class=\"ds-return\" href=\"#\">Back to results</a>",
+      "css": ".ds-return{color:var(--ink);text-underline-offset:4px}.ds-return:hover{color:var(--primary-strong);text-decoration-thickness:2px}.ds-return:focus-visible{outline:3px solid var(--focus);outline-offset:3px}"
+    },
+    {
+      "name": "Rental summary surface",
+      "kind": "card",
+      "refersTo": "rental-summary",
+      "description": "Quiet grouping for real rental costs and contact information.",
+      "html": "<aside class=\"ds-summary\"><strong>Rental summary</strong><p>Rent, availability, deposit, and permitted contact channels.</p></aside>",
+      "css": ".ds-summary{padding:24px;border-radius:var(--radius-md);background:var(--surface);color:var(--ink)}.ds-summary p{margin:12px 0 0;color:var(--muted)}"
+    }
+  ],
+  "narrative": {
+    "overview": "Practical, local, trustworthy student rental discovery. This reference records shared foundations and the reviewed rental-detail surface without replacing existing product requirements.",
+    "keyCharacteristics": [
+      "Khmer-capable typography",
+      "Quiet neutral surfaces",
+      "Explicit availability",
+      "Recoverable photo states"
+    ],
+    "rules": [],
+    "dos": [
+      "Do preserve the shared palette and Khmer-capable typography.",
+      "Do keep explicit availability text, keyboard focus, and usable image recovery.",
+      "Do separate listing-update time from availability-confirmation time."
+    ],
+    "donts": [
+      "Don't turn synthetic QA photos or contact data into production content.",
+      "Don't add decorative motion, invented trust claims, or private account fields."
+    ]
+  }
+}

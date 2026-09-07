@@ -10,6 +10,8 @@ import type {
   SearchViewport,
 } from "@findme/contracts";
 
+import { isSearchRadius } from "./distance-filter-model.ts";
+
 interface ErrorEnvelope {
   error?: { code?: string; message?: string };
 }
@@ -155,7 +157,7 @@ function isInstitutionSearchPage(
   );
 }
 
-function isInstitution(value: unknown): value is InstitutionDto {
+export function isInstitution(value: unknown): value is InstitutionDto {
   if (typeof value !== "object" || value === null) return false;
   const institution = value as Partial<InstitutionDto>;
   return (
@@ -192,7 +194,19 @@ function isPublicListingSearchPage(
   );
 }
 
-function isPublicListing(value: unknown): value is PublicListingDto {
+export function isPublicListing(value: unknown): value is PublicListingDto {
+  return (
+    isPublicListingSummary(value) &&
+    "distanceMeters" in value &&
+    typeof value.distanceMeters === "number" &&
+    Number.isFinite(value.distanceMeters) &&
+    value.distanceMeters >= 0
+  );
+}
+
+export function isPublicListingSummary(
+  value: unknown,
+): value is Omit<PublicListingDto, "distanceMeters"> {
   if (typeof value !== "object" || value === null) return false;
   const listing = value as Partial<PublicListingDto>;
   return (
@@ -211,9 +225,6 @@ function isPublicListing(value: unknown): value is PublicListingDto {
     (listing.availableFrom === null || isDateOnly(listing.availableFrom)) &&
     isTimestamp(listing.availabilityConfirmedAt) &&
     isTimestamp(listing.publishedAt) &&
-    typeof listing.distanceMeters === "number" &&
-    Number.isFinite(listing.distanceMeters) &&
-    listing.distanceMeters >= 0 &&
     isPublicLocation(listing.location) &&
     Array.isArray(listing.amenities) &&
     listing.amenities.every(isAmenity) &&
@@ -241,10 +252,7 @@ function isPublicListingSearchMeta(
     Number.isInteger(meta.totalPages) &&
     meta.totalPages >= 0 &&
     isInstitution(meta.institution) &&
-    typeof meta.radiusMeters === "number" &&
-    Number.isFinite(meta.radiusMeters) &&
-    meta.radiusMeters >= 100 &&
-    meta.radiusMeters <= 20_000 &&
+    isSearchRadius(meta.radiusMeters) &&
     (meta.viewport === null || isViewport(meta.viewport)) &&
     isAppliedFilters(meta.filters) &&
     ["distance", "price_asc", "price_desc", "newest"].includes(
@@ -337,7 +345,7 @@ function isAmenity(value: unknown): boolean {
   );
 }
 
-function isPrimaryImage(value: unknown): boolean {
+export function isPrimaryImage(value: unknown): boolean {
   if (typeof value !== "object" || value === null) return false;
   const image = value as Record<string, unknown>;
   return (
@@ -381,6 +389,10 @@ function isTimestamp(value: unknown): value is string {
 
 function apiBaseUrl(): string {
   return (
+    (typeof window === "undefined"
+      ? process.env.API_INTERNAL_BASE_URL
+      : undefined
+    )?.replace(/\/$/, "") ??
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
     "http://localhost:3001/api/v1"
   );

@@ -8,14 +8,21 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const params = await searchParams;
   return (
     <AuthShell
       title="Sign in"
       titleKm="ចូលទៅកាន់គណនីរបស់អ្នក"
       description="Return to nearby rental search and the rooms you are considering."
     >
-      <LoginForm />
+      <LoginForm
+        returnTo={typeof params.next === "string" ? params.next : null}
+      />
     </AuthShell>
   );
 }

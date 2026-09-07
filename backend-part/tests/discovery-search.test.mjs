@@ -3,6 +3,9 @@ import "reflect-metadata";
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { plainToInstance } from "class-transformer";
+import { validateSync } from "class-validator";
+
 import { SearchPublicListingsDto } from "../dist/modules/discovery/dto/search-public-listings.dto.js";
 import { normalizePublicSearchQuery } from "../dist/modules/discovery/discovery.service.js";
 
@@ -24,6 +27,44 @@ function errorCode(run) {
     return typeof response === "object" && response ? response.code : null;
   }
 }
+
+test("search DTO enforces integer radius boundaries after HTTP query transformation", () => {
+  for (const radiusMeters of ["100", "101", "1001", "5000", "19999", "20000"]) {
+    const query = plainToInstance(SearchPublicListingsDto, {
+      institutionId,
+      radiusMeters,
+    });
+    assert.deepEqual(validateSync(query), [], radiusMeters);
+    assert.equal(
+      normalizePublicSearchQuery(query).radiusMeters,
+      Number(radiusMeters),
+    );
+  }
+  for (const radiusMeters of [
+    "",
+    "0",
+    "99",
+    "20001",
+    "100.5",
+    "NaN",
+    "Infinity",
+    ["100", "20000"],
+  ]) {
+    const query = plainToInstance(SearchPublicListingsDto, {
+      institutionId,
+      radiusMeters,
+    });
+    assert.ok(
+      validateSync(query).some((error) => error.property === "radiusMeters"),
+      String(radiusMeters),
+    );
+  }
+  const defaultQuery = plainToInstance(SearchPublicListingsDto, {
+    institutionId,
+  });
+  assert.equal(defaultQuery.radiusMeters, 5_000);
+  assert.deepEqual(validateSync(defaultQuery), []);
+});
 
 test("normalizes a stable cache-ready rental search", () => {
   const normalized = normalizePublicSearchQuery(

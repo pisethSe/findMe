@@ -1,6 +1,7 @@
 import type { PropertyType } from "@findme/contracts";
 import type { Metadata } from "next";
 
+import { parseDistanceFilter } from "../../features/search/distance-filter-model";
 import { PublishedRentalSearch } from "../../features/search/published-rental-search";
 import { parseSearchMapState } from "../../features/search/search-url-state";
 
@@ -53,12 +54,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     ? (requestedPropertyType as PropertyType)
     : undefined;
   const requestedMaxRent = firstValue(params.maxRentUsd);
-  const requestedMaxDistance = firstValue(params.maxDistanceKm);
   const parsedMaxRent = parseBoundedPositive(
     requestedMaxRent,
     9_999_999_999.99,
   );
-  const parsedMaxDistance = parseBoundedPositive(requestedMaxDistance, 20);
+  const distanceFilter = parseDistanceFilter(params.maxDistanceKm);
   const searchMapState = parseSearchMapState(params);
   const invalidFilters =
     !validInstitutionSlug ||
@@ -66,7 +66,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       requestedPropertyType !== "" &&
       propertyType === undefined) ||
     (requestedMaxRent !== undefined && parsedMaxRent === undefined) ||
-    (requestedMaxDistance !== undefined && parsedMaxDistance === undefined) ||
+    distanceFilter.invalid ||
     searchMapState.invalid;
 
   return (
@@ -75,7 +75,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         validInstitutionSlug ? institutionSlug : DEFAULT_INSTITUTION_SLUG
       }
       maxRentUsd={parsedMaxRent ?? 300}
-      maxDistanceKm={parsedMaxDistance ?? 5}
+      radiusMeters={distanceFilter.radiusMeters}
       {...(propertyType ? { propertyType } : {})}
       initialPage={searchMapState.page}
       initialViewport={searchMapState.viewport}

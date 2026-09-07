@@ -681,6 +681,9 @@ function RecentInquiries({
           <h2 id="recent-inquiries-title">Recent inquiries</h2>
           <p>{formatCount(total, "inquiry", "inquiries")}</p>
         </div>
+        <Link href="/landlord/inquiries" className="dashboard-text-link">
+          View all inquiries
+        </Link>
       </div>
       {inquiries.length === 0 ? (
         <div className="dashboard-inquiry-empty">

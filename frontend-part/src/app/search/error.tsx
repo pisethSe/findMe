@@ -5,10 +5,10 @@ import { useEffect } from "react";
 
 interface SearchErrorProps {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }
 
-export default function SearchError({ error, reset }: SearchErrorProps) {
+export default function SearchError({ error, retry }: SearchErrorProps) {
   useEffect(() => {
     console.error("Rental search failed", {
       name: error.name,
@@ -26,7 +26,7 @@ export default function SearchError({ error, reset }: SearchErrorProps) {
           page and choose your university once more.
         </p>
         <div className="error-actions">
-          <button type="button" onClick={reset}>
+          <button type="button" onClick={retry}>
             Try again
           </button>
           <Link href="/">Return home</Link>

@@ -13,6 +13,9 @@ services:
         CDN_BASE_URL: ${CDN_BASE_URL:-}
     ports:
       - "3000:3000"
+    environment:
+      API_INTERNAL_BASE_URL: http://backend:3001/api/v1
+      SITE_URL: http://localhost:3000
     depends_on:
       backend:
         condition: service_healthy

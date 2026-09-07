@@ -6,7 +6,17 @@ import { useState, type FormEvent } from "react";
 
 import { AuthApiError, getPostAuthenticationPath, register } from "./auth-api";
 
-export function RegisterForm() {
+import {
+  safeStudentReturnPath,
+  studentPostAuthPath,
+} from "./student-return-path";
+
+export function RegisterForm({
+  returnTo = null,
+}: {
+  returnTo?: string | null;
+}) {
+  const safeReturnTo = safeStudentReturnPath(returnTo);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -30,7 +40,9 @@ export function RegisterForm() {
         password,
         preferredLocale: formData.get("preferredLocale") === "EN" ? "EN" : "KM",
       });
-      router.replace(await getPostAuthenticationPath());
+      router.replace(
+        studentPostAuthPath(await getPostAuthenticationPath(), safeReturnTo),
+      );
     } catch (caught) {
       setError(
         caught instanceof AuthApiError
@@ -105,7 +117,16 @@ export function RegisterForm() {
         access is never self-assigned.
       </p>
       <p className="auth-alternate">
-        Already have an account? <Link href="/login">Sign in</Link>
+        Already have an account?{" "}
+        <Link
+          href={
+            safeReturnTo
+              ? `/login?${new URLSearchParams({ next: safeReturnTo })}`
+              : "/login"
+          }
+        >
+          Sign in
+        </Link>
       </p>
     </form>
   );

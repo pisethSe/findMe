@@ -1,5 +1,7 @@
 import type { SearchViewport } from "@findme/contracts";
 
+import { isSearchRadius } from "./distance-filter-model.ts";
+
 type SearchParamValue = string | readonly string[] | undefined;
 type SearchParamRecord = Readonly<Record<string, SearchParamValue>>;
 
@@ -93,6 +95,20 @@ export function buildSearchMapHref(
 
   const query = params.toString();
   return query ? `/search?${query}` : "/search";
+}
+
+export function buildDistanceSearchHref(
+  currentSearch: string,
+  radiusMeters: number,
+): string {
+  if (!isSearchRadius(radiusMeters)) {
+    throw new RangeError(
+      "Search radius must be an integer from 100 to 20000 metres.",
+    );
+  }
+  const params = new URLSearchParams(currentSearch);
+  params.set("maxDistanceKm", String(radiusMeters / 1_000));
+  return buildSearchMapHref(params.toString(), { page: 1, viewport: null });
 }
 
 export function isSearchViewport(

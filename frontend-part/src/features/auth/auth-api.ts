@@ -163,6 +163,10 @@ export async function refreshSession(): Promise<AuthSession> {
         inMemoryAccessToken = session.accessToken;
         return session;
       })
+      .catch((error: unknown) => {
+        inMemoryAccessToken = null;
+        throw error;
+      })
       .finally(() => {
         refreshInFlight = null;
       });
@@ -229,7 +233,7 @@ export async function getPostAuthenticationPath(): Promise<
 export async function authorizedRequest<TData>(
   path: string,
   options: {
-    method: "GET" | "POST" | "PATCH" | "DELETE";
+    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: object;
   },
 ): Promise<TData> {
@@ -241,7 +245,7 @@ export async function authorizedRequest<TData>(
 export async function authorizedPageRequest<TData, TMeta>(
   path: string,
   options: {
-    method: "GET" | "POST" | "PATCH" | "DELETE";
+    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: object;
   },
 ): Promise<ApiPageEnvelope<TData, TMeta>> {
@@ -278,7 +282,7 @@ async function ensureAccessToken(): Promise<string> {
 async function request<TData>(
   path: string,
   options: {
-    method: "GET" | "POST" | "PATCH" | "DELETE";
+    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: object;
     accessToken?: string;
   },
@@ -286,6 +290,7 @@ async function request<TData>(
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: options.method,
     credentials: "include",
+    cache: "no-store",
     headers: {
       ...(options.body ? { "content-type": "application/json" } : {}),
       ...(options.accessToken
@@ -312,7 +317,7 @@ async function request<TData>(
 async function requestPage<TData, TMeta>(
   path: string,
   options: {
-    method: "GET" | "POST" | "PATCH" | "DELETE";
+    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: object;
     accessToken?: string;
   },
@@ -320,6 +325,7 @@ async function requestPage<TData, TMeta>(
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: options.method,
     credentials: "include",
+    cache: "no-store",
     headers: {
       ...(options.body ? { "content-type": "application/json" } : {}),
       ...(options.accessToken

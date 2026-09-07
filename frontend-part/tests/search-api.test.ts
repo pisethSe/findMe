@@ -231,3 +231,57 @@ test("public search exposes stable API errors", async () => {
     globalThis.fetch = previousFetch;
   }
 });
+
+test("public search accepts integer radius bounds and rejects malformed response radii", async () => {
+  const previousFetch = globalThis.fetch;
+  let responseRadius: unknown = 100;
+  globalThis.fetch = (async () =>
+    Response.json({
+      data: [],
+      meta: {
+        page: 1,
+        pageSize: 12,
+        total: 0,
+        totalPages: 0,
+        institution,
+        radiusMeters: responseRadius,
+        viewport: null,
+        filters: {
+          minPrice: null,
+          maxPrice: null,
+          currency: null,
+          propertyTypes: [],
+          amenities: [],
+          availableBy: "2026-09-05",
+        },
+        sort: "distance",
+        refreshedAt: "2026-09-05T00:00:00.000Z",
+        cacheGeneration: null,
+      },
+    })) as typeof fetch;
+  try {
+    for (const radius of [100, 101, 1_001, 20_000]) {
+      responseRadius = radius;
+      const page = await searchPublishedListings({
+        institutionId: institution.id,
+        radiusMeters: radius,
+      });
+      assert.equal(page.meta.radiusMeters, radius);
+    }
+    for (const radius of [99, 20_001, 100.5, "100", null]) {
+      responseRadius = radius;
+      await assert.rejects(
+        () =>
+          searchPublishedListings({
+            institutionId: institution.id,
+            radiusMeters: 100,
+          }),
+        (error: unknown) =>
+          error instanceof PublicSearchApiError &&
+          error.code === "PUBLIC_SEARCH_RESPONSE_INVALID",
+      );
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});

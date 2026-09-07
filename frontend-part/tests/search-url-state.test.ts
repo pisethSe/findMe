@@ -2,11 +2,37 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildDistanceSearchHref,
   buildSearchMapHref,
   normalizeSearchViewport,
   parseSearchMapState,
   searchViewportsEqual,
 } from "../src/features/search/search-url-state.ts";
+
+test("changing distance preserves rental filters but clears all stale geographic bounds and pages", () => {
+  const url = new URL(
+    buildDistanceSearchHref(
+      "?institution=rupp&maxRentUsd=150&propertyType=ROOM&maxDistanceKm=1&maxDistanceKm=2&page=7&north=11.59&south=11.55&east=104.92&west=104.87",
+      3_000,
+    ),
+    "https://findme.test",
+  );
+  assert.equal(url.pathname, "/search");
+  assert.equal(url.searchParams.get("institution"), "rupp");
+  assert.equal(url.searchParams.get("maxRentUsd"), "150");
+  assert.equal(url.searchParams.get("propertyType"), "ROOM");
+  assert.deepEqual(url.searchParams.getAll("maxDistanceKm"), ["3"]);
+  for (const key of ["page", "north", "south", "east", "west"]) {
+    assert.equal(url.searchParams.has(key), false, key);
+  }
+  assert.equal(buildDistanceSearchHref("", 101), "/search?maxDistanceKm=0.101");
+  for (const radius of [99, 20_001, 100.5, NaN]) {
+    assert.throws(
+      () => buildDistanceSearchHref("?institution=rupp", radius),
+      RangeError,
+    );
+  }
+});
 
 test("restores a valid page and map viewport from a shared search URL", () => {
   const state = parseSearchMapState({

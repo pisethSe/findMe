@@ -10,6 +10,8 @@ import {
   selectRole,
 } from "../auth/auth-api";
 
+import { studentPostAuthPath } from "../auth/student-return-path";
+
 type SelectableRole = "STUDENT" | "LANDLORD";
 
 export function RoleOnboardingForm() {
@@ -34,7 +36,12 @@ export function RoleOnboardingForm() {
           state.stage !== "ROLE_SELECTION" &&
           state.stage !== "STUDENT_PROFILE"
         ) {
-          router.replace(state.nextPath);
+          router.replace(
+            studentPostAuthPath(
+              state.nextPath,
+              new URLSearchParams(window.location.search).get("next"),
+            ),
+          );
           return;
         }
         if (state.stage === "STUDENT_PROFILE") setRole("STUDENT");
@@ -74,7 +81,12 @@ export function RoleOnboardingForm() {
           ? { displayName: String(formData.get("displayName") ?? "") }
           : {}),
       });
-      router.replace(state.nextPath);
+      router.replace(
+        studentPostAuthPath(
+          state.nextPath,
+          new URLSearchParams(window.location.search).get("next"),
+        ),
+      );
     } catch (caught) {
       setError(
         caught instanceof AuthApiError

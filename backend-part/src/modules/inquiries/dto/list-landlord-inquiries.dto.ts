@@ -1,17 +1,24 @@
-import { Type } from "class-transformer";
-import { IsInt, IsOptional, Max, Min } from "class-validator";
+import { Transform } from "class-transformer";
+import { IsInt, Max, Min } from "class-validator";
 
-export class ListLandlordInquiriesDto {
-  @Type(() => Number)
-  @IsOptional()
+export class ListStudentInquiriesDto {
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value,
+  )
   @IsInt()
   @Min(1)
+  @Max(10000)
   page = 1;
 
-  @Type(() => Number)
-  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value,
+  )
   @IsInt()
   @Min(1)
   @Max(50)
-  pageSize = 5;
+  pageSize = 12;
+}
+
+export class ListLandlordInquiriesDto extends ListStudentInquiriesDto {
+  override pageSize = 5;
 }

@@ -154,6 +154,25 @@ export interface LandlordInquiryPage {
   meta: OffsetPageMeta;
 }
 
+export interface StudentInquiryDto {
+  id: string;
+  message: string;
+  status: InquiryStatus;
+  createdAt: string;
+  updatedAt: string;
+  listing: {
+    id: string;
+    slug: string;
+    titleKm: string | null;
+    titleEn: string | null;
+  } | null;
+}
+
+export interface StudentInquiryPage {
+  data: readonly StudentInquiryDto[];
+  meta: OffsetPageMeta;
+}
+
 export interface InstitutionDto {
   id: string;
   slug: string;
@@ -174,6 +193,22 @@ export interface InstitutionSearchPage {
     selectedSlug: string | null;
     limit: number;
   };
+}
+
+export interface FavoriteDto {
+  listingId: string;
+  savedAt: string;
+  listing: Omit<PublicListingDto, "distanceMeters"> | null;
+}
+
+export interface FavoritesPage {
+  data: FavoriteDto[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+}
+
+export interface FavoriteMutationResult {
+  listingId: string;
+  saved: boolean;
 }
 
 export interface PublicListingDto {
@@ -205,6 +240,33 @@ export interface SearchViewport {
   south: number;
   east: number;
   west: number;
+}
+
+export interface PublicListingDetailDto extends Omit<
+  PublicListingDto,
+  "primaryImage" | "distanceMeters"
+> {
+  descriptionKm: string | null;
+  descriptionEn: string | null;
+  depositAmount: number | null;
+  utilityNotesKm: string | null;
+  utilityNotesEn: string | null;
+  houseRulesKm: string | null;
+  houseRulesEn: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  furnished: boolean;
+  updatedAt: string;
+  distanceMeters: number | null;
+  institution: InstitutionDto | null;
+  location: PublicListingDto["location"] & { addressLine: string };
+  images: readonly Omit<ListingImageDto, "listingId" | "status">[];
+  contact: {
+    preference: ContactPreference;
+    displayName: string | null;
+    phone: string | null;
+    telegram: string | null;
+  };
 }
 
 export interface PublicListingSearchMeta extends OffsetPageMeta {

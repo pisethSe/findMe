@@ -41,6 +41,8 @@ export function InstitutionPicker({
   const listboxId = `${id}-${generatedId}-results`;
   const helpId = `${id}-${generatedId}-help`;
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const listboxRef = useRef<HTMLUListElement>(null);
+  const keyboardNavigationRef = useRef(false);
   const [query, setQuery] = useState(
     selectedInstitution ? institutionInputValue(selectedInstitution) : "",
   );
@@ -53,6 +55,27 @@ export function InstitutionPicker({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    if (!open || activeIndex < 0 || !keyboardNavigationRef.current) return;
+    const listbox = listboxRef.current;
+    const option = listbox?.children.item(activeIndex);
+    if (!listbox || !(option instanceof HTMLElement)) return;
+
+    // Move only the option list. Scrolling the page would move the focused
+    // search input, especially when the on-screen keyboard is open.
+    const listTop = listbox.getBoundingClientRect().top + listbox.clientTop;
+    const listBottom = listTop + listbox.clientHeight;
+    const optionBounds = option.getBoundingClientRect();
+    if (
+      optionBounds.top < listTop ||
+      optionBounds.height > listbox.clientHeight
+    ) {
+      listbox.scrollTop += optionBounds.top - listTop;
+    } else if (optionBounds.bottom > listBottom) {
+      listbox.scrollTop += optionBounds.bottom - listBottom;
+    }
+  }, [activeIndex, open]);
 
   useEffect(() => {
     const nextValue = selectedInstitution
@@ -132,6 +155,7 @@ export function InstitutionPicker({
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
+      keyboardNavigationRef.current = true;
       setOpen(true);
       setActiveIndex((current) =>
         nextInstitutionOptionIndex(
@@ -215,6 +239,7 @@ export function InstitutionPicker({
               </p>
             ) : (
               <ul
+                ref={listboxRef}
                 id={listboxId}
                 role="listbox"
                 aria-label="Active institutions"
@@ -226,7 +251,10 @@ export function InstitutionPicker({
                     aria-selected={index === activeIndex}
                     key={institution.id}
                     onMouseDown={(event) => event.preventDefault()}
-                    onMouseEnter={() => setActiveIndex(index)}
+                    onMouseEnter={() => {
+                      keyboardNavigationRef.current = false;
+                      setActiveIndex(index);
+                    }}
                     onClick={() => choose(institution)}
                   >
                     <strong lang="km">{institution.nameKm}</strong>

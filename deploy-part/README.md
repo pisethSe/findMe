@@ -36,6 +36,14 @@ requests from the exact frontend origin. The frontend image optimizer also
 receives `CDN_BASE_URL` as a build argument so it permits only that configured
 origin and path.
 
+Rental detail pages render on the Next.js server. Set `API_INTERNAL_BASE_URL`
+at frontend runtime to an API address reachable from that container; Compose
+uses `http://backend:3001/api/v1`. Browser API calls continue to use the
+build-time `NEXT_PUBLIC_API_BASE_URL`. Set frontend-runtime `SITE_URL` to the
+public website origin (for example, the deployed HTTPS origin) for canonical
+and Open Graph rental URLs. Do not use an internal container hostname for
+`SITE_URL`. If omitted locally, absolute canonical/OG URLs are omitted.
+
 The Phase 0 CI workflow also builds this stack, waits for its health checks,
 and probes the frontend and backend before every change can merge. See
 [Continuous integration](../docs/CONTINUOUS-INTEGRATION.md) for the exact

@@ -33,6 +33,7 @@ interface PublishedRentalMapProps {
   onSelectListing: (listingId: string) => void;
   onViewportChange: (viewport: SearchViewport) => void;
   onClearViewport: () => void;
+  onShowList: () => void;
 }
 
 const mapsConfig = resolveGoogleMapsBrowserConfig({
@@ -51,6 +52,7 @@ export function PublishedRentalMap({
   onSelectListing,
   onViewportChange,
   onClearViewport,
+  onShowList,
 }: PublishedRentalMapProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -477,23 +479,24 @@ export function PublishedRentalMap({
         >
           <strong>{listings.length} rentals on this results page</strong>
           <p>{fallbackMessage}</p>
-          {viewport || canRetry ? (
-            <div className="published-map-fallback-actions">
-              {viewport ? (
-                <button type="button" onClick={onClearViewport}>
-                  Clear map area
-                </button>
-              ) : null}
-              {canRetry ? (
-                <button
-                  type="button"
-                  onClick={() => setLoadAttempt((current) => current + 1)}
-                >
-                  Retry map
-                </button>
-              ) : null}
-            </div>
-          ) : null}
+          <div className="published-map-fallback-actions">
+            <button type="button" onClick={onShowList}>
+              Back to rental list
+            </button>
+            {viewport ? (
+              <button type="button" onClick={onClearViewport}>
+                Clear map area
+              </button>
+            ) : null}
+            {canRetry ? (
+              <button
+                type="button"
+                onClick={() => setLoadAttempt((current) => current + 1)}
+              >
+                Retry map
+              </button>
+            ) : null}
+          </div>
         </div>
         <div
           ref={containerRef}

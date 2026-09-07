@@ -9,8 +9,9 @@
     "start": "next start",
     "test": "node --test tests/*.test.ts",
     "typecheck": "corepack pnpm --filter @findme/contracts build && tsc --noEmit",
-    "lint": "oxlint src tests next.config.ts",
-    "format:check": "prettier --check src tests next.config.ts tsconfig.json package.json"
+    "lint": "oxlint src tests next.config.ts playwright.config.ts",
+    "format:check": "prettier --check src tests next.config.ts playwright.config.ts tsconfig.json package.json",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@findme/contracts": "workspace:*",
@@ -19,6 +20,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/google.maps": "^3.66.1",
     "@types/node": "26.4.0",
     "@types/react": "19.2.18",

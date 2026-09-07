@@ -377,26 +377,30 @@ model Favorite {
 
   @@id([studentId, listingId])
   @@index([listingId])
+  @@index([studentId, createdAt(sort: Desc), listingId])
   @@map("favorites")
 }
 
 model Inquiry {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  listingId   String        @map("listing_id") @db.Uuid
-  studentId   String        @map("student_id") @db.Uuid
-  landlordId  String        @map("landlord_id") @db.Uuid
-  message     String        @db.Text
-  status      InquiryStatus @default(NEW)
-  readAt      DateTime?     @map("read_at") @db.Timestamptz(3)
-  respondedAt DateTime?     @map("responded_at") @db.Timestamptz(3)
-  closedAt    DateTime?     @map("closed_at") @db.Timestamptz(3)
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime      @default(now()) @map("updated_at") @db.Timestamptz(3)
-  listing     Listing       @relation("ListingInquiries", fields: [listingId, landlordId], references: [id, landlordId], onDelete: Restrict)
-  student     User          @relation("StudentInquiries", fields: [studentId], references: [id], onDelete: Restrict)
-  landlord    User          @relation("LandlordInquiries", fields: [landlordId], references: [id], onDelete: Restrict)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId       String        @map("listing_id") @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  clientRequestId String?       @map("client_request_id") @db.Uuid
+  landlordId      String        @map("landlord_id") @db.Uuid
+  message         String        @db.Text
+  status          InquiryStatus @default(NEW)
+  readAt          DateTime?     @map("read_at") @db.Timestamptz(3)
+  respondedAt     DateTime?     @map("responded_at") @db.Timestamptz(3)
+  closedAt        DateTime?     @map("closed_at") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @default(now()) @map("updated_at") @db.Timestamptz(3)
+  listing         Listing       @relation("ListingInquiries", fields: [listingId, landlordId], references: [id, landlordId], onDelete: Restrict)
+  student         User          @relation("StudentInquiries", fields: [studentId], references: [id], onDelete: Restrict)
+  landlord        User          @relation("LandlordInquiries", fields: [landlordId], references: [id], onDelete: Restrict)
 
+  @@unique([studentId, clientRequestId], map: "inquiries_student_request_key")
   @@index([studentId, createdAt])
+  @@index([studentId, createdAt(sort: Desc), id(sort: Desc)], map: "inquiries_student_created_id_idx")
   @@index([landlordId, status, createdAt])
   @@index([landlordId, createdAt(sort: Desc), id(sort: Desc)], map: "inquiries_landlord_created_id_idx")
   @@index([listingId])

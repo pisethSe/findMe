@@ -6,7 +6,13 @@ import { useState, type FormEvent } from "react";
 
 import { AuthApiError, getPostAuthenticationPath, login } from "./auth-api";
 
-export function LoginForm() {
+import {
+  safeStudentReturnPath,
+  studentPostAuthPath,
+} from "./student-return-path";
+
+export function LoginForm({ returnTo = null }: { returnTo?: string | null }) {
+  const safeReturnTo = safeStudentReturnPath(returnTo);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -22,7 +28,9 @@ export function LoginForm() {
         email: String(formData.get("email") ?? ""),
         password: String(formData.get("password") ?? ""),
       });
-      router.replace(await getPostAuthenticationPath());
+      router.replace(
+        studentPostAuthPath(await getPostAuthenticationPath(), safeReturnTo),
+      );
     } catch (caught) {
       setError(
         caught instanceof AuthApiError
@@ -72,7 +80,16 @@ export function LoginForm() {
         {pending ? "Signing in…" : "Sign in"}
       </button>
       <p className="auth-alternate">
-        New to FindMe? <Link href="/register">Create an account</Link>
+        New to FindMe?{" "}
+        <Link
+          href={
+            safeReturnTo
+              ? `/register?${new URLSearchParams({ next: safeReturnTo })}`
+              : "/register"
+          }
+        >
+          Create an account
+        </Link>
       </p>
     </form>
   );

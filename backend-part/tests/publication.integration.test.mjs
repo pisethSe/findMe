@@ -346,6 +346,83 @@ test(
         /^\d{4}-\d{2}-\d{2}$/,
       );
 
+      // Exercise the actual geography calculation, not rounded card distances.
+      const measured = await database.query(
+        `SELECT ST_Distance(p.location, i.location)::double precision AS distance
+         FROM properties p
+         JOIN listings l ON l.property_id = p.id
+         CROSS JOIN institutions i
+         WHERE l.id = $1 AND i.id = $2`,
+        [fartherListingId, institutionId],
+      );
+      const fartherDistance = measured.rows[0].distance;
+      assert.ok(fartherDistance > 100 && fartherDistance < 1_000);
+      assert.notEqual(Math.floor(fartherDistance), Math.ceil(fartherDistance));
+      const radiusPath = `/listings/search?institutionId=${institutionId}&amenities=${sharedAmenityKey}`;
+      for (const [radius, expectedIds] of [
+        [100, [listingId]],
+        [Math.floor(fartherDistance), [listingId]],
+        [Math.ceil(fartherDistance), [listingId, fartherListingId]],
+        [20_000, [listingId, fartherListingId]],
+      ]) {
+        const result = await api(
+          baseUrl,
+          "GET",
+          `${radiusPath}&radiusMeters=${radius}`,
+        );
+        assert.equal(result.response.status, 200);
+        assert.deepEqual(
+          result.body.data.map((item) => item.id),
+          expectedIds,
+          `radius ${radius}`,
+        );
+        assert.equal(result.body.meta.total, expectedIds.length);
+        assert.equal(result.body.meta.radiusMeters, radius);
+      }
+      const defaultRadius = await api(baseUrl, "GET", radiusPath);
+      assert.equal(defaultRadius.response.status, 200);
+      assert.equal(defaultRadius.body.meta.radiusMeters, 5_000);
+      assert.equal(defaultRadius.body.meta.total, 2);
+
+      const fartherViewport =
+        "north=11.575&south=11.573&east=104.891&west=104.890";
+      const outsideRadius = await api(
+        baseUrl,
+        "GET",
+        `${radiusPath}&radiusMeters=100&${fartherViewport}`,
+      );
+      assert.equal(outsideRadius.response.status, 200);
+      assert.equal(outsideRadius.body.meta.total, 0);
+      assert.deepEqual(outsideRadius.body.data, []);
+      const expandedRadius = await api(
+        baseUrl,
+        "GET",
+        `${radiusPath}&radiusMeters=20000&${fartherViewport}`,
+      );
+      assert.equal(expandedRadius.response.status, 200);
+      assert.equal(expandedRadius.body.meta.total, 1);
+      assert.deepEqual(
+        expandedRadius.body.data.map((item) => item.id),
+        [fartherListingId],
+      );
+
+      for (const radius of [
+        "",
+        "99",
+        "20001",
+        "100.5",
+        "NaN",
+        "100&radiusMeters=20000",
+      ]) {
+        const invalidRadius = await api(
+          baseUrl,
+          "GET",
+          `${radiusPath}&radiusMeters=${radius}`,
+        );
+        assert.equal(invalidRadius.response.status, 400, `radius ${radius}`);
+        assert.equal(invalidRadius.body.error.code, "VALIDATION_FAILED");
+      }
+
       const availableByFuture = await api(
         baseUrl,
         "GET",
