@@ -13,6 +13,7 @@ export interface ApiError {
     message: string;
     requestId: string;
     fields: readonly ApiFieldError[] | null;
+    retryAfterSeconds?: number;
   };
 }
 
@@ -318,4 +319,64 @@ export interface PasswordResetRequestedDto {
   accepted: true;
   /** Returned only by local/test environments; never returned in staging/production. */
   developmentResetToken?: string;
+}
+
+export type ReportReason =
+  | "INACCURATE"
+  | "UNAVAILABLE"
+  | "SCAM_SUSPICIOUS"
+  | "DUPLICATE"
+  | "INAPPROPRIATE"
+  | "OTHER";
+export interface ReportReceiptDto {
+  id: string;
+  received: true;
+}
+
+export type ReportStatus = "OPEN" | "IN_REVIEW" | "RESOLVED" | "DISMISSED";
+export interface AdminReportDto {
+  id: string;
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  listing: {
+    id: string;
+    slug: string;
+    titleEn: string | null;
+    titleKm: string | null;
+    status: ListingStatus;
+    landlordId: string;
+  };
+}
+export interface AdminUserDto {
+  id: string;
+  role: UserRole | null;
+  accountStatus: "ACTIVE" | "SUSPENDED" | "DELETED";
+  displayName: string;
+  createdAt: string;
+}
+export interface AdminInstitutionDto {
+  id: string;
+  slug: string;
+  nameKm: string;
+  nameEn: string;
+  type: "UNIVERSITY" | "COLLEGE" | "SCHOOL" | "OTHER";
+  addressEn: string | null;
+  city: string;
+  latitude: number;
+  longitude: number;
+  isActive: boolean;
+}
+export interface AdminAmenityDto {
+  id: string;
+  key: string;
+  nameKm: string;
+  nameEn: string;
+  category: string | null;
+  sortOrder: number;
+  isActive: boolean;
 }

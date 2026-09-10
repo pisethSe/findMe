@@ -12,6 +12,7 @@ interface ExceptionPayload {
   code?: unknown;
   message?: unknown;
   fields?: unknown;
+  retryAfterSeconds?: unknown;
 }
 
 function requestIdFrom(request: Request): string {
@@ -38,6 +39,19 @@ export class ApiExceptionFilter implements ExceptionFilter {
       typeof rawPayload === "object" && rawPayload !== null ? rawPayload : {};
 
     response.setHeader("x-request-id", requestId);
+    const retryAfterSeconds =
+      (status === 429 || status === 503) &&
+      typeof payload.retryAfterSeconds === "number" &&
+      Number.isSafeInteger(payload.retryAfterSeconds) &&
+      payload.retryAfterSeconds > 0
+        ? payload.retryAfterSeconds
+        : status === 429
+          ? 3600
+          : undefined;
+    if (retryAfterSeconds !== undefined) {
+      response.setHeader("Retry-After", String(retryAfterSeconds));
+      response.setHeader("Cache-Control", "private, no-store");
+    }
     response.status(status).json({
       error: {
         code:
@@ -54,6 +68,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
               : "The request could not be completed.",
         requestId,
         fields: Array.isArray(payload.fields) ? payload.fields : null,
+        ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}),
       },
     });
   }

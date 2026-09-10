@@ -99,7 +99,8 @@ pins third-party actions to reviewed commit SHAs.
 ## Inquiry verification
 
 The verification job also provisions Redis 7 and sets `TEST_REDIS_URL` for real
-inquiry limiter tests (committed-ID uniqueness, rolling limits, and TTLs).
+inquiry limiter tests (committed-ID uniqueness, rolling limits, and TTLs) and
+request limiter tests (atomic multi-instance counters, TTLs, and key loss).
 PostGIS integration tests prove that inquiry submission remains limited and
 idempotent when Redis is unavailable. Browser checks include the student form,
 private student/landlord inboxes, status actions and responsive layouts.

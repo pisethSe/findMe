@@ -9,7 +9,7 @@ import {
 import { landlordListingSelect } from "../listings/listings.repository.js";
 import type { AdminPendingListingRecord } from "./moderation.types.js";
 
-const adminPendingListingSelect = {
+export const adminPendingListingSelect = {
   ...landlordListingSelect,
   landlordId: true,
   moderationNote: true,
@@ -79,7 +79,10 @@ export class ModerationRepository {
             { descriptionKm: { not: null } },
             { descriptionEn: { not: null } },
           ],
+          property: { deletedAt: null },
           landlord: {
+            deletedAt: null,
+            accountStatus: "ACTIVE",
             landlordEntitlement: {
               is: {
                 status: {

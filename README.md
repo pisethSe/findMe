@@ -6,8 +6,8 @@ understand the real monthly cost, and contact a verified property owner with
 more confidence.
 
 The repository implements its MVP foundation, all five Phase 1 rental supply
-steps, all seven Phase 2 student-discovery steps, and Phase 3 Steps 1–2
-(private student favorites and inquiries). The governing
+steps, all seven Phase 2 student-discovery steps, and Phase 3 Steps 1–5
+(favorites, inquiries, reports, admin moderation, and rate limits). The governing
 documents are:
 
 - [Product requirements](PRD.md)
@@ -97,6 +97,8 @@ The repository currently includes:
 Student save/remove behavior, authorization, and API pagination are documented in
 [Student favorites](docs/FAVORITES.md). Inquiry contracts, status handling and
 rate limits are documented in [Inquiries](docs/INQUIRIES.md).
+Endpoint request budgets, Redis outage behavior, and reverse proxy configuration
+are documented in [Rate limits](docs/RATE-LIMITS.md).
 
 Rental data ownership and the landlord publication flow are documented in
 [Rental data sourcing](docs/DATA-SOURCING.md).

@@ -8,6 +8,7 @@ import {
   PublicListingSlugDto,
 } from "./dto/public-listing-detail.dto.js";
 import { ListingDetailService } from "./listing-detail.service.js";
+import { RateLimit } from "../rate-limits/rate-limit.policy.js";
 
 @Controller()
 export class DiscoveryController {
@@ -17,18 +18,21 @@ export class DiscoveryController {
   ) {}
 
   @Get("institutions")
+  @RateLimit("catalog")
   @Header("Cache-Control", "public, max-age=60, stale-while-revalidate=300")
   async institutions(@Query() query: SearchInstitutionsDto) {
     return this.discovery.listInstitutions(query);
   }
 
   @Get("listings/search")
+  @RateLimit("search")
   @Header("Cache-Control", "no-store")
   search(@Query() query: SearchPublicListingsDto) {
     return this.discovery.search(query);
   }
 
   @Get("listings/:slug")
+  @RateLimit("listingRead")
   @Header("Cache-Control", "no-store")
   detail(
     @Param() params: PublicListingSlugDto,

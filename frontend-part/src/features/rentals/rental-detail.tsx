@@ -2,6 +2,7 @@ import type { PublicListingDetailDto } from "@findme/contracts";
 import Link from "next/link";
 
 import { RentalFavorite } from "../favorites/favorites-context";
+import { ReportForm } from "../reports/report-form";
 import { InquiryForm } from "../inquiries/inquiry-form";
 import { BrandMark } from "../landing/brand-mark";
 import { RentalGallery } from "./rental-gallery";
@@ -165,6 +166,11 @@ export function RentalDetail({
               landlord before arranging a viewing.
             </p>
             <Link href={backHref}>Keep browsing nearby rentals</Link>
+            <ReportForm
+              key={rental.id}
+              listingId={rental.id}
+              slug={rental.slug}
+            />
           </aside>
           <div className="rental-detail-sections">
             <InquiryForm

@@ -103,6 +103,11 @@ test(
         "INSERT INTO student_profiles(user_id,display_name) VALUES($1,'Dara Student'),($2,'Other Student')",
         students,
       );
+      // These rentals also enter the shared moderation queue during this test.
+      await db.query(
+        "INSERT INTO landlord_profiles(user_id,display_name,contact_phone) VALUES($1,'Inquiry owner','+85512345678'),($2,'Other inquiry owner','+85512345679')",
+        owners,
+      );
       await db.query(
         "INSERT INTO properties(id,landlord_id,name,address_line,latitude,longitude,total_units) VALUES($1,$2,'Student rooms','PRIVATE_ADDRESS',11.57,104.89,20)",
         [property, owners[0]],
@@ -175,6 +180,17 @@ test(
           "LISTING_NOT_FOUND",
           status,
         );
+        if (status === "pending_review") {
+          const queue = await api(
+            "GET",
+            "/admin/listings/pending?pageSize=50",
+            await token(admin),
+          );
+          assert.equal(queue.response.status, 200, JSON.stringify(queue.body));
+          assert.ok(
+            queue.body.data.some((listing) => listing.id === listingIds[0]),
+          );
+        }
       }
       await db.query("UPDATE listings SET status='published' WHERE id=$1", [
         listingIds[0],

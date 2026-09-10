@@ -18,6 +18,7 @@ import { RolesGuard } from "../auth/roles.guard.js";
 import { CreateUploadIntentDto } from "./dto/create-upload-intent.dto.js";
 import { FinalizeMediaDto } from "./dto/finalize-media.dto.js";
 import { MediaService } from "./media.service.js";
+import { RateLimit } from "../rate-limits/rate-limit.policy.js";
 
 const mediaIdPipe = new ParseUUIDPipe({ version: "4" });
 
@@ -28,6 +29,7 @@ export class MediaController {
   constructor(private readonly media: MediaService) {}
 
   @Post("upload-intents")
+  @RateLimit("uploadIntent")
   async createUploadIntent(
     @CurrentUser() user: AccessPrincipal,
     @Body() input: CreateUploadIntentDto,
@@ -36,6 +38,7 @@ export class MediaController {
   }
 
   @Post(":id/finalize")
+  @RateLimit("mediaFinalize")
   @HttpCode(200)
   async finalize(
     @CurrentUser() user: AccessPrincipal,

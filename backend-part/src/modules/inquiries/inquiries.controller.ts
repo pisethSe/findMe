@@ -27,6 +27,7 @@ import {
   UpdateInquiryStatusDto,
 } from "./dto/inquiry-mutations.dto.js";
 import { InquiriesService } from "./inquiries.service.js";
+import { RateLimit } from "../rate-limits/rate-limit.policy.js";
 
 @Controller("landlord/inquiries")
 @UseGuards(AccessTokenGuard, RolesGuard)
@@ -61,6 +62,7 @@ export class StudentInquiriesController {
   constructor(private readonly inquiries: InquiriesService) {}
 
   @Post("listings/:listingId/inquiries")
+  @RateLimit("inquiry")
   @Header("Cache-Control", "private, no-store")
   create(
     @CurrentUser() user: AccessPrincipal,

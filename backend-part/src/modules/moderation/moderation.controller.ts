@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -20,6 +21,7 @@ import { RolesGuard } from "../auth/roles.guard.js";
 import { ListPendingListingsDto } from "./dto/list-pending-listings.dto.js";
 import { RejectListingDto } from "./dto/reject-listing.dto.js";
 import { ModerationService } from "./moderation.service.js";
+import { RateLimit } from "../rate-limits/rate-limit.policy.js";
 
 const listingIdPipe = new ParseUUIDPipe({ version: "4" });
 
@@ -30,11 +32,13 @@ export class ModerationController {
   constructor(private readonly moderation: ModerationService) {}
 
   @Get("pending")
+  @Header("Cache-Control", "private, no-store")
   listPending(@Query() query: ListPendingListingsDto) {
     return this.moderation.listPending(query);
   }
 
   @Post(":id/approve")
+  @RateLimit("adminWrite")
   @HttpCode(HttpStatus.OK)
   async approve(
     @CurrentUser() admin: AccessPrincipal,
@@ -44,6 +48,7 @@ export class ModerationController {
   }
 
   @Post(":id/reject")
+  @RateLimit("adminWrite")
   @HttpCode(HttpStatus.OK)
   async reject(
     @CurrentUser() admin: AccessPrincipal,

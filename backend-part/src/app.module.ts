@@ -14,8 +14,14 @@ import { ModerationModule } from "./modules/moderation/moderation.module.js";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 import { PublicCacheModule } from "./modules/public-cache/public-cache.module.js";
 
+import { ReportsModule } from "./modules/reports/reports.module.js";
+
+import { AdminModule } from "./modules/admin/admin.module.js";
+import { RateLimitsModule } from "./modules/rate-limits/rate-limits.module.js";
+
 @Module({
   imports: [
+    RateLimitsModule,
     DatabaseModule,
     PublicCacheModule,
     AmenitiesModule,
@@ -26,8 +32,10 @@ import { PublicCacheModule } from "./modules/public-cache/public-cache.module.js
     ListingsModule,
     InquiriesModule,
     FavoritesModule,
+    ReportsModule,
     MediaModule,
     ModerationModule,
+    AdminModule,
     HealthModule,
   ],
 })

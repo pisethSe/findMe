@@ -425,6 +425,7 @@ model Report {
 
   @@index([status, createdAt])
   @@index([listingId])
+  @@index([reporterId, createdAt])
   @@map("reports")
 }
 

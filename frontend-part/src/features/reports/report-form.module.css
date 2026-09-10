@@ -1,0 +1,111 @@
+.section {
+  scroll-margin-top: 24px;
+}
+.section form {
+  display: grid;
+  gap: 12px;
+}
+.section label {
+  font-weight: 600;
+}
+.section textarea {
+  display: block;
+  width: 100%;
+  min-height: 156px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.section textarea:focus-visible,
+.section button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.section textarea[aria-invalid="true"] {
+  border-color: var(--accent);
+}
+.section .help,
+.section .count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.count {
+  font-variant-numeric: tabular-nums;
+}
+.section .error {
+  margin: 0;
+  color: var(--accent);
+}
+.submit,
+.secondary {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid var(--primary-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.submit {
+  color: var(--bg);
+  background: var(--primary-strong);
+}
+.submit:hover:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.secondary {
+  color: var(--ink);
+  background: var(--surface);
+}
+.secondary:hover {
+  background: var(--surface-strong);
+}
+.submit:disabled {
+  background: var(--surface-strong);
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: default;
+}
+.success {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.success h3 {
+  margin-top: 0;
+}
+.section {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.section summary {
+  cursor: pointer;
+  padding: 12px 0;
+  min-height: 48px;
+  font-weight: 600;
+}
+.section select {
+  min-height: 48px;
+  width: 100%;
+  padding: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+.section select:focus-visible,
+.section summary:focus-visible,
+.section a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}

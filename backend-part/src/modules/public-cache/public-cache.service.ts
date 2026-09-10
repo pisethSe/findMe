@@ -97,6 +97,16 @@ export class PublicCacheService implements OnModuleDestroy {
     }
   }
 
+  async invalidateSearch(): Promise<void> {
+    const client = await this.getClient();
+    if (!client) return;
+    try {
+      await client.incr(SEARCH_GENERATION_KEY);
+    } catch {
+      this.disableClient();
+    }
+  }
+
   async onModuleDestroy(): Promise<void> {
     const client = this.client;
     this.client = null;
@@ -123,7 +133,7 @@ export class PublicCacheService implements OnModuleDestroy {
       this.client = client;
       return client;
     } catch {
-      client.destroy();
+      if (client.isOpen) client.destroy();
       this.connection = null;
       return null;
     }

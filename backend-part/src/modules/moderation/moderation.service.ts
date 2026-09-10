@@ -99,7 +99,7 @@ function concurrentModeration(): ConflictException {
   });
 }
 
-function toAdminListingDto(listing: AdminPendingListingRecord) {
+export function toAdminListingDto(listing: AdminPendingListingRecord) {
   const profile = listing.landlord.landlordProfile;
   if (!profile) {
     throw new ConflictException({
@@ -110,6 +110,7 @@ function toAdminListingDto(listing: AdminPendingListingRecord) {
   return {
     ...toLandlordListingDto(listing),
     moderationNote: listing.moderationNote,
+    landlordId: listing.landlordId,
     landlord: {
       displayName: profile.displayName,
       businessName: profile.businessName,

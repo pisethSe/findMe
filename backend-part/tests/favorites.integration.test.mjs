@@ -97,6 +97,11 @@ test(
           [id, `${id}@example.test`, role, complete ? new Date() : null],
         );
       }
+      // Pending-review fixtures need the same owner profile as real rentals.
+      await db.query(
+        "INSERT INTO landlord_profiles(user_id,display_name,contact_phone) VALUES($1,'Favorites owner','+85512345678')",
+        [owner],
+      );
       await db.query(
         "INSERT INTO properties(id,landlord_id,name,address_line,latitude,longitude,total_units) VALUES($1,$2,'Private property','PRIVATE ADDRESS',11.57,104.89,3)",
         [property, owner],

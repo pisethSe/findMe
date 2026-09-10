@@ -1,5 +1,6 @@
 import { config as loadEnvironment } from "dotenv";
 import { fileURLToPath } from "node:url";
+import { isIP } from "node:net";
 
 loadEnvironment({
   path: fileURLToPath(new URL("../../../.env", import.meta.url)),
@@ -99,6 +100,29 @@ export function getRedisUrl(
   }
 
   return redisUrl;
+}
+
+export function getTrustedProxyCidrs(value: string | undefined): string[] {
+  if (!value?.trim()) return [];
+  const entries = value.split(",").map((entry) => entry.trim());
+  for (const entry of entries) {
+    const [address = "", prefix, ...extra] = entry.split("/");
+    const version = isIP(address);
+    if (
+      !version ||
+      address.includes("%") ||
+      extra.length ||
+      (prefix !== undefined &&
+        (!/^\d+$/.test(prefix) ||
+          Number(prefix) < 1 ||
+          Number(prefix) > (version === 4 ? 32 : 128)))
+    ) {
+      throw new TypeError(
+        "TRUSTED_PROXY_CIDRS must be a comma-separated list of proxy IPs or CIDRs, without /0 networks.",
+      );
+    }
+  }
+  return entries;
 }
 
 export function getAppEnvironment(value: string | undefined): AppEnvironment {
@@ -329,6 +353,7 @@ export function validateApplicationEnvironment(
   validateAuthEnvironment(environment);
   const appEnvironment = getAppEnvironment(environment.APP_ENV);
   getRedisUrl(environment.REDIS_URL, appEnvironment);
+  getTrustedProxyCidrs(environment.TRUSTED_PROXY_CIDRS);
   getGoogleMapsServerKey(environment.GOOGLE_MAPS_SERVER_KEY, appEnvironment);
   getObjectStorageConfig(environment, appEnvironment);
 }

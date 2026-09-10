@@ -22,6 +22,7 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { RegisterDto } from "./dto/register.dto.js";
 import { ResetPasswordDto } from "./dto/reset-password.dto.js";
+import { RateLimit } from "../rate-limits/rate-limit.policy.js";
 
 const REFRESH_COOKIE = "findme_refresh";
 const REFRESH_COOKIE_PATH = "/api/v1/auth";
@@ -31,6 +32,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("register")
+  @RateLimit("registration")
   async register(
     @Body() input: RegisterDto,
     @Req() request: Request,
@@ -49,6 +51,7 @@ export class AuthController {
   }
 
   @Post("login")
+  @RateLimit("login")
   @HttpCode(200)
   async login(
     @Body() input: LoginDto,
@@ -65,6 +68,7 @@ export class AuthController {
   }
 
   @Post("refresh")
+  @RateLimit("sessionRefresh")
   @HttpCode(200)
   async refresh(
     @Req() request: Request,
@@ -103,6 +107,7 @@ export class AuthController {
   }
 
   @Post("forgot-password")
+  @RateLimit("passwordResetRequest")
   @HttpCode(202)
   async forgotPassword(@Body() input: ForgotPasswordDto) {
     const result = await this.authService.requestPasswordReset(input.email);
@@ -117,6 +122,7 @@ export class AuthController {
   }
 
   @Post("reset-password")
+  @RateLimit("passwordReset")
   @HttpCode(200)
   async resetPassword(@Body() input: ResetPasswordDto) {
     await this.authService.resetPassword(input.token, input.password);

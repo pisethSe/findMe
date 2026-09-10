@@ -6,11 +6,13 @@ import {
   type ValidationError,
 } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 
 import { AppModule } from "./app.module.js";
 import { ApiExceptionFilter } from "./common/http/api-exception.filter.js";
 import {
   getWebOrigin,
+  getTrustedProxyCidrs,
   parseApiPort,
   validateApplicationEnvironment,
 } from "./config/environment.js";
@@ -34,8 +36,10 @@ function flattenValidationErrors(
 
 async function bootstrap(): Promise<void> {
   validateApplicationEnvironment();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const port = parseApiPort(process.env.PORT);
+  const trustedProxies = getTrustedProxyCidrs(process.env.TRUSTED_PROXY_CIDRS);
+  app.set("trust proxy", trustedProxies.length ? trustedProxies : false);
 
   app.enableShutdownHooks();
   app.setGlobalPrefix("api/v1");
@@ -57,6 +61,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: getWebOrigin(process.env.WEB_ORIGIN),
     credentials: true,
+    exposedHeaders: ["Retry-After", "x-request-id"],
   });
 
   await app.listen(port, "0.0.0.0");

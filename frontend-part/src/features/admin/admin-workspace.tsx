@@ -21,6 +21,8 @@ import {
   pageAfterModerationDecision,
 } from "./admin-moderation-model";
 
+import { AdminNavigation } from "./admin-navigation";
+
 type ModerationAction = "approve" | "reject";
 
 export function AdminWorkspace() {
@@ -162,6 +164,7 @@ export function AdminWorkspace() {
       </header>
 
       <section className="workspace-content" aria-labelledby="admin-title">
+        <AdminNavigation />
         <div className="workspace-heading">
           <div>
             <p>Administration</p>
@@ -285,7 +288,7 @@ export function AdminWorkspace() {
   );
 }
 
-function ModerationCard({
+export function ModerationCard({
   listing,
   note,
   workingAction,
@@ -293,6 +296,7 @@ function ModerationCard({
   onNoteChange,
   onApprove,
   onReject,
+  reviewOnly = false,
 }: {
   listing: AdminPendingListingDto;
   note: string;
@@ -301,6 +305,7 @@ function ModerationCard({
   onNoteChange: (value: string) => void;
   onApprove: () => void;
   onReject: () => void;
+  reviewOnly?: boolean;
 }) {
   const title = listing.titleEn ?? listing.titleKm ?? listing.property.name;
   const readyPhotos = listing.images.filter(
@@ -386,41 +391,43 @@ function ModerationCard({
         </div>
       </div>
 
-      <div className="moderation-decision">
-        <label htmlFor={`moderation-note-${listing.id}`}>
-          Correction note for rejection
-        </label>
-        <textarea
-          id={`moderation-note-${listing.id}`}
-          value={note}
-          minLength={3}
-          maxLength={2_000}
-          rows={4}
-          placeholder="Explain exactly what the landlord should correct."
-          disabled={disabled}
-          onChange={(event) => onNoteChange(event.target.value)}
-        />
-        <div>
-          <button
-            className="moderation-reject"
-            type="button"
+      {!reviewOnly ? (
+        <div className="moderation-decision">
+          <label htmlFor={`moderation-note-${listing.id}`}>
+            Correction note for rejection
+          </label>
+          <textarea
+            id={`moderation-note-${listing.id}`}
+            value={note}
+            minLength={3}
+            maxLength={2_000}
+            rows={4}
+            placeholder="Explain exactly what the landlord should correct."
             disabled={disabled}
-            onClick={onReject}
-          >
-            {workingAction === "reject" ? "Rejecting…" : "Reject with note"}
-          </button>
-          <button
-            className="moderation-approve"
-            type="button"
-            disabled={disabled}
-            onClick={onApprove}
-          >
-            {workingAction === "approve"
-              ? "Publishing…"
-              : "Approve and publish"}
-          </button>
+            onChange={(event) => onNoteChange(event.target.value)}
+          />
+          <div>
+            <button
+              className="moderation-reject"
+              type="button"
+              disabled={disabled}
+              onClick={onReject}
+            >
+              {workingAction === "reject" ? "Rejecting…" : "Reject with note"}
+            </button>
+            <button
+              className="moderation-approve"
+              type="button"
+              disabled={disabled}
+              onClick={onApprove}
+            >
+              {workingAction === "approve"
+                ? "Publishing…"
+                : "Approve and publish"}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
     </li>
   );
 }
