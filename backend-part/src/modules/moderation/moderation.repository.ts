@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
+import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 import {
   EntitlementStatus,
   ImageStatus,
@@ -113,6 +114,7 @@ export class ModerationRepository {
           },
         },
       });
+      await recordAnalyticsEvent(transaction, "LISTING_PUBLISHED");
       return transaction.listing.findUnique({
         where: { id: listingId },
         select: adminPendingListingSelect,
@@ -152,6 +154,7 @@ export class ModerationRepository {
           },
         },
       });
+      await recordAnalyticsEvent(transaction, "LISTING_REJECTED");
       return transaction.listing.findUnique({
         where: { id: listingId },
         select: adminPendingListingSelect,

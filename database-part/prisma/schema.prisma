@@ -460,6 +460,36 @@ model RefreshSession {
   @@map("refresh_sessions")
 }
 
+enum AnalyticsEventName {
+  SEARCH_RESPONSE
+  SEARCH_ZERO_RESULTS
+  LISTING_DETAIL_RESPONSE
+  FAVORITE_SAVED
+  FAVORITE_REMOVED
+  INQUIRY_CREATED
+  REPORT_CREATED
+  STUDENT_ROLE_SELECTED
+  LANDLORD_ROLE_SELECTED
+  LANDLORD_TRIAL_STARTED
+  LISTING_CREATED
+  LISTING_SUBMITTED
+  LISTING_PUBLISHED
+  LISTING_REJECTED
+
+  @@map("analytics_event_name")
+}
+
+// Anonymous, append-only facts. No actor/resource IDs or event payloads.
+// Day precision prevents reconstructing individual activity timelines.
+model AnalyticsEvent {
+  id    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  day   DateTime           @default(dbgenerated("((clock_timestamp() AT TIME ZONE 'UTC'))::date")) @db.Date
+  event AnalyticsEventName
+
+  @@index([day, event])
+  @@map("analytics_events")
+}
+
 model PasswordResetToken {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String    @map("user_id") @db.Uuid

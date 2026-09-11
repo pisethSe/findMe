@@ -22,6 +22,7 @@ permit the request. Invalid input and failed authentication consume budgets too.
 | Rental search      | `GET /listings/search`                                                                                                                   | 120/minute          | None                                |
 | Catalog            | `GET /institutions`, `GET /amenities`                                                                                                    | 240/minute combined | None                                |
 | Rental details     | `GET /listings/:slug`                                                                                                                    | 600/minute          | None                                |
+| Analytics summary  | `GET /admin/analytics/summary`                                                                                                          | 60/minute           | 30/minute per admin                 |
 | Inquiry attempts   | `POST /listings/:listingId/inquiries`                                                                                                    | 120/minute          | 60/minute per authenticated account |
 | Report attempts    | `POST /listings/:listingId/reports`                                                                                                      | 120/minute          | 30/minute per authenticated account |
 | Upload intents     | `POST /media/upload-intents`                                                                                                             | 120/10 minutes      | 30/10 minutes per landlord          |
@@ -30,7 +31,7 @@ permit the request. Invalid input and failed authentication consume budgets too.
 
 These are MVP operational defaults in
 `backend-part/src/modules/rate-limits/rate-limit.policy.ts`, not subscription
-quotas. Health checks, logout, and private read routes remain outside these
+quotas. Health checks, logout, and other private read routes remain outside these
 policies. Rate limiting does not replace validation, role, account-state,
 ownership, entitlement, or listing-state checks. Admin reads remain available
 when an admin's write budget is exhausted.

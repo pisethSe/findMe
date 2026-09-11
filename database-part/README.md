@@ -44,3 +44,8 @@ TEST_DATABASE_URL=postgresql://user@localhost:5432/findme_test \
 
 `legacy-sql/` is historical reference only. Never apply its migrations to a
 new FindMe database.
+
+`20260911000100_basic_analytics` adds anonymous event facts and a day/event index.
+Apply it before deploying the Phase 3 Step 6 API. Marketplace writes record
+events atomically; daily admin summaries are computed from committed facts.
+See [Basic analytics events](../docs/ANALYTICS.md) for event semantics and privacy.

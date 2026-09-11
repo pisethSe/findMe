@@ -31,6 +31,11 @@ export const RATE_LIMIT_POLICIES = {
   search: { ip: { limit: 120, seconds: 60 }, failClosed: false },
   catalog: { ip: { limit: 240, seconds: 60 }, failClosed: false },
   listingRead: { ip: { limit: 600, seconds: 60 }, failClosed: false },
+  analyticsRead: {
+    ip: { limit: 60, seconds: 60 },
+    user: { limit: 30, seconds: 60 },
+    failClosed: false,
+  },
   inquiry: {
     ip: { limit: 120, seconds: 60 },
     user: { limit: 60, seconds: 60 },

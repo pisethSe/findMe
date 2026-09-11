@@ -3,6 +3,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { ListFavoritesDto } from "./favorites.dto.js";
+import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 
 // Match public detail eligibility. Saved rows survive a rental's withdrawal,
 // but its former public content must never become a private-data back door.
@@ -161,10 +162,12 @@ export class FavoritesRepository {
                 code: "LISTING_NOT_FOUND",
                 message: "This rental is unavailable or could not be found.",
               });
-            await tx.favorite.createMany({
+            const created = await tx.favorite.createMany({
               data: [{ studentId, listingId }],
               skipDuplicates: true,
             });
+            if (created.count === 1)
+              await recordAnalyticsEvent(tx, "FAVORITE_SAVED");
           },
           { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
         );
@@ -182,6 +185,12 @@ export class FavoritesRepository {
   }
 
   async remove(studentId: string, listingId: string): Promise<void> {
-    await this.prisma.favorite.deleteMany({ where: { studentId, listingId } });
+    await this.prisma.$transaction(async (tx) => {
+      const removed = await tx.favorite.deleteMany({
+        where: { studentId, listingId },
+      });
+      if (removed.count === 1)
+        await recordAnalyticsEvent(tx, "FAVORITE_REMOVED");
+    });
   }
 }

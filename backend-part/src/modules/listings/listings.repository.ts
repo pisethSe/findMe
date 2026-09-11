@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
+import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 import type { ListingStatus } from "../../generated/prisma/client.js";
 import type {
   CreateLandlordListingInput,
@@ -167,7 +168,7 @@ export class ListingsRepository {
         select: { id: true },
       });
 
-      return transaction.listing.create({
+      const listing = await transaction.listing.create({
         data: {
           propertyId: property.id,
           landlordId: input.landlordId,
@@ -185,6 +186,8 @@ export class ListingsRepository {
         },
         select: landlordListingSelect,
       });
+      await recordAnalyticsEvent(transaction, "LISTING_CREATED");
+      return listing;
     });
   }
 
@@ -297,6 +300,12 @@ export class ListingsRepository {
         data,
       });
       if (updated.count !== 1) return null;
+      if (data.status !== expectedStatus) {
+        if (data.status === "PENDING_REVIEW")
+          await recordAnalyticsEvent(transaction, "LISTING_SUBMITTED");
+        if (data.status === "PUBLISHED")
+          await recordAnalyticsEvent(transaction, "LISTING_PUBLISHED");
+      }
       return transaction.listing.findFirst({
         where: { id: listingId, landlordId, deletedAt: null },
         select: landlordListingSelect,

@@ -8,6 +8,7 @@ import { PrismaService } from "../../database/prisma.service.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { CreateReportDto } from "./reports.dto.js";
 import { ReportRateLimiter } from "./report-rate-limiter.js";
+import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 
 @Injectable()
 export class ReportsRepository {
@@ -88,6 +89,7 @@ export class ReportsRepository {
             createdAt: clock.now,
           },
         });
+        await recordAnalyticsEvent(tx, "REPORT_CREATED");
         return { report, created: true };
       },
       { timeout: 10000 },

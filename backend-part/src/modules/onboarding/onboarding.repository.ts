@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
+import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 import {
   AccountStatus,
   EntitlementSource,
@@ -135,6 +136,14 @@ export class OnboardingRepository {
         }
       }
 
+      if (selected.count === 1) {
+        await recordAnalyticsEvent(
+          transaction,
+          role === UserRole.STUDENT
+            ? "STUDENT_ROLE_SELECTED"
+            : "LANDLORD_ROLE_SELECTED",
+        );
+      }
       return {
         outcome: selected.count === 1 ? "SELECTED" : "IDEMPOTENT",
         user,
@@ -203,6 +212,7 @@ export class OnboardingRepository {
           select: entitlementSelect,
         });
 
+        await recordAnalyticsEvent(transaction, "LANDLORD_TRIAL_STARTED");
         return {
           outcome: "ACTIVATED" as const,
           activation: { profile, entitlement },

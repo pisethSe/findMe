@@ -127,6 +127,7 @@ AppModule
 ├── MediaModule
 ├── AdminModule
 ├── AuditModule
+├── AnalyticsModule
 ├── CacheModule
 └── HealthModule
 ```
@@ -1219,6 +1220,13 @@ If jobs are added, Redis-backed BullMQ is a natural NestJS option. Database stat
 ---
 
 ## 22. Observability
+
+Basic product analytics use anonymous, server-generated PostgreSQL events with
+UTC day precision and a bounded admin-only daily summary API. Mutation events
+commit with marketplace state; discovery read telemetry is best effort. Events
+contain no actor/resource IDs, locations, or arbitrary payloads. See
+[Basic analytics events](docs/ANALYTICS.md) for the implemented event definitions,
+measurement limits, and migration requirements.
 
 Minimum production observability:
 

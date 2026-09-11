@@ -17,6 +17,7 @@ import {
   INQUIRY_HOUR_MS,
 } from "./inquiry-policy.js";
 import { InquiryRateLimiter } from "./inquiry-rate-limiter.js";
+import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 
 const coreSelect = {
   id: true,
@@ -173,6 +174,7 @@ export class InquiriesRepository {
             createdAt: clock.now,
           },
         });
+        await recordAnalyticsEvent(tx, "INQUIRY_CREATED");
         return { inquiry, created: true };
       },
       { timeout: 10000 },

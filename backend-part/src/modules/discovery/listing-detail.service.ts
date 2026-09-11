@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { AnalyticsService } from "../analytics/analytics.service.js";
 
 import { DiscoveryRepository } from "./discovery.repository.js";
 import {
@@ -11,6 +12,7 @@ export class ListingDetailService {
   constructor(
     private readonly repository: ListingDetailRepository,
     private readonly discovery: DiscoveryRepository,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async detail(slug: string, institutionId?: string) {
@@ -30,6 +32,7 @@ export class ListingDetailService {
         message: "The selected institution could not be found.",
       });
     }
+    await this.analytics.recordRead(["LISTING_DETAIL_RESPONSE"]);
     return {
       data: {
         ...serializePublicDetail(record),

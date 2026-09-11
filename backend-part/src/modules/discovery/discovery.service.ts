@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 
 import { PublicCacheService } from "../public-cache/public-cache.service.js";
+import { AnalyticsService } from "../analytics/analytics.service.js";
 import type { SearchInstitutionsDto } from "./dto/search-institutions.dto.js";
 import {
   PublicListingSort,
@@ -23,6 +24,7 @@ export class DiscoveryService {
   constructor(
     private readonly repository: DiscoveryRepository,
     private readonly cache: PublicCacheService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async listInstitutions(query: SearchInstitutionsDto) {
@@ -73,6 +75,7 @@ export class DiscoveryService {
     const cached =
       await this.cache.getSearch<ReturnType<typeof buildPage>>(normalized);
     if (cached.value) {
+      await this.recordSearch(cached.value.meta.total);
       return {
         ...cached.value,
         meta: {
@@ -85,7 +88,16 @@ export class DiscoveryService {
     const result = await this.repository.search(normalized);
     const page = buildPage(result, institution, normalized, cached.generation);
     await this.cache.setSearch(cached.generation, normalized, page);
+    await this.recordSearch(page.meta.total);
     return page;
+  }
+
+  private recordSearch(total: number) {
+    return this.analytics.recordRead(
+      total === 0
+        ? ["SEARCH_RESPONSE", "SEARCH_ZERO_RESULTS"]
+        : ["SEARCH_RESPONSE"],
+    );
   }
 }
 

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AnalyticsModule } from "../analytics/analytics.module.js";
 
 import { DiscoveryController } from "./discovery.controller.js";
 import { DiscoveryRepository } from "./discovery.repository.js";
@@ -7,6 +8,7 @@ import { ListingDetailRepository } from "./listing-detail.repository.js";
 import { ListingDetailService } from "./listing-detail.service.js";
 
 @Module({
+  imports: [AnalyticsModule],
   controllers: [DiscoveryController],
   providers: [
     DiscoveryRepository,
