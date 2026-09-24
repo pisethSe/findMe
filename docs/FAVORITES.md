@@ -90,3 +90,12 @@ pagination, keyboard controls and 320/390/768/1440px shortlist layouts.
 Browser fixtures live only in tests; the application uses the real NestJS API.
 Optional screenshots: `FINDME_QA_SCREENSHOTS=/tmp/findme-favorites-qa corepack pnpm
 --filter @findme/frontend test:browser`.
+
+
+## Availability age limit
+
+Phase 4 Step 3 adds [stale-listing controls](STALE-LISTINGS.md): dashboard
+reminders after 7 days and public eligibility for confirmations younger than
+14 days. Owned listing data and private history are retained. Explicit owner
+confirmation may keep the same room count, subject to entitlement and moderation
+rules. See the linked policy for cache timing and error behavior.

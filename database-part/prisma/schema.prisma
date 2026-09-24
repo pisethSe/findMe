@@ -76,6 +76,13 @@ enum PropertyType {
   HOUSE                @map("house")
   DORM_ROOM            @map("dorm_room")
   OTHER_STUDENT_RENTAL @map("other_student_rental")
+  ONE_BEDROOM          @map("one_bedroom")
+  TWO_BEDROOM          @map("two_bedroom")
+  THREE_BEDROOM        @map("three_bedroom")
+  SHARED_ROOM          @map("shared_room")
+  FLOOR_1              @map("floor_1")
+  FLOOR_2              @map("floor_2")
+  FLOOR_3              @map("floor_3")
 
   @@map("property_type")
 }
@@ -150,6 +157,7 @@ model User {
   id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email                 String?         @unique @db.VarChar(320)
   phone                 String?         @unique @db.VarChar(32)
+  googleSubject         String?         @unique @map("google_subject") @db.VarChar(255)
   passwordHash          String          @map("password_hash") @db.VarChar(255)
   role                  UserRole?
   accountStatus         AccountStatus   @default(ACTIVE) @map("account_status")
@@ -316,6 +324,8 @@ model Listing {
 
   @@unique([id, landlordId])
   @@index([propertyId])
+  // SQL-managed partial index listings_public_search_property_idx restricts
+  // property lookups to public inventory; predicate lives in the migration.
   @@index([landlordId, status, deletedAt])
   @@index([status, availableUnits, monthlyPrice])
   @@index([status, publishedAt(sort: Desc), id], map: "listings_publication_feed_idx")

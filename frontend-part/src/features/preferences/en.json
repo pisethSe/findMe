@@ -1,0 +1,23 @@
+{
+  "មិនអាចពិនិត្យគណនីរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។": "We could not check your account. Please try again.",
+  "សូមជ្រើសរើសសិស្ស/និស្សិត ឬម្ចាស់ផ្ទះជួល ដើម្បីបន្ត។": "Choose Student or Landlord to continue.",
+  "សូមពិនិត្យការតភ្ជាប់អ៊ីនធឺណិត ហើយព្យាយាមម្តងទៀត។": "Check your internet connection and try again.",
+  "កំពុងពិនិត្យគណនីរបស់អ្នក…": "Checking your account…",
+  "មិនអាចពិនិត្យគណនីបានទេ": "Your account could not be checked",
+  "ព្យាយាមម្តងទៀត": "Try again",
+  "សូមជ្រើសរើសតួនាទីមួយ": "Choose a role",
+  "សិស្ស/និស្សិត": "Student",
+  "ម្ចាស់ផ្ទះជួល": "Landlord",
+  "ស្វែងរកបន្ទប់នៅជិតសាលា ឬសាកលវិទ្យាល័យ ប្រៀបធៀប និងរក្សាទុកបន្ទប់ដែលអ្នកពេញចិត្ត។": "Find rooms near your school or university. Compare and save your favourites.",
+  "ដាក់បន្ទប់ជួល កែប្រែព័ត៌មាន និងគ្រប់គ្រងបន្ទប់ទំនេរសម្រាប់សិស្ស និងនិស្សិត។": "List rentals, update their details and manage availability for students.",
+  "ឈ្មោះដែលអ្នកចង់បង្ហាញ": "Your display name",
+  "ឈ្មោះនេះប្រើសម្រាប់គណនីឯកជនរបស់អ្នក ហើយមិនបង្ហាញជាមួយបន្ទប់ដែលអ្នកបានរក្សាទុកទេ។": "This name is for your private account. It is not shown with your saved rooms.",
+  "ការសាកល្បងឥតគិតថ្លៃរយៈពេល 7 ថ្ងៃរបស់អ្នក ចាប់ផ្តើមតែបន្ទាប់ពីអ្នកបំពេញព័ត៌មានម្ចាស់ផ្ទះជួលនៅជំហានបន្ទាប់។ មិនត្រូវការកាតបង់ប្រាក់ទេ។": "Your free seven-day trial starts after you complete the landlord details in the next step. No payment card is required.",
+  "កំពុងរក្សាទុកជម្រើស…": "Saving your choice…",
+  "បន្តជាម្ចាស់ផ្ទះជួល": "Continue as landlord",
+  "បន្តជាសិស្ស/និស្សិត": "Continue as student",
+  "ជ្រើសរើសតួនាទីដើម្បីបន្ត": "Choose a role to continue",
+  "ជម្រើសនេះកំណត់សិទ្ធិគណនីរបស់អ្នក ហើយមិនអាចប្តូរដោយខ្លួនឯងបន្ទាប់ពីបញ្ចប់បានទេ។": "This choice sets your account permissions and cannot be changed by yourself after completion.",
+  "តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?": "Are you a student or a landlord?",
+  "បំពេញព័ត៌មានម្ចាស់ផ្ទះជួល": "Complete your landlord profile"
+}

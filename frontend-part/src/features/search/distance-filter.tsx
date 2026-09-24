@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -34,66 +35,68 @@ export function DistanceFilter({ radiusMeters }: { radiusMeters: number }) {
   }, [radiusMeters]);
 
   return (
-    <div className="distance-filter">
-      <label htmlFor="search-distance">Maximum distance (km)</label>
-      <input
-        ref={inputRef}
-        id="search-distance"
-        name="maxDistanceKm"
-        type="number"
-        min={MIN_SEARCH_RADIUS_METERS / 1_000}
-        max={MAX_SEARCH_RADIUS_METERS / 1_000}
-        step="0.001"
-        inputMode="decimal"
-        required
-        value={value}
-        aria-invalid={invalid}
-        aria-describedby={`search-distance-help${invalid ? " search-distance-error" : ""}`}
-        onChange={(event) => {
-          const input = event.currentTarget;
-          setValue(input.value);
-          input.setCustomValidity(
-            radiusFromKilometres(input.value) === undefined
-              ? DISTANCE_ERROR
-              : "",
-          );
-        }}
-        onBlur={() => setTouched(true)}
-        onInvalid={() => setTouched(true)}
-      />
-      <div
-        className="distance-presets"
-        role="group"
-        aria-label="Quick maximum distances"
-      >
-        {SEARCH_RADIUS_PRESETS_METERS.map((radius) => (
-          <button
-            key={radius}
-            type="button"
-            aria-pressed={selectedRadius === radius}
-            onClick={() => {
-              setValue(String(radius / 1_000));
-              setTouched(false);
-              inputRef.current?.setCustomValidity("");
-            }}
-          >
-            {formatSearchRadius(radius)}
-          </button>
-        ))}
-      </div>
-      <p id="search-distance-help">
-        Straight-line distance from your institution, not walking distance.
-        Choose 0.1–20 km, then update results.
-      </p>
-      {invalid ? (
-        <p
-          id="search-distance-error"
-          className="distance-filter-error"
-          role="alert"
+    <Localized>
+      <div className="distance-filter">
+        <label htmlFor="search-distance">Maximum distance (km)</label>
+        <input
+          ref={inputRef}
+          id="search-distance"
+          name="maxDistanceKm"
+          type="number"
+          min={MIN_SEARCH_RADIUS_METERS / 1_000}
+          max={MAX_SEARCH_RADIUS_METERS / 1_000}
+          step="0.001"
+          inputMode="decimal"
+          required
+          value={value}
+          aria-invalid={invalid}
+          aria-describedby={`search-distance-help${invalid ? " search-distance-error" : ""}`}
+          onChange={(event) => {
+            const input = event.currentTarget;
+            setValue(input.value);
+            input.setCustomValidity(
+              radiusFromKilometres(input.value) === undefined
+                ? DISTANCE_ERROR
+                : "",
+            );
+          }}
+          onBlur={() => setTouched(true)}
+          onInvalid={() => setTouched(true)}
+        />
+        <div
+          className="distance-presets"
+          role="group"
+          aria-label="Quick maximum distances"
         >
-          {DISTANCE_ERROR}
+          {SEARCH_RADIUS_PRESETS_METERS.map((radius) => (
+            <button
+              key={radius}
+              type="button"
+              aria-pressed={selectedRadius === radius}
+              onClick={() => {
+                setValue(String(radius / 1_000));
+                setTouched(false);
+                inputRef.current?.setCustomValidity("");
+              }}
+            >
+              {formatSearchRadius(radius)}
+            </button>
+          ))}
+        </div>
+        <p id="search-distance-help">
+          Straight-line distance from your institution, not walking distance.
+          Choose 0.1–20 km, then update results.
         </p>
-      ) : null}
-    </div>
+        {invalid ? (
+          <p
+            id="search-distance-error"
+            className="distance-filter-error"
+            role="alert"
+          >
+            {DISTANCE_ERROR}
+          </p>
+        ) : null}
+      </div>
+    </Localized>
   );
 }

@@ -1,3 +1,4 @@
+import { evaluateAvailability } from "./availability-policy.js";
 import {
   BadRequestException,
   ConflictException,
@@ -204,6 +205,10 @@ export class ListingsService {
     listingId: string,
     input: UpdateAvailabilityDto,
   ): Promise<LandlordListingDto> {
+    // Resolve expiry before reading status: equal-count confirmation must not
+    // revive expired supply, while safe reductions remain possible on paused rows.
+    await this.requireOwned(listingId, landlordId);
+    await this.entitlements.getCurrent(landlordId);
     const current = await this.requireOwned(listingId, landlordId);
     if (!canUpdateAvailability(current.status)) {
       throw invalidState(current.status, "UPDATE_AVAILABILITY");
@@ -220,6 +225,7 @@ export class ListingsService {
       listingId,
       landlordId,
       current.status,
+      current.availableUnits,
       {
         availableUnits: input.availableUnits,
         availabilityConfirmedAt: new Date(),
@@ -565,6 +571,9 @@ export function toLandlordListingDto(
     availableUnits: listing.availableUnits,
     availabilityConfirmedAt:
       listing.availabilityConfirmedAt?.toISOString() ?? null,
+    availabilityFreshness: evaluateAvailability(
+      listing.availabilityConfirmedAt,
+    ),
     contactPreference: listing.contactPreference,
     status: listing.status,
     publishedAt: listing.publishedAt?.toISOString() ?? null,

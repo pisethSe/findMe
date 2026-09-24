@@ -12,7 +12,11 @@ coverage/
 *.tsbuildinfo
 **/next-env.d.ts
 .DS_Store
-.impeccable/review/
+.impeccable/
+
+# Local tooling and scratch scripts
+.codex/
+frontend-part/tmp-*.mjs
 
 # Browser verification artifacts
 **/test-results/

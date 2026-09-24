@@ -1,3 +1,4 @@
+import { publicListingWhere } from "../listings/availability-policy.js";
 import { Injectable, NotFoundException } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
@@ -7,15 +8,6 @@ import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 
 // Match public detail eligibility. Saved rows survive a rental's withdrawal,
 // but its former public content must never become a private-data back door.
-const publicListingWhere = {
-  status: "PUBLISHED",
-  deletedAt: null,
-  availableUnits: { gt: 0 },
-  publishedAt: { not: null },
-  availabilityConfirmedAt: { not: null },
-  property: { deletedAt: null },
-  landlord: { deletedAt: null, accountStatus: "ACTIVE" },
-} satisfies Prisma.ListingWhereInput;
 
 const summarySelect = {
   id: true,
@@ -90,7 +82,7 @@ export class FavoritesRepository {
         const total = await tx.favorite.count({ where });
         const listings = await tx.listing.findMany({
           where: {
-            ...publicListingWhere,
+            ...publicListingWhere(),
             id: { in: favorites.map((f) => f.listingId) },
           },
           select: summarySelect,
@@ -154,7 +146,7 @@ export class FavoritesRepository {
             )
               return;
             const listing = await tx.listing.findFirst({
-              where: { ...publicListingWhere, id: listingId },
+              where: { ...publicListingWhere(), id: listingId },
               select: { id: true },
             });
             if (!listing)

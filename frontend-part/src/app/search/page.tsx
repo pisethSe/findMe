@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { parseDistanceFilter } from "../../features/search/distance-filter-model";
 import { PublishedRentalSearch } from "../../features/search/published-rental-search";
+import { ROOM_TYPE_VALUES } from "../../features/search/room-type-options";
 import { parseSearchMapState } from "../../features/search/search-url-state";
 
 export const metadata: Metadata = {
@@ -10,14 +11,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const PROPERTY_TYPES = new Set<PropertyType>([
-  "ROOM",
-  "STUDIO",
-  "APARTMENT",
-  "HOUSE",
-  "DORM_ROOM",
-  "OTHER_STUDENT_RENTAL",
-]);
+const PROPERTY_TYPES = ROOM_TYPE_VALUES;
 const DEFAULT_INSTITUTION_SLUG = "royal-university-of-phnom-penh";
 const INSTITUTION_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

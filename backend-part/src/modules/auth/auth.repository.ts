@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
 import {
@@ -73,6 +73,7 @@ export class AuthRepository {
       email: string;
       passwordHash: string;
       preferredLocale: PreferredLocale;
+      googleSubject?: string;
     },
     session: CreateSessionRecord,
   ): Promise<AuthenticationUserRecord> {
@@ -112,6 +113,32 @@ export class AuthRepository {
       },
       select: publicUserSelect,
     });
+  }
+
+  async findUserByGoogleSubject(
+    subject: string,
+  ): Promise<AuthenticationUserRecord | null> {
+    return this.prisma.user.findFirst({
+      where: { googleSubject: subject },
+      select: userAuthenticationSelect,
+    });
+  }
+
+  async linkGoogleSubject(userId: string, subject: string): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { googleSubject: subject },
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException({
+          code: "GOOGLE_ACCOUNT_ALREADY_LINKED",
+          message: "This Google account is already linked to another account.",
+        });
+      }
+      throw error;
+    }
   }
 
   async createRefreshSession(

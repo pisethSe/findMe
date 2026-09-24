@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type { InstitutionDto } from "@findme/contracts";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 
@@ -61,43 +62,45 @@ export function InstitutionStartForm() {
   }
 
   return (
-    <form
-      className="institution-search"
-      action="/search"
-      method="get"
-      onSubmit={submit}
-    >
-      <div className="institution-search-row">
-        <InstitutionPicker
-          id="home-institution"
-          label="Start with your school, university, or college"
-          selectedInstitution={institution}
-          onSelect={setInstitution}
-          onSelectionValidityChange={updateValidity}
-          disabled={loading || empty || Boolean(error)}
-        />
-        <button
-          type="submit"
-          disabled={loading || empty || Boolean(error) || !selectionValid}
-        >
-          {loading ? "Loading institutions…" : "Find nearby rooms"}
-        </button>
-      </div>
-      {error ? (
-        <div className="institution-start-feedback" role="alert">
-          <p>{error}</p>
+    <Localized>
+      <form
+        className="institution-search"
+        action="/search"
+        method="get"
+        onSubmit={submit}
+      >
+        <div className="institution-search-row">
+          <InstitutionPicker
+            id="home-institution"
+            label="Start with your school, university, or college"
+            selectedInstitution={institution}
+            onSelect={setInstitution}
+            onSelectionValidityChange={updateValidity}
+            disabled={loading || empty || Boolean(error)}
+          />
           <button
-            type="button"
-            onClick={() => setAttempt((value) => value + 1)}
+            type="submit"
+            disabled={loading || empty || Boolean(error) || !selectionValid}
           >
-            Try again
+            {loading ? "Loading institutions…" : "Find nearby rooms"}
           </button>
         </div>
-      ) : empty ? (
-        <p className="institution-start-feedback" role="status">
-          No active institutions are available yet. Please check again later.
-        </p>
-      ) : null}
-    </form>
+        {error ? (
+          <div className="institution-start-feedback" role="alert">
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        ) : empty ? (
+          <p className="institution-start-feedback" role="status">
+            No active institutions are available yet. Please check again later.
+          </p>
+        ) : null}
+      </form>
+    </Localized>
   );
 }

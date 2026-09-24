@@ -110,6 +110,11 @@ test("prefills an owned rental for editing and omits dashboard-managed availabil
     availableFrom: "2026-09-10T00:00:00.000Z",
     availableUnits: 2,
     availabilityConfirmedAt: null,
+    availabilityFreshness: {
+      state: "UNCONFIRMED",
+      remindAt: null,
+      expiresAt: null,
+    },
     contactPreference: "IN_APP_ONLY",
     status: "DRAFT",
     publishedAt: null,

@@ -2,11 +2,11 @@ import Link from "next/link";
 
 export function BrandMark() {
   return (
-    <Link className="brand-mark" href="/" aria-label="FindMe home">
+    <Link className="brand-mark" href="/" aria-label="rentMe home">
       <span className="brand-symbol" aria-hidden="true">
         <span />
       </span>
-      <span>findMe</span>
+      <span>rentMe</span>
     </Link>
   );
 }

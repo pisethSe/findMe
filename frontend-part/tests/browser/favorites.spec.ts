@@ -80,7 +80,7 @@ async function favoriteApi(page: Page, initial: FavoriteDto[] = []) {
                   ? "/landlord"
                   : state.role === "INCOMPLETE"
                     ? "/onboarding/role"
-                    : "/search",
+                    : "/",
             },
           });
     if (!url.pathname.startsWith("/api/v1/me/favorites"))

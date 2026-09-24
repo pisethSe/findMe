@@ -49,3 +49,8 @@ new FindMe database.
 Apply it before deploying the Phase 3 Step 6 API. Marketplace writes record
 events atomically; daily admin summaries are computed from committed facts.
 See [Basic analytics events](../docs/ANALYTICS.md) for event semantics and privacy.
+
+`20260911000200_public_search_property_index` adds a SQL-managed partial index for
+published inventory reached through PostGIS property searches. It preserves the
+full property index and all constraints. See [Performance](../docs/PERFORMANCE.md)
+for measured query plans, deployment window considerations, and the benchmark.

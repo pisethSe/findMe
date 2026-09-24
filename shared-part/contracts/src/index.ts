@@ -42,7 +42,14 @@ export type PropertyType =
   | "APARTMENT"
   | "HOUSE"
   | "DORM_ROOM"
-  | "OTHER_STUDENT_RENTAL";
+  | "OTHER_STUDENT_RENTAL"
+  | "ONE_BEDROOM"
+  | "TWO_BEDROOM"
+  | "THREE_BEDROOM"
+  | "SHARED_ROOM"
+  | "FLOOR_1"
+  | "FLOOR_2"
+  | "FLOOR_3";
 export type Currency = "USD" | "KHR";
 export type PublicListingSort =
   "distance" | "price_asc" | "price_desc" | "newest";
@@ -100,6 +107,11 @@ export interface LandlordListingDto {
   availableFrom: string | null;
   availableUnits: number;
   availabilityConfirmedAt: string | null;
+  availabilityFreshness: {
+    state: "FRESH" | "DUE" | "STALE" | "UNCONFIRMED";
+    remindAt: string | null;
+    expiresAt: string | null;
+  };
   contactPreference: ContactPreference;
   status: ListingStatus;
   publishedAt: string | null;

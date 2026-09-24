@@ -9,6 +9,7 @@ import { getTrustedProxyCidrs } from "../dist/config/environment.js";
 import { RateLimitsModule } from "../dist/modules/rate-limits/rate-limits.module.js";
 import { AuthController } from "../dist/modules/auth/auth.controller.js";
 import { AuthService } from "../dist/modules/auth/auth.service.js";
+import { GoogleOAuthService } from "../dist/modules/auth/google-oauth.service.js";
 import { AccessTokenGuard } from "../dist/modules/auth/access-token.guard.js";
 import { RolesGuard } from "../dist/modules/auth/roles.guard.js";
 import { DiscoveryController } from "../dist/modules/discovery/discovery.controller.js";
@@ -86,6 +87,20 @@ async function start({ trusted = false, mode = "test" } = {}) {
       AccessTokenGuard,
       RolesGuard,
       { provide: AuthService, useValue: auth },
+      {
+        // The Google flow is not exercised here; the stub only satisfies the
+        // AuthController dependency so throttling can be proven on its routes.
+        provide: GoogleOAuthService,
+        useValue: {
+          isConfigured: () => false,
+          startUrl: () => {
+            throw new Error("not used in this test");
+          },
+          completeSignIn: async () => {
+            throw new Error("not used in this test");
+          },
+        },
+      },
       {
         provide: DiscoveryService,
         useValue: {

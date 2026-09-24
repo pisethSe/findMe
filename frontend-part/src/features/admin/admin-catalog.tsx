@@ -1,4 +1,6 @@
 "use client";
+
+import { Localized } from "../preferences/translated-text";
 import type {
   AdminAmenityDto,
   AdminInstitutionDto,
@@ -87,99 +89,102 @@ export function AdminCatalog({ kind }: { kind: Kind }) {
     };
   }, [kind, page, attempt]);
   return (
-    <main className="workspace-page" lang="en">
-      <header className="workspace-header">
-        <BrandMark />
-        <Link href="/search">Browse student rentals</Link>
-      </header>
-      <section className={`workspace-content ${styles.scope}`}>
-        <AdminNavigation />
-        <h1 ref={heading} tabIndex={-1}>
-          Manage {kind}
-        </h1>
-        <p>
-          Maintain Khmer and English names. Deactivation hides a record from new
-          selections and preserves existing data.
-        </p>
-        <p role="status">{notice}</p>
-        {denied ? (
-          <p role="alert">
-            Administrator access is required. <Link href="/login">Sign in</Link>
+    <Localized>
+      <main className="workspace-page" lang="en">
+        <header className="workspace-header">
+          <BrandMark />
+          <Link href="/search">Browse student rentals</Link>
+        </header>
+        <section className={`workspace-content ${styles.scope}`}>
+          <AdminNavigation />
+          <h1 ref={heading} tabIndex={-1}>
+            Manage {kind}
+          </h1>
+          <p>
+            Maintain Khmer and English names. Deactivation hides a record from
+            new selections and preserves existing data.
           </p>
-        ) : (
-          <>
-            {error ? (
-              <div role="alert">
-                <p>{error}</p>
-                <button onClick={() => setAttempt((n) => n + 1)}>
-                  Retry loading
-                </button>
-              </div>
-            ) : !rows ? (
-              <p role="status">Loading catalog…</p>
-            ) : (
-              <>
-                <button onClick={() => setEditing("new")}>
-                  Add {kind === "institutions" ? "institution" : "amenity"}
-                </button>
-                {editing ? (
-                  <CatalogEditor
-                    key={typeof editing === "string" ? "new" : editing.id}
-                    kind={kind}
-                    row={editing === "new" ? null : editing}
-                    onCancel={() => setEditing(null)}
-                    onSaved={() => {
-                      setEditing(null);
-                      setAttempt((n) => n + 1);
-                      setNotice("Catalog saved and audit record created.");
-                      heading.current?.focus();
-                    }}
-                    onDenied={() => {
-                      setEditing(null);
-                      setRows(null);
-                      setDenied(true);
-                    }}
-                  />
-                ) : null}
-                {rows.length === 0 ? (
-                  <p>No catalog records yet. Add the first record above.</p>
-                ) : (
-                  <ul className={styles.list}>
-                    {rows.map((row) => (
-                      <li key={row.id} className={styles.row}>
-                        <h2>{row.nameEn}</h2>
-                        <p lang="km">{row.nameKm}</p>
-                        <p>{row.isActive ? "Active" : "Inactive"}</p>
-                        <button onClick={() => setEditing(row)}>
-                          Edit {row.nameEn}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <nav className={styles.toolbar} aria-label="Catalog pages">
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => setPage((n) => n - 1)}
-                  >
-                    Previous
+          <p role="status">{notice}</p>
+          {denied ? (
+            <p role="alert">
+              Administrator access is required.{" "}
+              <Link href="/login">Sign in</Link>
+            </p>
+          ) : (
+            <>
+              {error ? (
+                <div role="alert">
+                  <p>{error}</p>
+                  <button onClick={() => setAttempt((n) => n + 1)}>
+                    Retry loading
                   </button>
-                  <span>
-                    Page {page} of {Math.max(1, meta?.totalPages ?? 1)}
-                  </span>
-                  <button
-                    disabled={page >= (meta?.totalPages ?? 1)}
-                    onClick={() => setPage((n) => n + 1)}
-                  >
-                    Next
+                </div>
+              ) : !rows ? (
+                <p role="status">Loading catalog…</p>
+              ) : (
+                <>
+                  <button onClick={() => setEditing("new")}>
+                    Add {kind === "institutions" ? "institution" : "amenity"}
                   </button>
-                </nav>
-              </>
-            )}
-          </>
-        )}
-      </section>
-    </main>
+                  {editing ? (
+                    <CatalogEditor
+                      key={typeof editing === "string" ? "new" : editing.id}
+                      kind={kind}
+                      row={editing === "new" ? null : editing}
+                      onCancel={() => setEditing(null)}
+                      onSaved={() => {
+                        setEditing(null);
+                        setAttempt((n) => n + 1);
+                        setNotice("Catalog saved and audit record created.");
+                        heading.current?.focus();
+                      }}
+                      onDenied={() => {
+                        setEditing(null);
+                        setRows(null);
+                        setDenied(true);
+                      }}
+                    />
+                  ) : null}
+                  {rows.length === 0 ? (
+                    <p>No catalog records yet. Add the first record above.</p>
+                  ) : (
+                    <ul className={styles.list}>
+                      {rows.map((row) => (
+                        <li key={row.id} className={styles.row}>
+                          <h2>{row.nameEn}</h2>
+                          <p lang="km">{row.nameKm}</p>
+                          <p>{row.isActive ? "Active" : "Inactive"}</p>
+                          <button onClick={() => setEditing(row)}>
+                            Edit {row.nameEn}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <nav className={styles.toolbar} aria-label="Catalog pages">
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => setPage((n) => n - 1)}
+                    >
+                      Previous
+                    </button>
+                    <span>
+                      Page {page} of {Math.max(1, meta?.totalPages ?? 1)}
+                    </span>
+                    <button
+                      disabled={page >= (meta?.totalPages ?? 1)}
+                      onClick={() => setPage((n) => n + 1)}
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </>
+              )}
+            </>
+          )}
+        </section>
+      </main>
+    </Localized>
   );
 }
 function CatalogEditor({
@@ -252,149 +257,151 @@ function CatalogEditor({
   const institution = row && "slug" in row ? row : null;
   const amenity = row && "key" in row ? row : null;
   return (
-    <form className={styles.decision} onSubmit={submit} aria-busy={pending}>
-      <h2>
-        {row ? "Edit" : "Add"}{" "}
-        {kind === "institutions" ? "institution" : "amenity"}
-      </h2>
-      <fieldset disabled={pending} className={styles.fields}>
-        <label>
-          English name
-          <input
-            ref={first}
-            name="nameEn"
-            required
-            maxLength={120}
-            defaultValue={row?.nameEn ?? ""}
-          />
-        </label>
-        <label>
-          Khmer name
-          <input
-            name="nameKm"
-            lang="km"
-            required
-            maxLength={120}
-            defaultValue={row?.nameKm ?? ""}
-          />
-        </label>
-        {kind === "institutions" ? (
-          <>
-            <label>
-              URL slug
-              <input
-                name="slug"
-                required
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                maxLength={160}
-                defaultValue={institution?.slug ?? ""}
-              />
-            </label>
-            <label>
-              Institution type
-              <select
-                name="type"
-                defaultValue={institution?.type ?? "UNIVERSITY"}
-              >
-                {["UNIVERSITY", "COLLEGE", "SCHOOL", "OTHER"].map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Address
-              <input
-                name="addressEn"
-                required
-                maxLength={500}
-                defaultValue={institution?.addressEn ?? ""}
-              />
-            </label>
-            <label>
-              City
-              <input
-                name="city"
-                required
-                maxLength={120}
-                defaultValue={institution?.city ?? "Phnom Penh"}
-              />
-            </label>
-            <label>
-              Latitude
-              <input
-                name="latitude"
-                type="number"
-                step="0.000001"
-                min={-90}
-                max={90}
-                required
-                defaultValue={institution?.latitude ?? ""}
-              />
-            </label>
-            <label>
-              Longitude
-              <input
-                name="longitude"
-                type="number"
-                step="0.000001"
-                min={-180}
-                max={180}
-                required
-                defaultValue={institution?.longitude ?? ""}
-              />
-            </label>
-          </>
-        ) : (
-          <>
-            <label>
-              Stable key
-              <input
-                name="key"
-                required
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                maxLength={80}
-                defaultValue={amenity?.key ?? ""}
-              />
-            </label>
-            <label>
-              Category
-              <input
-                name="category"
-                maxLength={80}
-                defaultValue={amenity?.category ?? ""}
-              />
-            </label>
-            <label>
-              Sort order
-              <input
-                name="sortOrder"
-                type="number"
-                min={0}
-                max={10000}
-                required
-                defaultValue={amenity?.sortOrder ?? 0}
-              />
-            </label>
-          </>
-        )}
-        <label>
-          <input
-            type="checkbox"
-            name="isActive"
-            defaultChecked={row?.isActive ?? true}
-          />{" "}
-          Active
-        </label>
-      </fieldset>
-      {error ? <p role="alert">{error}</p> : null}
-      <div className={styles.toolbar}>
-        <button disabled={pending}>
-          {pending ? "Saving…" : "Save catalog record"}
-        </button>
-        <button type="button" disabled={pending} onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-    </form>
+    <Localized>
+      <form className={styles.decision} onSubmit={submit} aria-busy={pending}>
+        <h2>
+          {row ? "Edit" : "Add"}{" "}
+          {kind === "institutions" ? "institution" : "amenity"}
+        </h2>
+        <fieldset disabled={pending} className={styles.fields}>
+          <label>
+            English name
+            <input
+              ref={first}
+              name="nameEn"
+              required
+              maxLength={120}
+              defaultValue={row?.nameEn ?? ""}
+            />
+          </label>
+          <label>
+            Khmer name
+            <input
+              name="nameKm"
+              lang="km"
+              required
+              maxLength={120}
+              defaultValue={row?.nameKm ?? ""}
+            />
+          </label>
+          {kind === "institutions" ? (
+            <>
+              <label>
+                URL slug
+                <input
+                  name="slug"
+                  required
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  maxLength={160}
+                  defaultValue={institution?.slug ?? ""}
+                />
+              </label>
+              <label>
+                Institution type
+                <select
+                  name="type"
+                  defaultValue={institution?.type ?? "UNIVERSITY"}
+                >
+                  {["UNIVERSITY", "COLLEGE", "SCHOOL", "OTHER"].map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Address
+                <input
+                  name="addressEn"
+                  required
+                  maxLength={500}
+                  defaultValue={institution?.addressEn ?? ""}
+                />
+              </label>
+              <label>
+                City
+                <input
+                  name="city"
+                  required
+                  maxLength={120}
+                  defaultValue={institution?.city ?? "Phnom Penh"}
+                />
+              </label>
+              <label>
+                Latitude
+                <input
+                  name="latitude"
+                  type="number"
+                  step="0.000001"
+                  min={-90}
+                  max={90}
+                  required
+                  defaultValue={institution?.latitude ?? ""}
+                />
+              </label>
+              <label>
+                Longitude
+                <input
+                  name="longitude"
+                  type="number"
+                  step="0.000001"
+                  min={-180}
+                  max={180}
+                  required
+                  defaultValue={institution?.longitude ?? ""}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label>
+                Stable key
+                <input
+                  name="key"
+                  required
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  maxLength={80}
+                  defaultValue={amenity?.key ?? ""}
+                />
+              </label>
+              <label>
+                Category
+                <input
+                  name="category"
+                  maxLength={80}
+                  defaultValue={amenity?.category ?? ""}
+                />
+              </label>
+              <label>
+                Sort order
+                <input
+                  name="sortOrder"
+                  type="number"
+                  min={0}
+                  max={10000}
+                  required
+                  defaultValue={amenity?.sortOrder ?? 0}
+                />
+              </label>
+            </>
+          )}
+          <label>
+            <input
+              type="checkbox"
+              name="isActive"
+              defaultChecked={row?.isActive ?? true}
+            />{" "}
+            Active
+          </label>
+        </fieldset>
+        {error ? <p role="alert">{error}</p> : null}
+        <div className={styles.toolbar}>
+          <button disabled={pending}>
+            {pending ? "Saving…" : "Save catalog record"}
+          </button>
+          <button type="button" disabled={pending} onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </Localized>
   );
 }

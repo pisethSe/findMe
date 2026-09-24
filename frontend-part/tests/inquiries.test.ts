@@ -83,5 +83,7 @@ test("inquiry form limits and status actions express the server workflow", () =>
   assert.equal(inquiryStatusLabel("RESPONDED"), "Marked replied");
   assert.equal(safeStudentReturnPath("/inquiries"), "/inquiries");
   assert.equal(studentPostAuthPath("/search", "/inquiries"), "/inquiries");
+  assert.equal(studentPostAuthPath("/", "/inquiries"), "/inquiries");
+  assert.equal(studentPostAuthPath("/", null), "/");
   assert.equal(studentPostAuthPath("/landlord", "/inquiries"), "/landlord");
 });

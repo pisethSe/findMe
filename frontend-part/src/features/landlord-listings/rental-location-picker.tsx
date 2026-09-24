@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import { useEffect, useRef, useState } from "react";
 
 import { resolveGoogleMapsBrowserConfig } from "../../config/google-maps";
@@ -235,61 +236,63 @@ export function RentalLocationPicker({
 
   const isAvailable = availableUnits > 0;
   return (
-    <section
-      className="rental-location-preview"
-      aria-labelledby="private-map-title"
-    >
-      <div className="private-map-heading">
-        <div>
-          <h3 id="private-map-title">Private map preview</h3>
-          <p>Only you can see this pin until the listing is published.</p>
+    <Localized>
+      <section
+        className="rental-location-preview"
+        aria-labelledby="private-map-title"
+      >
+        <div className="private-map-heading">
+          <div>
+            <h3 id="private-map-title">Private map preview</h3>
+            <p>Only you can see this pin until the listing is published.</p>
+          </div>
+          <span className="private-preview-label">Not public</span>
         </div>
-        <span className="private-preview-label">Not public</span>
-      </div>
 
-      <div
-        ref={autocompleteContainerRef}
-        className="place-autocomplete-host"
-        data-visible={state === "ready"}
-      />
-      <div className="location-map-frame">
-        <div className="location-map-fallback" aria-hidden="true">
-          <span className="fallback-road fallback-road-one" />
-          <span className="fallback-road fallback-road-two" />
-          {location ? (
-            <span className="private-map-pin" data-available={isAvailable}>
-              <strong aria-hidden="true">{isAvailable ? "✓" : "×"}</strong>
-              <small>{isAvailable ? "Available" : "Unavailable"}</small>
-            </span>
-          ) : (
-            <span className="private-map-target">Choose a location</span>
-          )}
-        </div>
         <div
-          ref={mapContainerRef}
-          className="location-live-map"
+          ref={autocompleteContainerRef}
+          className="place-autocomplete-host"
           data-visible={state === "ready"}
-          aria-hidden="true"
         />
-        {state === "loading" ? (
-          <p className="location-map-status" role="status">
-            Loading the location picker…
-          </p>
-        ) : null}
-        {state === "fallback" || state === "error" ? (
-          <p className="location-map-status">
-            {state === "error"
-              ? "Map unavailable. Enter coordinates below to keep going."
-              : "Map preview is off. Enter coordinates below to keep going."}
-          </p>
-        ) : null}
-      </div>
-      <p className="location-accessible-summary" role="status">
-        {location
-          ? `Selected coordinates ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}. ${isAvailable ? `${availableUnits} rooms available.` : "Currently unavailable."}`
-          : "No rental location selected yet."}
-      </p>
-    </section>
+        <div className="location-map-frame">
+          <div className="location-map-fallback" aria-hidden="true">
+            <span className="fallback-road fallback-road-one" />
+            <span className="fallback-road fallback-road-two" />
+            {location ? (
+              <span className="private-map-pin" data-available={isAvailable}>
+                <strong aria-hidden="true">{isAvailable ? "✓" : "×"}</strong>
+                <small>{isAvailable ? "Available" : "Unavailable"}</small>
+              </span>
+            ) : (
+              <span className="private-map-target">Choose a location</span>
+            )}
+          </div>
+          <div
+            ref={mapContainerRef}
+            className="location-live-map"
+            data-visible={state === "ready"}
+            aria-hidden="true"
+          />
+          {state === "loading" ? (
+            <p className="location-map-status" role="status">
+              Loading the location picker…
+            </p>
+          ) : null}
+          {state === "fallback" || state === "error" ? (
+            <p className="location-map-status">
+              {state === "error"
+                ? "Map unavailable. Enter coordinates below to keep going."
+                : "Map preview is off. Enter coordinates below to keep going."}
+            </p>
+          ) : null}
+        </div>
+        <p className="location-accessible-summary" role="status">
+          {location
+            ? `Selected coordinates ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}. ${isAvailable ? `${availableUnits} rooms available.` : "Currently unavailable."}`
+            : "No rental location selected yet."}
+        </p>
+      </section>
+    </Localized>
   );
 }
 

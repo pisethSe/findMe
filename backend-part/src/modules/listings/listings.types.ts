@@ -160,6 +160,11 @@ export interface LandlordListingDto {
   availableFrom: string | null;
   availableUnits: number;
   availabilityConfirmedAt: string | null;
+  availabilityFreshness: {
+    state: "FRESH" | "DUE" | "STALE" | "UNCONFIRMED";
+    remindAt: string | null;
+    expiresAt: string | null;
+  };
   contactPreference: ContactPreference;
   status: ListingStatus;
   publishedAt: string | null;

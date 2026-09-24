@@ -373,3 +373,12 @@ map/list handoff, and scrolling the active institution option. The 82 frontend
 unit tests, formatting, lint, type-checking, and production build also pass.
 These are local viewport-emulation checks with isolated API/image fixtures;
 physical mobile devices, Safari, and live Google Maps rendering were not tested.
+
+
+## Availability age limit
+
+Phase 4 Step 3 adds [stale-listing controls](STALE-LISTINGS.md): dashboard
+reminders after 7 days and public eligibility for confirmations younger than
+14 days. Owned listing data and private history are retained. Explicit owner
+confirmation may keep the same room count, subject to entitlement and moderation
+rules. See the linked policy for cache timing and error behavior.

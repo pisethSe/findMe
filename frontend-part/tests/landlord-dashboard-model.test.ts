@@ -38,6 +38,11 @@ function listing(
     availableFrom: null,
     availableUnits: 2,
     availabilityConfirmedAt: "2026-09-04T00:00:00.000Z",
+    availabilityFreshness: {
+      state: "UNCONFIRMED",
+      remindAt: null,
+      expiresAt: null,
+    },
     contactPreference: "IN_APP_ONLY",
     status: "DRAFT",
     publishedAt: null,

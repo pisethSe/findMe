@@ -1,4 +1,8 @@
 import {
+  publicListingWhere,
+  availabilityCutoff,
+} from "../listings/availability-policy.js";
+import {
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -38,15 +42,7 @@ const landlordSelect = {
     },
   },
 } satisfies Prisma.InquirySelect;
-const publicListingWhere = {
-  status: "PUBLISHED",
-  deletedAt: null,
-  availableUnits: { gt: 0 },
-  publishedAt: { not: null },
-  availabilityConfirmedAt: { not: null },
-  property: { deletedAt: null },
-  landlord: { deletedAt: null, accountStatus: "ACTIVE" },
-} satisfies Prisma.ListingWhereInput;
+
 type PageInput = { page: number; pageSize: number };
 
 @Injectable()
@@ -84,7 +80,7 @@ export class InquiriesRepository {
         });
         const listings = await tx.listing.findMany({
           where: {
-            ...publicListingWhere,
+            ...publicListingWhere(),
             id: { in: rows.map((row) => row.listingId) },
           },
           select: { id: true, slug: true, titleKm: true, titleEn: true },
@@ -139,7 +135,9 @@ export class InquiriesRepository {
         SELECT l.landlord_id AS "landlordId" FROM listings l
         JOIN properties p ON p.id=l.property_id JOIN users u ON u.id=l.landlord_id
         WHERE l.id=${listingId}::uuid AND l.status='published' AND l.deleted_at IS NULL
-          AND l.available_units>0 AND l.published_at IS NOT NULL AND l.availability_confirmed_at IS NOT NULL
+          AND l.available_units>0 AND l.published_at IS NOT NULL
+          AND l.availability_confirmed_at > ${availabilityCutoff()}
+          AND l.availability_confirmed_at <= clock_timestamp()
           AND p.deleted_at IS NULL AND u.deleted_at IS NULL AND u.account_status='active'
         FOR SHARE OF l,p,u`);
         const target = targets[0];
@@ -182,7 +180,7 @@ export class InquiriesRepository {
     if (result.created) await this.limiter.record(studentId, result.inquiry);
     // Replay may follow withdrawal: use the same private history projection.
     const listing = await this.prisma.listing.findFirst({
-      where: { ...publicListingWhere, id: listingId },
+      where: { ...publicListingWhere(), id: listingId },
       select: { id: true, slug: true, titleKm: true, titleEn: true },
     });
     const row = result.inquiry;

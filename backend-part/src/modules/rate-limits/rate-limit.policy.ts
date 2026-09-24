@@ -16,6 +16,8 @@ export interface RateLimitPolicy {
 // budgets remain enforced separately against committed PostgreSQL records.
 export const RATE_LIMIT_POLICIES = {
   registration: { ip: { limit: 10, seconds: 3600 }, failClosed: true },
+  oauthStart: { ip: { limit: 60, seconds: 300 }, failClosed: true },
+  oauthCallback: { ip: { limit: 60, seconds: 300 }, failClosed: true },
   login: {
     ip: { limit: 30, seconds: 900 },
     email: { limit: 10, seconds: 900 },

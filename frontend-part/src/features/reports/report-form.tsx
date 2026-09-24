@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type { ReportReason } from "@findme/contracts";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
@@ -72,71 +73,75 @@ export function ReportForm({
     next: `/rentals/${encodeURIComponent(slug)}`,
   });
   return (
-    <details className={styles.section}>
-      <summary>Report this rental</summary>
-      <p>
-        Tell us about inaccurate or suspicious information. Reports are private
-        and are not shared with the landlord. Sign-in is required.
-      </p>
-      {sent ? (
-        <p role="status">
-          Your report has been received for review. If you already had an open
-          report for this rental, we kept that report.
+    <Localized>
+      <details className={styles.section}>
+        <summary>Report this rental</summary>
+        <p>
+          Tell us about inaccurate or suspicious information. Reports are
+          private and are not shared with the landlord. Sign-in is required.
         </p>
-      ) : (
-        <form onSubmit={submit} aria-busy={pending}>
-          <label htmlFor="report-reason">Reason</label>
-          <select
-            id="report-reason"
-            value={reason}
-            onChange={(event) => setReason(event.target.value as ReportReason)}
-            disabled={pending || unavailable}
-          >
-            {reasons.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <label htmlFor="report-details">Details (optional)</label>
-          <textarea
-            id="report-details"
-            value={details}
-            onChange={(event) => setDetails(event.target.value)}
-            rows={4}
-            maxLength={2000}
-            disabled={pending || unavailable}
-            aria-describedby="report-help"
-          />
-          <p id="report-help" className={styles.help}>
-            Describe what is wrong, up to 2,000 characters. Do not include
-            passwords, payment details, or other sensitive information.
+        {sent ? (
+          <p role="status">
+            Your report has been received for review. If you already had an open
+            report for this rental, we kept that report.
           </p>
-          {error ? (
-            <p role="alert" className={styles.error}>
-              {error}
+        ) : (
+          <form onSubmit={submit} aria-busy={pending}>
+            <label htmlFor="report-reason">Reason</label>
+            <select
+              id="report-reason"
+              value={reason}
+              onChange={(event) =>
+                setReason(event.target.value as ReportReason)
+              }
+              disabled={pending || unavailable}
+            >
+              {reasons.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="report-details">Details (optional)</label>
+            <textarea
+              id="report-details"
+              value={details}
+              onChange={(event) => setDetails(event.target.value)}
+              rows={4}
+              maxLength={2000}
+              disabled={pending || unavailable}
+              aria-describedby="report-help"
+            />
+            <p id="report-help" className={styles.help}>
+              Describe what is wrong, up to 2,000 characters. Do not include
+              passwords, payment details, or other sensitive information.
             </p>
-          ) : null}
-          {guest ? (
-            <p role="alert">
-              <Link href={`/login?${returnQuery}`}>
-                Sign in to report this rental
-              </Link>
-            </p>
-          ) : null}
-          <button
-            className={styles.submit}
-            disabled={pending || unavailable}
-            type="submit"
-          >
-            {pending
-              ? "Submitting report…"
-              : unavailable
-                ? "Rental unavailable"
-                : "Submit report"}
-          </button>
-        </form>
-      )}
-    </details>
+            {error ? (
+              <p role="alert" className={styles.error}>
+                {error}
+              </p>
+            ) : null}
+            {guest ? (
+              <p role="alert">
+                <Link href={`/login?${returnQuery}`}>
+                  Sign in to report this rental
+                </Link>
+              </p>
+            ) : null}
+            <button
+              className={styles.submit}
+              disabled={pending || unavailable}
+              type="submit"
+            >
+              {pending
+                ? "Submitting report…"
+                : unavailable
+                  ? "Rental unavailable"
+                  : "Submit report"}
+            </button>
+          </form>
+        )}
+      </details>
+    </Localized>
   );
 }

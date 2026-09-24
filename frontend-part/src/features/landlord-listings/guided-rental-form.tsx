@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type {
   AmenityDto,
   LandlordListingDto,
@@ -49,6 +50,7 @@ import {
   type RentalFormValues,
 } from "./listing-form-model";
 import { RentalLocationPicker } from "./rental-location-picker";
+import { ROOM_TYPE_OPTIONS } from "../search/room-type-options";
 
 interface LocalPhoto {
   id: string;
@@ -409,22 +411,29 @@ export function GuidedRentalForm({ listingId }: { listingId?: string }) {
     );
   }
 
-  if (loading) return <RentalFormLoading />;
+  if (loading)
+    return (
+      <Localized>
+        <RentalFormLoading />
+      </Localized>
+    );
   if (loadError) {
     return (
-      <RentalFormShell>
-        <section className="rental-form-message-panel" role="alert">
-          <h1>Rental form unavailable</h1>
-          <p>{loadError}</p>
-          <button
-            className="rental-primary-button"
-            type="button"
-            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
-          >
-            Try again
-          </button>
-        </section>
-      </RentalFormShell>
+      <Localized>
+        <RentalFormShell>
+          <section className="rental-form-message-panel" role="alert">
+            <h1>Rental form unavailable</h1>
+            <p>{loadError}</p>
+            <button
+              className="rental-primary-button"
+              type="button"
+              onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+            >
+              Try again
+            </button>
+          </section>
+        </RentalFormShell>
+      </Localized>
     );
   }
   if (
@@ -433,271 +442,279 @@ export function GuidedRentalForm({ listingId }: { listingId?: string }) {
     !entitlement.capabilities.canCreateListings
   ) {
     return (
-      <RentalFormShell>
-        <section className="rental-form-message-panel" role="alert">
-          <p className="rental-state-label">Access ended</p>
-          <h1>Your saved rental data is still here.</h1>
-          <p>
-            New rental creation is currently restricted. You can still open your
-            landlord workspace and read existing rentals and inquiries.
-          </p>
-          <Link className="rental-primary-button" href="/landlord">
-            Open landlord workspace
-          </Link>
-        </section>
-      </RentalFormShell>
+      <Localized>
+        <RentalFormShell>
+          <section className="rental-form-message-panel" role="alert">
+            <p className="rental-state-label">Access ended</p>
+            <h1>Your saved rental data is still here.</h1>
+            <p>
+              New rental creation is currently restricted. You can still open
+              your landlord workspace and read existing rentals and inquiries.
+            </p>
+            <Link className="rental-primary-button" href="/landlord">
+              Open landlord workspace
+            </Link>
+          </section>
+        </RentalFormShell>
+      </Localized>
     );
   }
   if (completion) {
     return (
-      <RentalFormShell>
-        <section
-          className="rental-form-message-panel rental-success-panel"
-          role="status"
-        >
-          <p className="rental-state-label">Rental saved</p>
-          <h1>
-            {completion.submitted
-              ? "Your rental is ready for review."
-              : existingListing
-                ? "Your rental changes are saved."
-                : "Your draft is ready when you are."}
-          </h1>
-          <p>
-            {completion.submitted
-              ? "It remains private until an authorized moderator publishes it."
-              : existingListing
-                ? "The dashboard now shows the latest saved details."
-                : "You can return to complete or submit it later."}
-          </p>
-          <dl className="rental-completion-summary">
-            <div>
-              <dt>Status</dt>
-              <dd>{formatListingStatus(completion.listing.status)}</dd>
+      <Localized>
+        <RentalFormShell>
+          <section
+            className="rental-form-message-panel rental-success-panel"
+            role="status"
+          >
+            <p className="rental-state-label">Rental saved</p>
+            <h1>
+              {completion.submitted
+                ? "Your rental is ready for review."
+                : existingListing
+                  ? "Your rental changes are saved."
+                  : "Your draft is ready when you are."}
+            </h1>
+            <p>
+              {completion.submitted
+                ? "It remains private until an authorized moderator publishes it."
+                : existingListing
+                  ? "The dashboard now shows the latest saved details."
+                  : "You can return to complete or submit it later."}
+            </p>
+            <dl className="rental-completion-summary">
+              <div>
+                <dt>Status</dt>
+                <dd>{formatListingStatus(completion.listing.status)}</dd>
+              </div>
+              <div>
+                <dt>Availability</dt>
+                <dd>
+                  {completion.listing.availableUnits} of{" "}
+                  {completion.listing.property.totalUnits} rooms
+                </dd>
+              </div>
+              <div>
+                <dt>Photos</dt>
+                <dd>{completion.photoCount} uploaded</dd>
+              </div>
+            </dl>
+            <div className="rental-success-actions">
+              <Link className="rental-primary-button" href="/landlord">
+                Open landlord workspace
+              </Link>
+              {!existingListing ? (
+                <button
+                  className="rental-secondary-button"
+                  type="button"
+                  onClick={() => window.location.reload()}
+                >
+                  Add another rental
+                </button>
+              ) : null}
             </div>
-            <div>
-              <dt>Availability</dt>
-              <dd>
-                {completion.listing.availableUnits} of{" "}
-                {completion.listing.property.totalUnits} rooms
-              </dd>
-            </div>
-            <div>
-              <dt>Photos</dt>
-              <dd>{completion.photoCount} uploaded</dd>
-            </div>
-          </dl>
-          <div className="rental-success-actions">
-            <Link className="rental-primary-button" href="/landlord">
-              Open landlord workspace
-            </Link>
-            {!existingListing ? (
-              <button
-                className="rental-secondary-button"
-                type="button"
-                onClick={() => window.location.reload()}
-              >
-                Add another rental
-              </button>
-            ) : null}
-          </div>
-        </section>
-      </RentalFormShell>
+          </section>
+        </RentalFormShell>
+      </Localized>
     );
   }
   if (createdListingId && saveError) {
     return (
-      <RentalFormShell>
-        <section className="rental-form-message-panel" role="alert">
-          <p className="rental-state-label">Draft saved</p>
-          <h1>Your rental details are safe.</h1>
-          <p>{saveError}</p>
-          <p>
-            {uploadedPhotoIds.size} of {photos.length} photos uploaded. Keep
-            this page open to retry the remaining files.
-          </p>
-          <div className="rental-success-actions">
-            <button
-              className="rental-primary-button"
-              type="button"
-              onClick={() => void retryPhotoUpload()}
-              disabled={pending}
-            >
-              {pending ? "Retrying upload…" : "Retry photo upload"}
-            </button>
-            <Link className="rental-secondary-button" href="/landlord">
-              Return to workspace
-            </Link>
-          </div>
-        </section>
-      </RentalFormShell>
+      <Localized>
+        <RentalFormShell>
+          <section className="rental-form-message-panel" role="alert">
+            <p className="rental-state-label">Draft saved</p>
+            <h1>Your rental details are safe.</h1>
+            <p>{saveError}</p>
+            <p>
+              {uploadedPhotoIds.size} of {photos.length} photos uploaded. Keep
+              this page open to retry the remaining files.
+            </p>
+            <div className="rental-success-actions">
+              <button
+                className="rental-primary-button"
+                type="button"
+                onClick={() => void retryPhotoUpload()}
+                disabled={pending}
+              >
+                {pending ? "Retrying upload…" : "Retry photo upload"}
+              </button>
+              <Link className="rental-secondary-button" href="/landlord">
+                Return to workspace
+              </Link>
+            </div>
+          </section>
+        </RentalFormShell>
+      </Localized>
     );
   }
 
   return (
-    <RentalFormShell>
-      <div className="guided-rental-layout">
-        <aside
-          className="rental-step-sidebar"
-          aria-label="Rental setup progress"
-        >
-          <p className="rental-sidebar-label">
-            {existingListing ? "Edit rental" : "New rental"}
-          </p>
-          <h1 id="rental-form-title">
-            {existingListing
-              ? "Keep your rental details accurate."
-              : "Add the details students need."}
-          </h1>
-          <p>
-            {existingListing
-              ? "Changes stay private when the rental is not published. Availability is managed from the dashboard."
-              : "Save a private draft from the review step. Nothing appears in student search before moderation and publication."}
-          </p>
-          <ol>
-            {STEPS.map((item) => (
-              <li
-                key={item.number}
-                data-state={
-                  item.number === step
-                    ? "current"
-                    : item.number < step
-                      ? "complete"
-                      : "upcoming"
-                }
-                aria-current={item.number === step ? "step" : undefined}
-              >
-                <span aria-hidden="true">
-                  {item.number < step ? "✓" : item.number}
-                </span>
-                <div>
-                  <strong>{item.label}</strong>
-                  <small lang="km">{item.labelKm}</small>
-                </div>
-              </li>
-            ))}
-          </ol>
-          {entitlement?.accessEndsAt ? (
-            <p className="rental-trial-note">
-              Trial access ends{" "}
-              <time dateTime={entitlement.accessEndsAt}>
-                {formatPhnomPenhDate(entitlement.accessEndsAt)}
-              </time>
-              .
+    <Localized>
+      <RentalFormShell>
+        <div className="guided-rental-layout">
+          <aside
+            className="rental-step-sidebar"
+            aria-label="Rental setup progress"
+          >
+            <p className="rental-sidebar-label">
+              {existingListing ? "Edit rental" : "New rental"}
             </p>
-          ) : null}
-        </aside>
-
-        <section
-          className="rental-form-surface"
-          aria-labelledby="rental-form-title"
-        >
-          <div className="rental-mobile-progress">
-            Step {step} of {STEPS.length}: {STEPS[step - 1]?.label}
-          </div>
-          <form onSubmit={(event) => event.preventDefault()} noValidate>
-            {step === 1 ? (
-              <RentalBasicsStep
-                values={values}
-                errors={errors}
-                availabilityLocked={Boolean(existingListing)}
-                updateField={updateField}
-              />
-            ) : null}
-            {step === 2 ? (
-              <RentalLocationStep
-                values={values}
-                errors={errors}
-                location={location}
-                availableUnits={availableUnits}
-                availabilityLocked={Boolean(existingListing)}
-                updateField={updateField}
-                updateLocation={updateLocation}
-              />
-            ) : null}
-            {step === 3 ? (
-              <RentalFacilitiesStep
-                values={values}
-                errors={errors}
-                amenities={amenities}
-                updateField={updateField}
-              />
-            ) : null}
-            {step === 4 ? (
-              <RentalReviewStep
-                values={values}
-                errors={errors}
-                amenities={amenities}
-                photos={photos}
-                existingPhotos={existingPhotos}
-                canManagePhotos={Boolean(
-                  entitlement?.capabilities.canCreateListings,
-                )}
-                onPhotoSelection={handlePhotoSelection}
-                removePhoto={removePhoto}
-                movePhoto={movePhoto}
-              />
-            ) : null}
-
-            {saveError ? (
-              <p className="form-message is-error" role="alert">
-                {saveError}
+            <h1 id="rental-form-title">
+              {existingListing
+                ? "Keep your rental details accurate."
+                : "Add the details students need."}
+            </h1>
+            <p>
+              {existingListing
+                ? "Changes stay private when the rental is not published. Availability is managed from the dashboard."
+                : "Save a private draft from the review step. Nothing appears in student search before moderation and publication."}
+            </p>
+            <ol>
+              {STEPS.map((item) => (
+                <li
+                  key={item.number}
+                  data-state={
+                    item.number === step
+                      ? "current"
+                      : item.number < step
+                        ? "complete"
+                        : "upcoming"
+                  }
+                  aria-current={item.number === step ? "step" : undefined}
+                >
+                  <span aria-hidden="true">
+                    {item.number < step ? "✓" : item.number}
+                  </span>
+                  <div>
+                    <strong>{item.label}</strong>
+                    <small lang="km">{item.labelKm}</small>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {entitlement?.accessEndsAt ? (
+              <p className="rental-trial-note">
+                Trial access ends{" "}
+                <time dateTime={entitlement.accessEndsAt}>
+                  {formatPhnomPenhDate(entitlement.accessEndsAt)}
+                </time>
+                .
               </p>
             ) : null}
-            <div className="rental-form-actions">
-              {step > 1 ? (
-                <button
-                  className="rental-secondary-button"
-                  type="button"
-                  onClick={goBack}
-                  disabled={pending}
-                >
-                  Back
-                </button>
-              ) : (
-                <Link className="rental-text-action" href="/landlord">
-                  Cancel
-                </Link>
-              )}
-              {step < 4 ? (
-                <button
-                  className="rental-primary-button"
-                  type="button"
-                  onClick={goForward}
-                >
-                  Continue
-                </button>
-              ) : (
-                <div className="rental-final-actions">
+          </aside>
+
+          <section
+            className="rental-form-surface"
+            aria-labelledby="rental-form-title"
+          >
+            <div className="rental-mobile-progress">
+              Step {step} of {STEPS.length}: {STEPS[step - 1]?.label}
+            </div>
+            <form onSubmit={(event) => event.preventDefault()} noValidate>
+              {step === 1 ? (
+                <RentalBasicsStep
+                  values={values}
+                  errors={errors}
+                  availabilityLocked={Boolean(existingListing)}
+                  updateField={updateField}
+                />
+              ) : null}
+              {step === 2 ? (
+                <RentalLocationStep
+                  values={values}
+                  errors={errors}
+                  location={location}
+                  availableUnits={availableUnits}
+                  availabilityLocked={Boolean(existingListing)}
+                  updateField={updateField}
+                  updateLocation={updateLocation}
+                />
+              ) : null}
+              {step === 3 ? (
+                <RentalFacilitiesStep
+                  values={values}
+                  errors={errors}
+                  amenities={amenities}
+                  updateField={updateField}
+                />
+              ) : null}
+              {step === 4 ? (
+                <RentalReviewStep
+                  values={values}
+                  errors={errors}
+                  amenities={amenities}
+                  photos={photos}
+                  existingPhotos={existingPhotos}
+                  canManagePhotos={Boolean(
+                    entitlement?.capabilities.canCreateListings,
+                  )}
+                  onPhotoSelection={handlePhotoSelection}
+                  removePhoto={removePhoto}
+                  movePhoto={movePhoto}
+                />
+              ) : null}
+
+              {saveError ? (
+                <p className="form-message is-error" role="alert">
+                  {saveError}
+                </p>
+              ) : null}
+              <div className="rental-form-actions">
+                {step > 1 ? (
                   <button
                     className="rental-secondary-button"
                     type="button"
-                    onClick={() => void handleSave(false)}
+                    onClick={goBack}
                     disabled={pending}
                   >
-                    {pending
-                      ? "Saving…"
-                      : existingListing
-                        ? "Save changes"
-                        : "Save draft"}
+                    Back
                   </button>
-                  {entitlement?.capabilities.canSubmitListings ? (
+                ) : (
+                  <Link className="rental-text-action" href="/landlord">
+                    Cancel
+                  </Link>
+                )}
+                {step < 4 ? (
+                  <button
+                    className="rental-primary-button"
+                    type="button"
+                    onClick={goForward}
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <div className="rental-final-actions">
                     <button
-                      className="rental-primary-button"
+                      className="rental-secondary-button"
                       type="button"
-                      onClick={() => void handleSave(true)}
+                      onClick={() => void handleSave(false)}
                       disabled={pending}
                     >
-                      {pending ? "Saving…" : "Submit for review"}
+                      {pending
+                        ? "Saving…"
+                        : existingListing
+                          ? "Save changes"
+                          : "Save draft"}
                     </button>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          </form>
-        </section>
-      </div>
-    </RentalFormShell>
+                    {entitlement?.capabilities.canSubmitListings ? (
+                      <button
+                        className="rental-primary-button"
+                        type="button"
+                        onClick={() => void handleSave(true)}
+                        disabled={pending}
+                      >
+                        {pending ? "Saving…" : "Submit for review"}
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            </form>
+          </section>
+        </div>
+      </RentalFormShell>
+    </Localized>
   );
 }
 
@@ -708,157 +725,162 @@ function RentalBasicsStep({
   updateField,
 }: StepProps & { availabilityLocked: boolean }) {
   return (
-    <fieldset className="rental-step-fieldset">
-      <legend>
-        <span lang="km">ប្រាប់យើងអំពីកន្លែងជួល</span>
-        <strong>Start with the rental basics</strong>
-      </legend>
-      <p className="rental-step-intro">
-        Use a name students will recognize, then describe the room offer and
-        current capacity.
-      </p>
-      <div className="rental-field">
-        <label htmlFor="propertyName">Property or rental name</label>
-        <input
-          id="propertyName"
-          value={values.propertyName}
-          onChange={(event) => updateField("propertyName", event.target.value)}
-          maxLength={180}
-          autoComplete="organization"
-          aria-invalid={Boolean(errors.propertyName)}
-          aria-describedby={errorId("propertyName", errors)}
-        />
-        <FieldError field="propertyName" errors={errors} />
-      </div>
-      <div className="rental-field-grid">
+    <Localized>
+      <fieldset className="rental-step-fieldset">
+        <legend>
+          <span lang="km">ប្រាប់យើងអំពីកន្លែងជួល</span>
+          <strong>Start with the rental basics</strong>
+        </legend>
+        <p className="rental-step-intro">
+          Use a name students will recognize, then describe the room offer and
+          current capacity.
+        </p>
         <div className="rental-field">
-          <label htmlFor="titleKm">Listing title in Khmer</label>
+          <label htmlFor="propertyName">Property or rental name</label>
           <input
-            id="titleKm"
-            lang="km"
-            value={values.titleKm}
-            onChange={(event) => updateField("titleKm", event.target.value)}
-            maxLength={200}
-            placeholder="បន្ទប់ជួលនៅជិតសាកលវិទ្យាល័យ"
-            aria-invalid={Boolean(errors.titleKm)}
-            aria-describedby={errorId("titleKm", errors)}
+            id="propertyName"
+            value={values.propertyName}
+            onChange={(event) =>
+              updateField("propertyName", event.target.value)
+            }
+            maxLength={180}
+            autoComplete="organization"
+            aria-invalid={Boolean(errors.propertyName)}
+            aria-describedby={errorId("propertyName", errors)}
           />
-          <FieldError field="titleKm" errors={errors} />
+          <FieldError field="propertyName" errors={errors} />
         </div>
-        <div className="rental-field">
-          <label htmlFor="titleEn">Listing title in English</label>
-          <input
-            id="titleEn"
-            value={values.titleEn}
-            onChange={(event) => updateField("titleEn", event.target.value)}
-            maxLength={200}
-            placeholder="Student room near RUPP"
-          />
-        </div>
-      </div>
-      <div className="rental-field">
-        <label htmlFor="propertyType">Rental type</label>
-        <select
-          id="propertyType"
-          value={values.propertyType}
-          onChange={(event) =>
-            updateField(
-              "propertyType",
-              event.target.value as RentalFormValues["propertyType"],
-            )
-          }
-        >
-          <option value="ROOM">Room</option>
-          <option value="DORM_ROOM">Dorm room</option>
-          <option value="STUDIO">Studio</option>
-          <option value="APARTMENT">Apartment</option>
-          <option value="HOUSE">House</option>
-          <option value="OTHER_STUDENT_RENTAL">Other student rental</option>
-        </select>
-      </div>
-      <div className="rental-field-grid rental-field-grid-three">
-        <NumberField
-          id="totalUnits"
-          label="Total rooms or units"
-          value={values.totalUnits}
-          min="1"
-          errors={errors}
-          onChange={(value) => updateField("totalUnits", value)}
-        />
-        <NumberField
-          id="availableUnits"
-          label="Available now"
-          value={values.availableUnits}
-          min="0"
-          disabled={availabilityLocked}
-          errors={errors}
-          onChange={(value) => updateField("availableUnits", value)}
-        />
-        <div
-          className="availability-readout"
-          data-available={Number(values.availableUnits) > 0}
-        >
-          <span aria-hidden="true">
-            {Number(values.availableUnits) > 0 ? "✓" : "×"}
-          </span>
-          <div>
-            <strong>
-              {Number(values.availableUnits) > 0 ? "Available" : "Unavailable"}
-            </strong>
-            <small>This state also appears in the private map preview.</small>
+        <div className="rental-field-grid">
+          <div className="rental-field">
+            <label htmlFor="titleKm">Listing title in Khmer</label>
+            <input
+              id="titleKm"
+              lang="km"
+              value={values.titleKm}
+              onChange={(event) => updateField("titleKm", event.target.value)}
+              maxLength={200}
+              placeholder="បន្ទប់ជួលនៅជិតសាកលវិទ្យាល័យ"
+              aria-invalid={Boolean(errors.titleKm)}
+              aria-describedby={errorId("titleKm", errors)}
+            />
+            <FieldError field="titleKm" errors={errors} />
+          </div>
+          <div className="rental-field">
+            <label htmlFor="titleEn">Listing title in English</label>
+            <input
+              id="titleEn"
+              value={values.titleEn}
+              onChange={(event) => updateField("titleEn", event.target.value)}
+              maxLength={200}
+              placeholder="Student room near RUPP"
+            />
           </div>
         </div>
-      </div>
-      <div className="rental-field-grid rental-price-grid">
         <div className="rental-field">
-          <label htmlFor="monthlyPrice">Monthly rent</label>
-          <input
-            id="monthlyPrice"
-            type="number"
-            inputMode="decimal"
-            min="0.01"
-            step="0.01"
-            value={values.monthlyPrice}
-            onChange={(event) =>
-              updateField("monthlyPrice", event.target.value)
-            }
-            aria-invalid={Boolean(errors.monthlyPrice)}
-            aria-describedby={errorId("monthlyPrice", errors)}
-          />
-          <FieldError field="monthlyPrice" errors={errors} />
-        </div>
-        <div className="rental-field">
-          <label htmlFor="currency">Currency</label>
+          <label htmlFor="propertyType">Rental type</label>
           <select
-            id="currency"
-            value={values.currency}
+            id="propertyType"
+            value={values.propertyType}
             onChange={(event) =>
-              updateField("currency", event.target.value as "USD" | "KHR")
+              updateField(
+                "propertyType",
+                event.target.value as RentalFormValues["propertyType"],
+              )
             }
           >
-            <option value="USD">USD ($)</option>
-            <option value="KHR">KHR (៛)</option>
+            {ROOM_TYPE_OPTIONS.map((option) => (
+              <option value={option.value} key={option.value}>
+                {option.en}
+              </option>
+            ))}
           </select>
         </div>
-        <div className="rental-field">
-          <label htmlFor="depositAmount">Deposit amount (optional)</label>
-          <input
-            id="depositAmount"
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={values.depositAmount}
-            onChange={(event) =>
-              updateField("depositAmount", event.target.value)
-            }
-            aria-invalid={Boolean(errors.depositAmount)}
-            aria-describedby={errorId("depositAmount", errors)}
+        <div className="rental-field-grid rental-field-grid-three">
+          <NumberField
+            id="totalUnits"
+            label="Total rooms or units"
+            value={values.totalUnits}
+            min="1"
+            errors={errors}
+            onChange={(value) => updateField("totalUnits", value)}
           />
-          <FieldError field="depositAmount" errors={errors} />
+          <NumberField
+            id="availableUnits"
+            label="Available now"
+            value={values.availableUnits}
+            min="0"
+            disabled={availabilityLocked}
+            errors={errors}
+            onChange={(value) => updateField("availableUnits", value)}
+          />
+          <div
+            className="availability-readout"
+            data-available={Number(values.availableUnits) > 0}
+          >
+            <span aria-hidden="true">
+              {Number(values.availableUnits) > 0 ? "✓" : "×"}
+            </span>
+            <div>
+              <strong>
+                {Number(values.availableUnits) > 0
+                  ? "Available"
+                  : "Unavailable"}
+              </strong>
+              <small>This state also appears in the private map preview.</small>
+            </div>
+          </div>
         </div>
-      </div>
-    </fieldset>
+        <div className="rental-field-grid rental-price-grid">
+          <div className="rental-field">
+            <label htmlFor="monthlyPrice">Monthly rent</label>
+            <input
+              id="monthlyPrice"
+              type="number"
+              inputMode="decimal"
+              min="0.01"
+              step="0.01"
+              value={values.monthlyPrice}
+              onChange={(event) =>
+                updateField("monthlyPrice", event.target.value)
+              }
+              aria-invalid={Boolean(errors.monthlyPrice)}
+              aria-describedby={errorId("monthlyPrice", errors)}
+            />
+            <FieldError field="monthlyPrice" errors={errors} />
+          </div>
+          <div className="rental-field">
+            <label htmlFor="currency">Currency</label>
+            <select
+              id="currency"
+              value={values.currency}
+              onChange={(event) =>
+                updateField("currency", event.target.value as "USD" | "KHR")
+              }
+            >
+              <option value="USD">USD ($)</option>
+              <option value="KHR">KHR (៛)</option>
+            </select>
+          </div>
+          <div className="rental-field">
+            <label htmlFor="depositAmount">Deposit amount (optional)</label>
+            <input
+              id="depositAmount"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={values.depositAmount}
+              onChange={(event) =>
+                updateField("depositAmount", event.target.value)
+              }
+              aria-invalid={Boolean(errors.depositAmount)}
+              aria-describedby={errorId("depositAmount", errors)}
+            />
+            <FieldError field="depositAmount" errors={errors} />
+          </div>
+        </div>
+      </fieldset>
+    </Localized>
   );
 }
 
@@ -882,111 +904,113 @@ function RentalLocationStep({
   }) => void;
 }) {
   return (
-    <fieldset className="rental-step-fieldset">
-      <legend>
-        <span lang="km">កំណត់ទីតាំងឱ្យបានត្រឹមត្រូវ</span>
-        <strong>Pin the rental location</strong>
-      </legend>
-      <p className="rental-step-intro">
-        Search, click, or drag the pin. If the map is unavailable, enter the
-        coordinates manually.
-      </p>
-      <div className="rental-field">
-        <label htmlFor="addressLine">Address students can recognize</label>
-        <input
-          id="addressLine"
-          value={values.addressLine}
-          onChange={(event) => updateField("addressLine", event.target.value)}
-          maxLength={500}
-          autoComplete="street-address"
-          placeholder="Street, sangkat, khan, Phnom Penh"
-          aria-invalid={Boolean(errors.addressLine)}
-          aria-describedby={errorId("addressLine", errors)}
-        />
-        <FieldError field="addressLine" errors={errors} />
-      </div>
-      <div className="location-availability-control">
-        <NumberField
-          id="availableUnits"
-          label="Available rooms shown on this preview"
-          value={values.availableUnits}
-          min="0"
-          disabled={availabilityLocked}
-          errors={errors}
-          onChange={(value) => updateField("availableUnits", value)}
-        />
-        <p>
-          {availabilityLocked
-            ? "Return to the dashboard to change room availability."
-            : "Change this value to check both available and unavailable marker states before saving."}
+    <Localized>
+      <fieldset className="rental-step-fieldset">
+        <legend>
+          <span lang="km">កំណត់ទីតាំងឱ្យបានត្រឹមត្រូវ</span>
+          <strong>Pin the rental location</strong>
+        </legend>
+        <p className="rental-step-intro">
+          Search, click, or drag the pin. If the map is unavailable, enter the
+          coordinates manually.
         </p>
-      </div>
-      <RentalLocationPicker
-        location={location}
-        availableUnits={availableUnits}
-        onLocationChange={updateLocation}
-      />
-      <div className="rental-field-grid">
         <div className="rental-field">
-          <label htmlFor="latitude">Latitude</label>
+          <label htmlFor="addressLine">Address students can recognize</label>
           <input
-            id="latitude"
-            type="number"
-            inputMode="decimal"
-            step="0.000001"
-            value={values.latitude}
-            onChange={(event) => {
-              updateField("latitude", event.target.value);
-              updateField("googlePlaceId", "");
-            }}
-            placeholder="11.569000"
-            aria-invalid={Boolean(errors.latitude)}
-            aria-describedby={errorId("latitude", errors)}
+            id="addressLine"
+            value={values.addressLine}
+            onChange={(event) => updateField("addressLine", event.target.value)}
+            maxLength={500}
+            autoComplete="street-address"
+            placeholder="Street, sangkat, khan, Phnom Penh"
+            aria-invalid={Boolean(errors.addressLine)}
+            aria-describedby={errorId("addressLine", errors)}
           />
-          <FieldError field="latitude" errors={errors} />
+          <FieldError field="addressLine" errors={errors} />
         </div>
-        <div className="rental-field">
-          <label htmlFor="longitude">Longitude</label>
-          <input
-            id="longitude"
-            type="number"
-            inputMode="decimal"
-            step="0.000001"
-            value={values.longitude}
-            onChange={(event) => {
-              updateField("longitude", event.target.value);
-              updateField("googlePlaceId", "");
-            }}
-            placeholder="104.891400"
-            aria-invalid={Boolean(errors.longitude)}
-            aria-describedby={errorId("longitude", errors)}
+        <div className="location-availability-control">
+          <NumberField
+            id="availableUnits"
+            label="Available rooms shown on this preview"
+            value={values.availableUnits}
+            min="0"
+            disabled={availabilityLocked}
+            errors={errors}
+            onChange={(value) => updateField("availableUnits", value)}
           />
-          <FieldError field="longitude" errors={errors} />
+          <p>
+            {availabilityLocked
+              ? "Return to the dashboard to change room availability."
+              : "Change this value to check both available and unavailable marker states before saving."}
+          </p>
         </div>
-      </div>
-      <div className="rental-field-grid">
-        <div className="rental-field">
-          <label htmlFor="district">Khan / district (optional)</label>
-          <input
-            id="district"
-            value={values.district}
-            onChange={(event) => updateField("district", event.target.value)}
-            maxLength={120}
-            placeholder="Tuol Kork"
-          />
+        <RentalLocationPicker
+          location={location}
+          availableUnits={availableUnits}
+          onLocationChange={updateLocation}
+        />
+        <div className="rental-field-grid">
+          <div className="rental-field">
+            <label htmlFor="latitude">Latitude</label>
+            <input
+              id="latitude"
+              type="number"
+              inputMode="decimal"
+              step="0.000001"
+              value={values.latitude}
+              onChange={(event) => {
+                updateField("latitude", event.target.value);
+                updateField("googlePlaceId", "");
+              }}
+              placeholder="11.569000"
+              aria-invalid={Boolean(errors.latitude)}
+              aria-describedby={errorId("latitude", errors)}
+            />
+            <FieldError field="latitude" errors={errors} />
+          </div>
+          <div className="rental-field">
+            <label htmlFor="longitude">Longitude</label>
+            <input
+              id="longitude"
+              type="number"
+              inputMode="decimal"
+              step="0.000001"
+              value={values.longitude}
+              onChange={(event) => {
+                updateField("longitude", event.target.value);
+                updateField("googlePlaceId", "");
+              }}
+              placeholder="104.891400"
+              aria-invalid={Boolean(errors.longitude)}
+              aria-describedby={errorId("longitude", errors)}
+            />
+            <FieldError field="longitude" errors={errors} />
+          </div>
         </div>
-        <div className="rental-field">
-          <label htmlFor="commune">Sangkat / commune (optional)</label>
-          <input
-            id="commune"
-            value={values.commune}
-            onChange={(event) => updateField("commune", event.target.value)}
-            maxLength={120}
-            placeholder="Tuek L'ak I"
-          />
+        <div className="rental-field-grid">
+          <div className="rental-field">
+            <label htmlFor="district">Khan / district (optional)</label>
+            <input
+              id="district"
+              value={values.district}
+              onChange={(event) => updateField("district", event.target.value)}
+              maxLength={120}
+              placeholder="Tuol Kork"
+            />
+          </div>
+          <div className="rental-field">
+            <label htmlFor="commune">Sangkat / commune (optional)</label>
+            <input
+              id="commune"
+              value={values.commune}
+              onChange={(event) => updateField("commune", event.target.value)}
+              maxLength={120}
+              placeholder="Tuek L'ak I"
+            />
+          </div>
         </div>
-      </div>
-    </fieldset>
+      </fieldset>
+    </Localized>
   );
 }
 
@@ -997,188 +1021,194 @@ function RentalFacilitiesStep({
   updateField,
 }: StepProps & { amenities: AmenityDto[] }) {
   return (
-    <fieldset className="rental-step-fieldset">
-      <legend>
-        <span lang="km">បន្ថែមព័ត៌មានដែលសិស្សត្រូវការ</span>
-        <strong>Describe facilities and contact</strong>
-      </legend>
-      <p className="rental-step-intro">
-        Clear details reduce unnecessary calls and help students compare real
-        monthly costs.
-      </p>
-      <div className="rental-field-grid">
-        <div className="rental-field">
-          <label htmlFor="descriptionKm">Description in Khmer</label>
-          <textarea
-            id="descriptionKm"
-            lang="km"
-            rows={5}
-            maxLength={10_000}
-            value={values.descriptionKm}
-            onChange={(event) =>
-              updateField("descriptionKm", event.target.value)
-            }
-            aria-invalid={Boolean(errors.descriptionKm)}
-            aria-describedby={errorId("descriptionKm", errors)}
-          />
-          <FieldError field="descriptionKm" errors={errors} />
-        </div>
-        <div className="rental-field">
-          <label htmlFor="descriptionEn">Description in English</label>
-          <textarea
-            id="descriptionEn"
-            rows={5}
-            maxLength={10_000}
-            value={values.descriptionEn}
-            onChange={(event) =>
-              updateField("descriptionEn", event.target.value)
-            }
-          />
-        </div>
-      </div>
-
-      <fieldset className="amenity-fieldset">
-        <legend>Facilities and amenities</legend>
-        {amenities.length > 0 ? (
-          <div className="amenity-options">
-            {amenities.map((amenity) => {
-              const checked = values.amenityIds.includes(amenity.id);
-              return (
-                <label key={amenity.id} data-selected={checked}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() =>
-                      updateField(
-                        "amenityIds",
-                        checked
-                          ? values.amenityIds.filter((id) => id !== amenity.id)
-                          : [...values.amenityIds, amenity.id],
-                      )
-                    }
-                  />
-                  <span>
-                    <strong lang="km">{amenity.nameKm}</strong>
-                    <small>{amenity.nameEn}</small>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="rental-inline-note">
-            No active amenities are configured. You can still save the rental.
-          </p>
-        )}
-      </fieldset>
-
-      <div className="rental-field-grid rental-field-grid-three">
-        <NumberField
-          id="bedrooms"
-          label="Bedrooms (optional)"
-          value={values.bedrooms}
-          min="0"
-          errors={errors}
-          onChange={(value) => updateField("bedrooms", value)}
-        />
-        <NumberField
-          id="bathrooms"
-          label="Bathrooms (optional)"
-          value={values.bathrooms}
-          min="0"
-          errors={errors}
-          onChange={(value) => updateField("bathrooms", value)}
-        />
-        <div className="rental-field">
-          <label htmlFor="availableFrom">Available from (optional)</label>
-          <input
-            id="availableFrom"
-            type="date"
-            value={values.availableFrom}
-            onChange={(event) =>
-              updateField("availableFrom", event.target.value)
-            }
-          />
-        </div>
-      </div>
-      <label className="furnished-option">
-        <input
-          type="checkbox"
-          checked={values.furnished}
-          onChange={(event) => updateField("furnished", event.target.checked)}
-        />
-        <span>
-          <strong>Furnished</strong>
-          <small>Furniture is included with the rental.</small>
-        </span>
-      </label>
-
-      <div className="rental-field-grid">
-        <div className="rental-field">
-          <label htmlFor="utilityNotesKm">
-            Utility notes in Khmer (optional)
-          </label>
-          <textarea
-            id="utilityNotesKm"
-            lang="km"
-            rows={3}
-            maxLength={10_000}
-            value={values.utilityNotesKm}
-            onChange={(event) =>
-              updateField("utilityNotesKm", event.target.value)
-            }
-          />
-        </div>
-        <div className="rental-field">
-          <label htmlFor="houseRulesKm">House rules in Khmer (optional)</label>
-          <textarea
-            id="houseRulesKm"
-            lang="km"
-            rows={3}
-            maxLength={10_000}
-            value={values.houseRulesKm}
-            onChange={(event) =>
-              updateField("houseRulesKm", event.target.value)
-            }
-          />
-        </div>
-      </div>
-
-      <fieldset className="contact-fieldset">
-        <legend>How should students contact you?</legend>
-        <p>
-          Contact details come from your landlord profile and are still
-          protected by the listing contact policy.
+    <Localized>
+      <fieldset className="rental-step-fieldset">
+        <legend>
+          <span lang="km">បន្ថែមព័ត៌មានដែលសិស្សត្រូវការ</span>
+          <strong>Describe facilities and contact</strong>
+        </legend>
+        <p className="rental-step-intro">
+          Clear details reduce unnecessary calls and help students compare real
+          monthly costs.
         </p>
-        <div className="contact-options">
-          {[
-            ["IN_APP_ONLY", "In-app inquiry only"],
-            ["PHONE", "Phone"],
-            ["TELEGRAM", "Telegram"],
-            ["PHONE_OR_TELEGRAM", "Phone or Telegram"],
-          ].map(([value, label]) => (
-            <label
-              key={value}
-              data-selected={values.contactPreference === value}
-            >
-              <input
-                type="radio"
-                name="contactPreference"
-                value={value}
-                checked={values.contactPreference === value}
-                onChange={() =>
-                  updateField(
-                    "contactPreference",
-                    value as RentalFormValues["contactPreference"],
-                  )
-                }
-              />
-              <span>{label}</span>
-            </label>
-          ))}
+        <div className="rental-field-grid">
+          <div className="rental-field">
+            <label htmlFor="descriptionKm">Description in Khmer</label>
+            <textarea
+              id="descriptionKm"
+              lang="km"
+              rows={5}
+              maxLength={10_000}
+              value={values.descriptionKm}
+              onChange={(event) =>
+                updateField("descriptionKm", event.target.value)
+              }
+              aria-invalid={Boolean(errors.descriptionKm)}
+              aria-describedby={errorId("descriptionKm", errors)}
+            />
+            <FieldError field="descriptionKm" errors={errors} />
+          </div>
+          <div className="rental-field">
+            <label htmlFor="descriptionEn">Description in English</label>
+            <textarea
+              id="descriptionEn"
+              rows={5}
+              maxLength={10_000}
+              value={values.descriptionEn}
+              onChange={(event) =>
+                updateField("descriptionEn", event.target.value)
+              }
+            />
+          </div>
         </div>
+
+        <fieldset className="amenity-fieldset">
+          <legend>Facilities and amenities</legend>
+          {amenities.length > 0 ? (
+            <div className="amenity-options">
+              {amenities.map((amenity) => {
+                const checked = values.amenityIds.includes(amenity.id);
+                return (
+                  <label key={amenity.id} data-selected={checked}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        updateField(
+                          "amenityIds",
+                          checked
+                            ? values.amenityIds.filter(
+                                (id) => id !== amenity.id,
+                              )
+                            : [...values.amenityIds, amenity.id],
+                        )
+                      }
+                    />
+                    <span>
+                      <strong lang="km">{amenity.nameKm}</strong>
+                      <small>{amenity.nameEn}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rental-inline-note">
+              No active amenities are configured. You can still save the rental.
+            </p>
+          )}
+        </fieldset>
+
+        <div className="rental-field-grid rental-field-grid-three">
+          <NumberField
+            id="bedrooms"
+            label="Bedrooms (optional)"
+            value={values.bedrooms}
+            min="0"
+            errors={errors}
+            onChange={(value) => updateField("bedrooms", value)}
+          />
+          <NumberField
+            id="bathrooms"
+            label="Bathrooms (optional)"
+            value={values.bathrooms}
+            min="0"
+            errors={errors}
+            onChange={(value) => updateField("bathrooms", value)}
+          />
+          <div className="rental-field">
+            <label htmlFor="availableFrom">Available from (optional)</label>
+            <input
+              id="availableFrom"
+              type="date"
+              value={values.availableFrom}
+              onChange={(event) =>
+                updateField("availableFrom", event.target.value)
+              }
+            />
+          </div>
+        </div>
+        <label className="furnished-option">
+          <input
+            type="checkbox"
+            checked={values.furnished}
+            onChange={(event) => updateField("furnished", event.target.checked)}
+          />
+          <span>
+            <strong>Furnished</strong>
+            <small>Furniture is included with the rental.</small>
+          </span>
+        </label>
+
+        <div className="rental-field-grid">
+          <div className="rental-field">
+            <label htmlFor="utilityNotesKm">
+              Utility notes in Khmer (optional)
+            </label>
+            <textarea
+              id="utilityNotesKm"
+              lang="km"
+              rows={3}
+              maxLength={10_000}
+              value={values.utilityNotesKm}
+              onChange={(event) =>
+                updateField("utilityNotesKm", event.target.value)
+              }
+            />
+          </div>
+          <div className="rental-field">
+            <label htmlFor="houseRulesKm">
+              House rules in Khmer (optional)
+            </label>
+            <textarea
+              id="houseRulesKm"
+              lang="km"
+              rows={3}
+              maxLength={10_000}
+              value={values.houseRulesKm}
+              onChange={(event) =>
+                updateField("houseRulesKm", event.target.value)
+              }
+            />
+          </div>
+        </div>
+
+        <fieldset className="contact-fieldset">
+          <legend>How should students contact you?</legend>
+          <p>
+            Contact details come from your landlord profile and are still
+            protected by the listing contact policy.
+          </p>
+          <div className="contact-options">
+            {[
+              ["IN_APP_ONLY", "In-app inquiry only"],
+              ["PHONE", "Phone"],
+              ["TELEGRAM", "Telegram"],
+              ["PHONE_OR_TELEGRAM", "Phone or Telegram"],
+            ].map(([value, label]) => (
+              <label
+                key={value}
+                data-selected={values.contactPreference === value}
+              >
+                <input
+                  type="radio"
+                  name="contactPreference"
+                  value={value}
+                  checked={values.contactPreference === value}
+                  onChange={() =>
+                    updateField(
+                      "contactPreference",
+                      value as RentalFormValues["contactPreference"],
+                    )
+                  }
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </fieldset>
-    </fieldset>
+    </Localized>
   );
 }
 
@@ -1207,172 +1237,179 @@ function RentalReviewStep({
     values.amenityIds.includes(amenity.id),
   );
   return (
-    <fieldset className="rental-step-fieldset">
-      <legend>
-        <span lang="km">បន្ថែមរូបថត និងពិនិត្យឡើងវិញ</span>
-        <strong>Add photos and review</strong>
-      </legend>
-      <p className="rental-step-intro">
-        {existingPhotos.length > 0
-          ? "Existing photos stay with this rental. You can add more photos while your access is active."
-          : "Put the clearest exterior or room photo first. Photos are uploaded only after your private draft is created."}
-      </p>
-
-      {canManagePhotos ? (
-        <div
-          className="photo-upload-field"
-          data-invalid={Boolean(errors.photos)}
-        >
-          <label htmlFor="listingPhotos">
-            <strong>Choose rental photos</strong>
-            <span>
-              JPEG, PNG, or WebP. Up to {MAX_LISTING_PHOTOS} photos total, 10 MB
-              each.
-            </span>
-          </label>
-          <input
-            id="listingPhotos"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            onChange={onPhotoSelection}
-            aria-invalid={Boolean(errors.photos)}
-            aria-describedby={errorId("photos", errors)}
-          />
-          <FieldError field="photos" errors={errors} />
-        </div>
-      ) : (
-        <p className="rental-inline-note">
-          Existing photos remain visible. Photo changes require active landlord
-          access.
+    <Localized>
+      <fieldset className="rental-step-fieldset">
+        <legend>
+          <span lang="km">បន្ថែមរូបថត និងពិនិត្យឡើងវិញ</span>
+          <strong>Add photos and review</strong>
+        </legend>
+        <p className="rental-step-intro">
+          {existingPhotos.length > 0
+            ? "Existing photos stay with this rental. You can add more photos while your access is active."
+            : "Put the clearest exterior or room photo first. Photos are uploaded only after your private draft is created."}
         </p>
-      )}
 
-      {existingPhotos.length > 0 ? (
-        <ol className="photo-order-list" aria-label="Existing rental photos">
-          {existingPhotos.map((photo, index) => (
-            <li key={photo.id}>
-              <img
-                src={photo.publicUrl}
-                loading="lazy"
-                decoding="async"
-                width={photo.width ?? 176}
-                height={photo.height ?? 132}
-                alt={
-                  photo.altTextEn ||
-                  photo.altTextKm ||
-                  `Existing rental photo ${index + 1}`
-                }
-              />
-              <div>
-                <strong>
-                  {index === 0
-                    ? "Current cover photo"
-                    : `Existing photo ${index + 1}`}
-                </strong>
-                <small>Already uploaded</small>
-              </div>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+        {canManagePhotos ? (
+          <div
+            className="photo-upload-field"
+            data-invalid={Boolean(errors.photos)}
+          >
+            <label htmlFor="listingPhotos">
+              <strong>Choose rental photos</strong>
+              <span>
+                JPEG, PNG, or WebP. Up to {MAX_LISTING_PHOTOS} photos total, 10
+                MB each.
+              </span>
+            </label>
+            <input
+              id="listingPhotos"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={onPhotoSelection}
+              aria-invalid={Boolean(errors.photos)}
+              aria-describedby={errorId("photos", errors)}
+            />
+            <FieldError field="photos" errors={errors} />
+          </div>
+        ) : (
+          <p className="rental-inline-note">
+            Existing photos remain visible. Photo changes require active
+            landlord access.
+          </p>
+        )}
 
-      {photos.length > 0 ? (
-        <ol
-          className="photo-order-list"
-          aria-label="Selected photos in upload order"
+        {existingPhotos.length > 0 ? (
+          <ol className="photo-order-list" aria-label="Existing rental photos">
+            {existingPhotos.map((photo, index) => (
+              <li key={photo.id}>
+                <img
+                  src={photo.publicUrl}
+                  loading="lazy"
+                  decoding="async"
+                  width={photo.width ?? 176}
+                  height={photo.height ?? 132}
+                  alt={
+                    photo.altTextEn ||
+                    photo.altTextKm ||
+                    `Existing rental photo ${index + 1}`
+                  }
+                />
+                <div>
+                  <strong>
+                    {index === 0
+                      ? "Current cover photo"
+                      : `Existing photo ${index + 1}`}
+                  </strong>
+                  <small>Already uploaded</small>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+
+        {photos.length > 0 ? (
+          <ol
+            className="photo-order-list"
+            aria-label="Selected photos in upload order"
+          >
+            {photos.map((photo, index) => (
+              <li key={photo.id}>
+                {/* A temporary local object URL is required before the image exists in object storage. */}
+                <img
+                  src={photo.previewUrl}
+                  alt={`Selected rental preview ${index + 1}`}
+                />
+                <div>
+                  <strong>
+                    {existingPhotos.length + index === 0
+                      ? "Cover photo"
+                      : `New photo ${existingPhotos.length + index + 1}`}
+                  </strong>
+                  <small>{formatFileSize(photo.file.size)}</small>
+                </div>
+                <div className="photo-order-actions">
+                  <button
+                    type="button"
+                    onClick={() => movePhoto(index, -1)}
+                    disabled={index === 0}
+                    aria-label={`Move ${photo.file.name} earlier`}
+                  >
+                    Earlier
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => movePhoto(index, 1)}
+                    disabled={index === photos.length - 1}
+                    aria-label={`Move ${photo.file.name} later`}
+                  >
+                    Later
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(photo.id)}
+                    aria-label={`Remove ${photo.file.name}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : existingPhotos.length === 0 ? (
+          <p className="rental-inline-note">
+            A draft can be saved without photos. At least one photo is required
+            before submitting for review.
+          </p>
+        ) : null}
+
+        <section
+          className="rental-review-summary"
+          aria-labelledby="review-summary-title"
         >
-          {photos.map((photo, index) => (
-            <li key={photo.id}>
-              {/* A temporary local object URL is required before the image exists in object storage. */}
-              <img
-                src={photo.previewUrl}
-                alt={`Selected rental preview ${index + 1}`}
-              />
-              <div>
-                <strong>
-                  {existingPhotos.length + index === 0
-                    ? "Cover photo"
-                    : `New photo ${existingPhotos.length + index + 1}`}
-                </strong>
-                <small>{formatFileSize(photo.file.size)}</small>
-              </div>
-              <div className="photo-order-actions">
-                <button
-                  type="button"
-                  onClick={() => movePhoto(index, -1)}
-                  disabled={index === 0}
-                  aria-label={`Move ${photo.file.name} earlier`}
-                >
-                  Earlier
-                </button>
-                <button
-                  type="button"
-                  onClick={() => movePhoto(index, 1)}
-                  disabled={index === photos.length - 1}
-                  aria-label={`Move ${photo.file.name} later`}
-                >
-                  Later
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removePhoto(photo.id)}
-                  aria-label={`Remove ${photo.file.name}`}
-                >
-                  Remove
-                </button>
-              </div>
-            </li>
-          ))}
-        </ol>
-      ) : existingPhotos.length === 0 ? (
-        <p className="rental-inline-note">
-          A draft can be saved without photos. At least one photo is required
-          before submitting for review.
-        </p>
-      ) : null}
-
-      <section
-        className="rental-review-summary"
-        aria-labelledby="review-summary-title"
-      >
-        <h3 id="review-summary-title">Review your student-facing details</h3>
-        <dl>
-          <div>
-            <dt>Rental</dt>
-            <dd>
-              {values.titleKm.trim() || values.titleEn.trim() || "No title yet"}
-            </dd>
-          </div>
-          <div>
-            <dt>Monthly rent</dt>
-            <dd>{formatMoney(values.monthlyPrice, values.currency)}</dd>
-          </div>
-          <div>
-            <dt>Availability</dt>
-            <dd>
-              {values.availableUnits || "0"} of {values.totalUnits || "0"} rooms
-            </dd>
-          </div>
-          <div>
-            <dt>Location</dt>
-            <dd>{values.addressLine || "No address yet"}</dd>
-          </div>
-          <div>
-            <dt>Amenities</dt>
-            <dd>
-              {selectedAmenities.length > 0
-                ? selectedAmenities.map((amenity) => amenity.nameEn).join(", ")
-                : "None selected"}
-            </dd>
-          </div>
-          <div>
-            <dt>Contact</dt>
-            <dd>{formatContactPreference(values.contactPreference)}</dd>
-          </div>
-        </dl>
-      </section>
-    </fieldset>
+          <h3 id="review-summary-title">Review your student-facing details</h3>
+          <dl>
+            <div>
+              <dt>Rental</dt>
+              <dd>
+                {values.titleKm.trim() ||
+                  values.titleEn.trim() ||
+                  "No title yet"}
+              </dd>
+            </div>
+            <div>
+              <dt>Monthly rent</dt>
+              <dd>{formatMoney(values.monthlyPrice, values.currency)}</dd>
+            </div>
+            <div>
+              <dt>Availability</dt>
+              <dd>
+                {values.availableUnits || "0"} of {values.totalUnits || "0"}{" "}
+                rooms
+              </dd>
+            </div>
+            <div>
+              <dt>Location</dt>
+              <dd>{values.addressLine || "No address yet"}</dd>
+            </div>
+            <div>
+              <dt>Amenities</dt>
+              <dd>
+                {selectedAmenities.length > 0
+                  ? selectedAmenities
+                      .map((amenity) => amenity.nameEn)
+                      .join(", ")
+                  : "None selected"}
+              </dd>
+            </div>
+            <div>
+              <dt>Contact</dt>
+              <dd>{formatContactPreference(values.contactPreference)}</dd>
+            </div>
+          </dl>
+        </section>
+      </fieldset>
+    </Localized>
   );
 }
 
@@ -1403,22 +1440,24 @@ function NumberField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="rental-field">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="number"
-        inputMode="numeric"
-        min={min}
-        step="1"
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        aria-invalid={Boolean(errors[id])}
-        aria-describedby={errorId(id, errors)}
-      />
-      <FieldError field={id} errors={errors} />
-    </div>
+    <Localized>
+      <div className="rental-field">
+        <label htmlFor={id}>{label}</label>
+        <input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={min}
+          step="1"
+          disabled={disabled}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          aria-invalid={Boolean(errors[id])}
+          aria-describedby={errorId(id, errors)}
+        />
+        <FieldError field={id} errors={errors} />
+      </div>
+    </Localized>
   );
 }
 
@@ -1438,33 +1477,41 @@ function FieldError({
 
 function RentalFormShell({ children }: { children: ReactNode }) {
   return (
-    <main className="rental-form-page" lang="en">
-      <header className="rental-form-header">
-        <BrandMark />
-        <Link href="/landlord">Landlord workspace</Link>
-      </header>
-      {children}
-    </main>
+    <Localized>
+      <main className="rental-form-page" lang="en">
+        <header className="rental-form-header">
+          <BrandMark />
+          <Link href="/landlord">Landlord workspace</Link>
+        </header>
+        {children}
+      </main>
+    </Localized>
   );
 }
 
 function RentalFormLoading() {
   return (
-    <RentalFormShell>
-      <div className="rental-form-loading" aria-busy="true" aria-live="polite">
-        <aside>
-          <div className="skeleton rental-loading-label" />
-          <div className="skeleton rental-loading-title" />
-          <div className="skeleton rental-loading-line" />
-        </aside>
-        <section>
-          <p>Preparing your rental form…</p>
-          <div className="skeleton rental-loading-field" />
-          <div className="skeleton rental-loading-field" />
-          <div className="skeleton rental-loading-field" />
-        </section>
-      </div>
-    </RentalFormShell>
+    <Localized>
+      <RentalFormShell>
+        <div
+          className="rental-form-loading"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <aside>
+            <div className="skeleton rental-loading-label" />
+            <div className="skeleton rental-loading-title" />
+            <div className="skeleton rental-loading-line" />
+          </aside>
+          <section>
+            <p>Preparing your rental form…</p>
+            <div className="skeleton rental-loading-field" />
+            <div className="skeleton rental-loading-field" />
+            <div className="skeleton rental-loading-field" />
+          </section>
+        </div>
+      </RentalFormShell>
+    </Localized>
   );
 }
 

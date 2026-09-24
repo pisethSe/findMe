@@ -60,7 +60,7 @@ async function api(page: Page) {
         data: {
           role: state.role,
           stage: "COMPLETE",
-          nextPath: state.role === "ADMIN" ? "/admin" : "/search",
+          nextPath: state.role === "ADMIN" ? "/admin" : "/",
         },
       });
     if (path === "/api/v1/admin/listings" && method === "GET")
@@ -177,7 +177,9 @@ for (const width of [320, 390, 768, 1440])
     ).toBe(true);
     state.failWrite = false;
     await page.getByRole("button", { name: "Resolve report" }).click();
-    await expect(page.getByRole("status")).toContainText("Action saved");
+    await expect(
+      page.getByRole("status").filter({ hasText: "Action saved" }),
+    ).toBeVisible();
     await page.goto("/admin/users");
     await page
       .getByLabel("Decision note (required)")

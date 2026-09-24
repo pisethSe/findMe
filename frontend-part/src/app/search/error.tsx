@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../../features/preferences/translated-text";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -17,21 +18,23 @@ export default function SearchError({ error, retry }: SearchErrorProps) {
   }, [error]);
 
   return (
-    <main className="route-error" lang="en">
-      <div>
-        <p className="hero-context">Search unavailable</p>
-        <h1>We couldn’t load nearby rooms.</h1>
-        <p>
-          Your filters are safe. Try the search again, or return to the landing
-          page and choose your university once more.
-        </p>
-        <div className="error-actions">
-          <button type="button" onClick={retry}>
-            Try again
-          </button>
-          <Link href="/">Return home</Link>
+    <Localized>
+      <main className="route-error" lang="en">
+        <div>
+          <p className="hero-context">Search unavailable</p>
+          <h1>We couldn’t load nearby rooms.</h1>
+          <p>
+            Your filters are safe. Try the search again, or return to the
+            landing page and choose your university once more.
+          </p>
+          <div className="error-actions">
+            <button type="button" onClick={retry}>
+              Try again
+            </button>
+            <Link href="/">Return home</Link>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </Localized>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Kantumruy_Pro } from "next/font/google";
 
 import "./globals.css";
+import { SitePreferences } from "../features/preferences/site-preferences";
 
 const kantumruy = Kantumruy_Pro({
   subsets: ["khmer", "latin"],
@@ -12,8 +13,8 @@ const kantumruy = Kantumruy_Pro({
 
 export const metadata: Metadata = {
   title: {
-    default: "FindMe | Student rentals near your university",
-    template: "%s | FindMe",
+    default: "rentMe | Student rentals near your university",
+    template: "%s | rentMe",
   },
   description:
     "Find student-friendly rooms near universities and colleges in Phnom Penh.",
@@ -23,8 +24,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="km">
-      <body className={kantumruy.variable}>{children}</body>
+    <html lang="en" data-scroll-behavior="smooth">
+      <body className={kantumruy.variable}>
+        <SitePreferences>{children}</SitePreferences>
+      </body>
     </html>
   );
 }

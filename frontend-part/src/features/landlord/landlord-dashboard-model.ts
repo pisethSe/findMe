@@ -32,7 +32,19 @@ const STATUS_PRESENTATION: Record<ListingStatus, ListingStatusPresentation> = {
 
 export function getListingStatusPresentation(
   status: ListingStatus,
+  freshness?: LandlordListingDto["availabilityFreshness"],
 ): ListingStatusPresentation {
+  if (
+    status === "PUBLISHED" &&
+    freshness &&
+    ["STALE", "UNCONFIRMED"].includes(freshness.state)
+  ) {
+    return {
+      label: "Availability overdue",
+      detail: "Hidden from students",
+      tone: "warning",
+    };
+  }
   return STATUS_PRESENTATION[status];
 }
 
@@ -105,4 +117,27 @@ export function mergeListingPages(
   const byId = new Map(current.map((listing) => [listing.id, listing]));
   nextPage.forEach((listing) => byId.set(listing.id, listing));
   return [...byId.values()];
+}
+
+export function availabilityReminder(
+  listing: LandlordListingDto,
+): string | null {
+  if (!["PUBLISHED", "PENDING_REVIEW"].includes(listing.status)) return null;
+  const freshness = listing.availabilityFreshness;
+  if (freshness.state === "STALE" || freshness.state === "UNCONFIRMED") {
+    return listing.status === "PUBLISHED"
+      ? "Hidden from students until you confirm how many rooms are available."
+      : "Confirm availability again before this rental can be published.";
+  }
+  if (freshness.state === "DUE" && freshness.expiresAt) {
+    const deadline = new Intl.DateTimeFormat("en-KH", {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "Asia/Phnom_Penh",
+    }).format(new Date(freshness.expiresAt));
+    return `Confirm availability by ${deadline} (Cambodia time) ${listing.status === "PUBLISHED" ? "to keep this rental visible to students" : "so this rental stays ready for publication"}.`;
+  }
+  return null;
 }

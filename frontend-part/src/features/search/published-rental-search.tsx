@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type {
   InstitutionDto,
   PropertyType,
@@ -17,7 +18,8 @@ import {
   FavoritesFeedback,
   SaveRentalButton,
 } from "../favorites/favorites-context";
-import { BrandMark } from "../landing/brand-mark";
+import { useSitePreferences } from "../preferences/site-preferences";
+import { SiteHeader } from "../landing/site-header";
 import { rentalDetailHref } from "../rentals/rental-detail-model";
 import { formatSearchRadius, nextSearchRadius } from "./distance-filter-model";
 import { InstitutionPicker } from "./institution-picker";
@@ -71,6 +73,7 @@ export function PublishedRentalSearch({
   initialViewport,
   invalidFilters,
 }: PublishedRentalSearchProps) {
+  const { locale } = useSitePreferences();
   const router = useRouter();
   const [institution, setInstitution] = useState<InstitutionDto | null>(null);
   const [institutionLoading, setInstitutionLoading] = useState(true);
@@ -418,294 +421,301 @@ export function PublishedRentalSearch({
   }, [currentPage, page, viewport]);
 
   return (
-    <FavoritesProvider
-      listingIds={page?.data.map((listing) => listing.id) ?? []}
-    >
-      <main className="search-page" lang="en">
-        <header className="site-header search-header">
-          <BrandMark />
-          <nav className="rental-navigation" aria-label="Rental navigation">
-            <Link href="/favorites" prefetch={false}>
-              Saved rentals
-            </Link>
-            <Link href="/inquiries" prefetch={false}>
-              Sent inquiries
-            </Link>
-            <Link href="/">Back to home</Link>
-          </nav>
-        </header>
+    <Localized>
+      <FavoritesProvider
+        listingIds={page?.data.map((listing) => listing.id) ?? []}
+      >
+        <main className="search-page">
+          <SiteHeader />
+          <header className="search-subnav">
+            <nav className="rental-navigation" aria-label="Rental navigation">
+              <Link href="/favorites" prefetch={false}>
+                Saved rentals
+              </Link>
+              <Link href="/inquiries" prefetch={false}>
+                Sent inquiries
+              </Link>
+              <Link href="/">Back to home</Link>
+            </nav>
+          </header>
 
-        <section className="search-intro">
-          <div>
-            <h1>Rooms near {institution?.nameEn ?? "your institution"}</h1>
-            {institution ? (
-              <p className="selected-institution-name" lang="km">
-                {institution.nameKm}
-              </p>
-            ) : null}
-            <p>
-              Only moderated rentals with current availability appear here. The
-              page checks for newly published rooms while you are viewing it.
-            </p>
-          </div>
-
-          <div className="search-filter-controls">
-            <InstitutionPicker
-              id="search-institution"
-              label="Institution"
-              selectedInstitution={institution}
-              onSelect={selectInstitution}
-              onSelectionValidityChange={updateSelectionValidity}
-              disabled={
-                institutionLoading ||
-                institutionEmpty ||
-                Boolean(institutionsError)
-              }
-            />
-            <SearchFilters
-              institution={institution}
-              selectionValid={selectionValid}
-              maxRentUsd={maxRentUsd}
-              radiusMeters={radiusMeters}
-              {...(propertyType ? { propertyType } : {})}
-            />
-          </div>
-        </section>
-
-        {warning ? (
-          <p className="filter-warning" role="alert">
-            {requestedInstitutionMissing
-              ? "That institution is inactive or unavailable, so the first active institution is shown. Choose another institution or update the results."
-              : "One or more shared filters were invalid, so safe defaults are shown. Review the filters and update the results."}
-          </p>
-        ) : null}
-
-        {institutionsError ? (
-          <section className="search-results">
-            <div className="workspace-error" role="alert">
-              <h2>Institutions unavailable</h2>
-              <p>{institutionsError}</p>
-              <button type="button" onClick={retryInstitutions}>
-                Try again
-              </button>
-            </div>
-          </section>
-        ) : institutionEmpty ? (
-          <section className="search-results">
-            <div className="workspace-error" role="status">
-              <h2>No active institutions yet</h2>
+          <section className="search-intro">
+            <div>
+              <h1>Rooms near {institution?.nameEn ?? "your institution"}</h1>
+              {institution ? (
+                <p className="selected-institution-name" lang="km">
+                  {institution.nameKm}
+                </p>
+              ) : null}
               <p>
-                Rental discovery will become available when an institution is
-                activated. Please check again later.
+                Only moderated rentals with current availability appear here.
+                The page checks for newly published rooms while you are viewing
+                it.
               </p>
-              <button type="button" onClick={retryInstitutions}>
-                Check again
-              </button>
             </div>
-          </section>
-        ) : institutionLoading || !institution || (!page && !searchError) ? (
-          <SearchLoading />
-        ) : searchError ? (
-          <section className="search-results">
-            <div className="workspace-error" role="alert">
-              <h2>Rentals unavailable</h2>
-              <p>{searchError}</p>
-              <button
-                type="button"
-                onClick={() => void loadResults(institution, false)}
-              >
-                Try again
-              </button>
-            </div>
-          </section>
-        ) : page ? (
-          <section
-            className="search-results"
-            aria-labelledby="results-title"
-            aria-busy={refreshing}
-          >
-            <div className="results-heading">
-              <div>
-                <h2 id="results-title">
-                  {page.meta.total} {page.meta.total === 1 ? "room" : "rooms"}{" "}
-                  found
-                </h2>
-                <p>
-                  {page.meta.total > 0
-                    ? `Showing ${resultRange.first}–${resultRange.last} · `
-                    : ""}
-                  {viewport ? "inside this map area" : "within the full radius"}
-                  {" · "}
-                  {formatSearchRadius(page.meta.radiusMeters)} from{" "}
-                  {page.meta.institution.shortName ??
-                    page.meta.institution.nameEn}
-                  {" · checked "}
-                  <time dateTime={page.meta.refreshedAt}>
-                    {formatTime(page.meta.refreshedAt)}
-                  </time>
-                </p>
-                <p>
-                  Distances are straight-line estimates, not walking or driving
-                  routes.
-                </p>
-              </div>
-              <div
-                className="mobile-result-switch"
-                role="group"
-                aria-label="Results view"
-              >
-                <button
-                  type="button"
-                  aria-pressed={mobileView === "list"}
-                  aria-controls="rental-list"
-                  onClick={() => setMobileView("list")}
-                >
-                  List ({page.data.length})
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={mobileView === "map"}
-                  aria-controls="rental-map"
-                  onClick={() => setMobileView("map")}
-                >
-                  Map
-                </button>
-              </div>
-            </div>
-            {refreshError ? (
-              <p className="search-refresh-warning" role="status">
-                Refresh failed. Showing the last complete results.{" "}
-                {refreshError}
-              </p>
-            ) : refreshing ? (
-              <p className="search-update-status" role="status">
-                {viewport
-                  ? "Updating rentals in the visible map area…"
-                  : currentPage > 1
-                    ? `Loading results page ${currentPage}…`
-                    : "Checking for newly published rentals…"}
-              </p>
-            ) : null}
 
-            <div
-              className="published-search-layout"
-              data-mobile-view={mobileView}
-            >
-              <PublishedRentalMap
-                institution={page.meta.institution}
-                listings={page.data}
-                selectedListingId={selectedListingId}
-                focusListingId={focusListingId}
-                viewport={viewport}
-                active={mobileView === "map"}
-                updating={refreshing}
-                onSelectListing={selectFromMap}
-                onViewportChange={updateViewport}
-                onClearViewport={clearViewport}
-                onShowList={() => {
-                  setMobileView("list");
-                  window.requestAnimationFrame(() => {
-                    document.getElementById("rental-list")?.focus();
-                  });
-                }}
+            <div className="search-filter-controls">
+              <InstitutionPicker
+                id="search-institution"
+                locale={locale}
+                label="Institution"
+                selectedInstitution={institution}
+                onSelect={selectInstitution}
+                onSelectionValidityChange={updateSelectionValidity}
+                disabled={
+                  institutionLoading ||
+                  institutionEmpty ||
+                  Boolean(institutionsError)
+                }
               />
-              <div
-                id="rental-list"
-                className="published-list-region"
-                tabIndex={-1}
-                aria-label="Rental results"
-              >
-                {page.data.length > 0 ? (
-                  <>
-                    <FavoritesFeedback />
-                    <ul className="rental-results published-rental-results">
-                      {page.data.map((listing) => (
-                        <RentalCard
-                          key={listing.id}
-                          listing={listing}
-                          institution={page.meta.institution}
-                          selected={listing.id === selectedListingId}
-                          onSelect={() => selectFromCard(listing.id)}
-                        />
-                      ))}
-                    </ul>
-                    {page.meta.totalPages > 1 ? (
-                      <nav
-                        className="search-pagination"
-                        aria-label="Rental result pages"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => changePage(page.meta.page - 1)}
-                          disabled={page.meta.page <= 1 || refreshing}
-                        >
-                          Previous
-                        </button>
-                        <p>
-                          Page <strong>{page.meta.page}</strong> of{" "}
-                          {page.meta.totalPages}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => changePage(page.meta.page + 1)}
-                          disabled={
-                            page.meta.page >= page.meta.totalPages || refreshing
-                          }
-                        >
-                          Next
-                        </button>
-                      </nav>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="empty-results">
-                    <h3>
-                      {viewport
-                        ? "No rentals are visible in this map area."
-                        : "No published rentals match these filters."}
-                    </h3>
-                    <p>
-                      {viewport
-                        ? "Show the full search radius, or move back toward the institution and try again."
-                        : widerRadius === null
-                          ? "You are searching the maximum 20 km radius. Try a higher monthly budget, another rental type, or a different institution."
-                          : "Try increasing the distance or monthly budget. Newly approved rentals will appear while this page is open."}
-                    </p>
-                    <div className="empty-results-actions">
-                      {viewport ? (
-                        <button type="button" onClick={clearViewport}>
-                          Show full radius
-                        </button>
-                      ) : null}
-                      {widerRadius !== null ? (
-                        <button
-                          type="button"
-                          disabled={refreshing}
-                          onClick={() => {
-                            router.push(
-                              buildDistanceSearchHref(
-                                window.location.search,
-                                widerRadius,
-                              ),
-                              { scroll: false },
-                            );
-                          }}
-                        >
-                          Widen search to {formatSearchRadius(widerRadius)}
-                        </button>
-                      ) : null}
-                      <Link href={`/search?institution=${institution.slug}`}>
-                        Reset filters
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <SearchFilters
+                institution={institution}
+                selectionValid={selectionValid}
+                maxRentUsd={maxRentUsd}
+                radiusMeters={radiusMeters}
+                {...(propertyType ? { propertyType } : {})}
+              />
             </div>
           </section>
-        ) : null}
-      </main>
-    </FavoritesProvider>
+
+          {warning ? (
+            <p className="filter-warning" role="alert">
+              {requestedInstitutionMissing
+                ? "That institution is inactive or unavailable, so the first active institution is shown. Choose another institution or update the results."
+                : "One or more shared filters were invalid, so safe defaults are shown. Review the filters and update the results."}
+            </p>
+          ) : null}
+
+          {institutionsError ? (
+            <section className="search-results">
+              <div className="workspace-error" role="alert">
+                <h2>Institutions unavailable</h2>
+                <p>{institutionsError}</p>
+                <button type="button" onClick={retryInstitutions}>
+                  Try again
+                </button>
+              </div>
+            </section>
+          ) : institutionEmpty ? (
+            <section className="search-results">
+              <div className="workspace-error" role="status">
+                <h2>No active institutions yet</h2>
+                <p>
+                  Rental discovery will become available when an institution is
+                  activated. Please check again later.
+                </p>
+                <button type="button" onClick={retryInstitutions}>
+                  Check again
+                </button>
+              </div>
+            </section>
+          ) : institutionLoading || !institution || (!page && !searchError) ? (
+            <SearchLoading />
+          ) : searchError ? (
+            <section className="search-results">
+              <div className="workspace-error" role="alert">
+                <h2>Rentals unavailable</h2>
+                <p>{searchError}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadResults(institution, false)}
+                >
+                  Try again
+                </button>
+              </div>
+            </section>
+          ) : page ? (
+            <section
+              className="search-results"
+              aria-labelledby="results-title"
+              aria-busy={refreshing}
+            >
+              <div className="results-heading">
+                <div>
+                  <h2 id="results-title">
+                    {page.meta.total} {page.meta.total === 1 ? "room" : "rooms"}{" "}
+                    found
+                  </h2>
+                  <p>
+                    {page.meta.total > 0
+                      ? `Showing ${resultRange.first}–${resultRange.last} · `
+                      : ""}
+                    {viewport
+                      ? "inside this map area"
+                      : "within the full radius"}
+                    {" · "}
+                    {formatSearchRadius(page.meta.radiusMeters)} from{" "}
+                    {page.meta.institution.shortName ??
+                      page.meta.institution.nameEn}
+                    {" · checked "}
+                    <time dateTime={page.meta.refreshedAt}>
+                      {formatTime(page.meta.refreshedAt)}
+                    </time>
+                  </p>
+                  <p>
+                    Distances are straight-line estimates, not walking or
+                    driving routes.
+                  </p>
+                </div>
+                <div
+                  className="mobile-result-switch"
+                  role="group"
+                  aria-label="Results view"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={mobileView === "list"}
+                    aria-controls="rental-list"
+                    onClick={() => setMobileView("list")}
+                  >
+                    List ({page.data.length})
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={mobileView === "map"}
+                    aria-controls="rental-map"
+                    onClick={() => setMobileView("map")}
+                  >
+                    Map
+                  </button>
+                </div>
+              </div>
+              {refreshError ? (
+                <p className="search-refresh-warning" role="status">
+                  Refresh failed. Showing the last complete results.{" "}
+                  {refreshError}
+                </p>
+              ) : refreshing ? (
+                <p className="search-update-status" role="status">
+                  {viewport
+                    ? "Updating rentals in the visible map area…"
+                    : currentPage > 1
+                      ? `Loading results page ${currentPage}…`
+                      : "Checking for newly published rentals…"}
+                </p>
+              ) : null}
+
+              <div
+                className="published-search-layout"
+                data-mobile-view={mobileView}
+              >
+                <PublishedRentalMap
+                  institution={page.meta.institution}
+                  listings={page.data}
+                  selectedListingId={selectedListingId}
+                  focusListingId={focusListingId}
+                  viewport={viewport}
+                  active={mobileView === "map"}
+                  updating={refreshing}
+                  onSelectListing={selectFromMap}
+                  onViewportChange={updateViewport}
+                  onClearViewport={clearViewport}
+                  onShowList={() => {
+                    setMobileView("list");
+                    window.requestAnimationFrame(() => {
+                      document.getElementById("rental-list")?.focus();
+                    });
+                  }}
+                />
+                <div
+                  id="rental-list"
+                  className="published-list-region"
+                  tabIndex={-1}
+                  aria-label="Rental results"
+                >
+                  {page.data.length > 0 ? (
+                    <>
+                      <FavoritesFeedback />
+                      <ul className="rental-results published-rental-results">
+                        {page.data.map((listing) => (
+                          <RentalCard
+                            key={listing.id}
+                            listing={listing}
+                            institution={page.meta.institution}
+                            selected={listing.id === selectedListingId}
+                            onSelect={() => selectFromCard(listing.id)}
+                          />
+                        ))}
+                      </ul>
+                      {page.meta.totalPages > 1 ? (
+                        <nav
+                          className="search-pagination"
+                          aria-label="Rental result pages"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => changePage(page.meta.page - 1)}
+                            disabled={page.meta.page <= 1 || refreshing}
+                          >
+                            Previous
+                          </button>
+                          <p>
+                            Page <strong>{page.meta.page}</strong> of{" "}
+                            {page.meta.totalPages}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => changePage(page.meta.page + 1)}
+                            disabled={
+                              page.meta.page >= page.meta.totalPages ||
+                              refreshing
+                            }
+                          >
+                            Next
+                          </button>
+                        </nav>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="empty-results">
+                      <h3>
+                        {viewport
+                          ? "No rentals are visible in this map area."
+                          : "No published rentals match these filters."}
+                      </h3>
+                      <p>
+                        {viewport
+                          ? "Show the full search radius, or move back toward the institution and try again."
+                          : widerRadius === null
+                            ? "You are searching the maximum 20 km radius. Try a higher monthly budget, another rental type, or a different institution."
+                            : "Try increasing the distance or monthly budget. Newly approved rentals will appear while this page is open."}
+                      </p>
+                      <div className="empty-results-actions">
+                        {viewport ? (
+                          <button type="button" onClick={clearViewport}>
+                            Show full radius
+                          </button>
+                        ) : null}
+                        {widerRadius !== null ? (
+                          <button
+                            type="button"
+                            disabled={refreshing}
+                            onClick={() => {
+                              router.push(
+                                buildDistanceSearchHref(
+                                  window.location.search,
+                                  widerRadius,
+                                ),
+                                { scroll: false },
+                              );
+                            }}
+                          >
+                            Widen search to {formatSearchRadius(widerRadius)}
+                          </button>
+                        ) : null}
+                        <Link href={`/search?institution=${institution.slug}`}>
+                          Reset filters
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          ) : null}
+        </main>
+      </FavoritesProvider>
+    </Localized>
   );
 }
 
@@ -732,91 +742,95 @@ function RentalCard({
       .filter(Boolean)
       .join(", ") || listing.location.city;
   return (
-    <li id={`rental-${listing.id}`} data-selected={selected} tabIndex={-1}>
-      {listing.primaryImage ? (
-        <div className="rental-card-photo">
-          <Image
-            src={listing.primaryImage.publicUrl}
-            alt={
-              listing.primaryImage.altTextEn ??
-              listing.primaryImage.altTextKm ??
-              title
-            }
-            fill
-            sizes="(max-width: 640px) calc(100vw - 28px), (max-width: 960px) calc(100vw - 40px), (max-width: 1220px) 55vw, 640px"
+    <Localized>
+      <li id={`rental-${listing.id}`} data-selected={selected} tabIndex={-1}>
+        {listing.primaryImage ? (
+          <div className="rental-card-photo">
+            <Image
+              src={listing.primaryImage.publicUrl}
+              alt={
+                listing.primaryImage.altTextEn ??
+                listing.primaryImage.altTextKm ??
+                title
+              }
+              fill
+              sizes="(max-width: 640px) calc(100vw - 28px), (max-width: 960px) calc(100vw - 40px), (max-width: 1220px) 55vw, 640px"
+            />
+          </div>
+        ) : (
+          <div className="photo-unavailable" aria-label="Photo unavailable">
+            <span>Photo unavailable</span>
+          </div>
+        )}
+        <div className="rental-card-copy">
+          <div className="price-row">
+            <strong>
+              {formatPrice(listing.monthlyPrice, listing.currency)}/month
+            </strong>
+            <span className="available-label">
+              <span className="availability-check" aria-hidden="true" />
+              {listing.availableUnits} available
+            </span>
+          </div>
+          <h3 lang={listing.titleEn ? "en" : "km"}>
+            <Link href={detailHref} prefetch={false}>
+              {title}
+            </Link>
+          </h3>
+          <p>
+            {PROPERTY_TYPE_LABELS[listing.propertyType]} ·{" "}
+            {formatDistance(listing.distanceMeters)} from{" "}
+            {institution.shortName ?? institution.nameEn}
+          </p>
+          <p className="location-context">{location}</p>
+          {listing.amenities.length > 0 ? (
+            <ul className="amenity-list" aria-label="Key amenities">
+              {listing.amenities.slice(0, 3).map((amenity) => (
+                <li key={amenity.id}>{amenity.nameEn}</li>
+              ))}
+            </ul>
+          ) : null}
+          <SaveRentalButton
+            listingId={listing.id}
+            title={title}
+            returnTo={`/search?${searchParams.toString()}`}
           />
+          <div className="rental-card-footer">
+            <small>
+              Last confirmed {formatDate(listing.availabilityConfirmedAt)}
+            </small>
+            <button
+              type="button"
+              aria-pressed={selected}
+              aria-controls="rental-map"
+              onClick={onSelect}
+            >
+              {selected ? "Shown on map" : "Show on map"}
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="photo-unavailable" aria-label="Photo unavailable">
-          <span>Photo unavailable</span>
-        </div>
-      )}
-      <div className="rental-card-copy">
-        <div className="price-row">
-          <strong>
-            {formatPrice(listing.monthlyPrice, listing.currency)}/month
-          </strong>
-          <span className="available-label">
-            <span className="availability-check" aria-hidden="true" />
-            {listing.availableUnits} available
-          </span>
-        </div>
-        <h3 lang={listing.titleEn ? "en" : "km"}>
-          <Link href={detailHref} prefetch={false}>
-            {title}
-          </Link>
-        </h3>
-        <p>
-          {PROPERTY_TYPE_LABELS[listing.propertyType]} ·{" "}
-          {formatDistance(listing.distanceMeters)} from{" "}
-          {institution.shortName ?? institution.nameEn}
-        </p>
-        <p className="location-context">{location}</p>
-        {listing.amenities.length > 0 ? (
-          <ul className="amenity-list" aria-label="Key amenities">
-            {listing.amenities.slice(0, 3).map((amenity) => (
-              <li key={amenity.id}>{amenity.nameEn}</li>
-            ))}
-          </ul>
-        ) : null}
-        <SaveRentalButton
-          listingId={listing.id}
-          title={title}
-          returnTo={`/search?${searchParams.toString()}`}
-        />
-        <div className="rental-card-footer">
-          <small>
-            Last confirmed {formatDate(listing.availabilityConfirmedAt)}
-          </small>
-          <button
-            type="button"
-            aria-pressed={selected}
-            aria-controls="rental-map"
-            onClick={onSelect}
-          >
-            {selected ? "Shown on map" : "Show on map"}
-          </button>
-        </div>
-      </div>
-    </li>
+      </li>
+    </Localized>
   );
 }
 
 function SearchLoading() {
   return (
-    <section className="search-results" aria-busy="true" aria-live="polite">
-      <p className="search-loading-message">
-        Loading current published rentals…
-      </p>
-      <div className="published-search-layout search-results-loading">
-        <div className="skeleton loading-map" aria-hidden="true" />
-        <div className="loading-card-grid" aria-hidden="true">
-          <div className="skeleton loading-card" />
-          <div className="skeleton loading-card" />
-          <div className="skeleton loading-card" />
+    <Localized>
+      <section className="search-results" aria-busy="true" aria-live="polite">
+        <p className="search-loading-message">
+          Loading current published rentals…
+        </p>
+        <div className="published-search-layout search-results-loading">
+          <div className="skeleton loading-map" aria-hidden="true" />
+          <div className="loading-card-grid" aria-hidden="true">
+            <div className="skeleton loading-card" />
+            <div className="skeleton loading-card" />
+            <div className="skeleton loading-card" />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </Localized>
   );
 }
 

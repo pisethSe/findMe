@@ -58,7 +58,7 @@ test("failed moderation never invalidates public caches", async () => {
 });
 
 function pendingListing() {
-  const now = new Date("2026-09-04T00:00:00.000Z");
+  const now = new Date();
   return {
     id: "listing-id",
     landlordId: "landlord-id",

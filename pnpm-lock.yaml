@@ -121,6 +121,9 @@ importers:
 
   frontend-part:
     dependencies:
+      '@designcodeio/threeui':
+        specifier: workspace:*
+        version: link:../shared-part/threeui
       '@findme/contracts':
         specifier: workspace:*
         version: link:../shared-part/contracts
@@ -154,6 +157,12 @@ importers:
         version: 7.0.2
 
   shared-part/contracts: {}
+
+  shared-part/threeui:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
 
 packages:
 

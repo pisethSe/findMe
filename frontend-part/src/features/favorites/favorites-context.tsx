@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type { FavoritesPage } from "@findme/contracts";
 import Link from "next/link";
 import {
@@ -163,24 +164,26 @@ export function FavoritesProvider({
   }
 
   return (
-    <Context.Provider
-      value={{
-        status: visibleStatus,
-        result: resolvedScope === scope ? result : null,
-        pending,
-        errors,
-        notice,
-        retry: () => void reload(),
-        toggle,
-        page,
-        changePage: (nextPage) => {
-          setPage(nextPage);
-          document.getElementById("favorites-title")?.focus();
-        },
-      }}
-    >
-      {children}
-    </Context.Provider>
+    <Localized>
+      <Context.Provider
+        value={{
+          status: visibleStatus,
+          result: resolvedScope === scope ? result : null,
+          pending,
+          errors,
+          notice,
+          retry: () => void reload(),
+          toggle,
+          page,
+          changePage: (nextPage) => {
+            setPage(nextPage);
+            document.getElementById("favorites-title")?.focus();
+          },
+        }}
+      >
+        {children}
+      </Context.Provider>
+    </Localized>
   );
 }
 
@@ -193,19 +196,21 @@ export function useFavorites() {
 export function FavoritesFeedback() {
   const favorites = useFavorites();
   return (
-    <>
-      <p className="favorite-notice" role="status">
-        {favorites.notice}
-      </p>
-      {favorites.status === "error" ? (
-        <p className="favorite-error" role="alert">
-          Saved rentals could not be loaded.{" "}
-          <button type="button" onClick={favorites.retry}>
-            Retry saved rentals
-          </button>
+    <Localized>
+      <>
+        <p className="favorite-notice" role="status">
+          {favorites.notice}
         </p>
-      ) : null}
-    </>
+        {favorites.status === "error" ? (
+          <p className="favorite-error" role="alert">
+            Saved rentals could not be loaded.{" "}
+            <button type="button" onClick={favorites.retry}>
+              Retry saved rentals
+            </button>
+          </p>
+        ) : null}
+      </>
+    </Localized>
   );
 }
 
@@ -222,48 +227,54 @@ export function SaveRentalButton({
   const saved = result?.data.some((f) => f.listingId === listingId) ?? false;
   if (status === "guest")
     return (
-      <Link
-        className="favorite-action"
-        href={`/login?${new URLSearchParams({ next: returnTo })}`}
-      >
-        Sign in to save<span className="sr-only"> {title}</span>
-      </Link>
+      <Localized>
+        <Link
+          className="favorite-action"
+          href={`/login?${new URLSearchParams({ next: returnTo })}`}
+        >
+          Sign in to save<span className="sr-only"> {title}</span>
+        </Link>
+      </Localized>
     );
   if (status === "onboarding")
     return (
-      <Link
-        className="favorite-action"
-        href={`/onboarding/role?${new URLSearchParams({ next: returnTo })}`}
-      >
-        Complete student profile to save
-      </Link>
+      <Localized>
+        <Link
+          className="favorite-action"
+          href={`/onboarding/role?${new URLSearchParams({ next: returnTo })}`}
+        >
+          Complete student profile to save
+        </Link>
+      </Localized>
     );
   return (
-    <div className="favorite-control">
-      <button
-        className="favorite-action"
-        type="button"
-        aria-pressed={saved}
-        aria-label={`${saved ? "Remove saved rental" : "Save rental"}: ${title}`}
-        disabled={status !== "ready" || pending.size > 0}
-        onClick={() => void toggle(listingId, !saved)}
-      >
-        {pending.has(listingId)
-          ? "Updating…"
-          : status === "loading"
-            ? "Checking saved…"
-            : status === "forbidden"
-              ? "Student accounts can save"
-              : saved
-                ? "Saved · Remove"
-                : "Save rental"}
-      </button>
-      {errors[listingId] ? (
-        <p className="favorite-error" role="alert">
-          {errors[listingId]}
-        </p>
-      ) : null}
-    </div>
+    <Localized>
+      <div className="favorite-control">
+        <button
+          className="favorite-action"
+          type="button"
+          aria-pressed={saved}
+          aria-label={`${saved ? "Remove saved rental" : "Save rental"}: ${title}`}
+          disabled={status !== "ready" || pending.size > 0}
+          onClick={() => void toggle(listingId, !saved)}
+        >
+          {pending.has(listingId)
+            ? "Updating…"
+            : status === "loading"
+              ? "Checking saved…"
+              : status === "forbidden"
+                ? "Student accounts can save"
+                : saved
+                  ? "Saved · Remove"
+                  : "Save rental"}
+        </button>
+        {errors[listingId] ? (
+          <p className="favorite-error" role="alert">
+            {errors[listingId]}
+          </p>
+        ) : null}
+      </div>
+    </Localized>
   );
 }
 
@@ -277,13 +288,15 @@ export function RentalFavorite({
   slug: string;
 }) {
   return (
-    <FavoritesProvider listingIds={[listingId]}>
-      <SaveRentalButton
-        listingId={listingId}
-        title={title}
-        returnTo={`/rentals/${encodeURIComponent(slug)}`}
-      />
-      <FavoritesFeedback />
-    </FavoritesProvider>
+    <Localized>
+      <FavoritesProvider listingIds={[listingId]}>
+        <SaveRentalButton
+          listingId={listingId}
+          title={title}
+          returnTo={`/rentals/${encodeURIComponent(slug)}`}
+        />
+        <FavoritesFeedback />
+      </FavoritesProvider>
+    </Localized>
   );
 }

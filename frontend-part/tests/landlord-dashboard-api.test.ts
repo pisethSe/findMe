@@ -74,7 +74,16 @@ test("dashboard writes call only named availability and lifecycle commands", asy
       method: init?.method ?? "GET",
       body: typeof init?.body === "string" ? init.body : null,
     });
-    return jsonResponse({ data: { id: "listing-id" } });
+    return jsonResponse({
+      data: {
+        id: "listing-id",
+        availabilityFreshness: {
+          state: "FRESH",
+          remindAt: "2026-09-08T00:00:00Z",
+          expiresAt: "2026-09-15T00:00:00Z",
+        },
+      },
+    });
   };
 
   await updateListingAvailability("listing-id", 2);

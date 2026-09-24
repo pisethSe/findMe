@@ -100,7 +100,7 @@ test(
       );
       assert.equal(selectedStudent.response.status, 200);
       assert.equal(selectedStudent.body.data.role, "STUDENT");
-      assert.equal(selectedStudent.body.data.nextPath, "/search");
+      assert.equal(selectedStudent.body.data.nextPath, "/");
       assert.equal(selectedStudent.body.data.profileComplete, true);
 
       const repeatedStudent = await apiPost(

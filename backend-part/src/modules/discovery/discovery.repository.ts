@@ -1,3 +1,4 @@
+import { availabilityCutoff } from "../listings/availability-policy.js";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
@@ -66,6 +67,19 @@ export class DiscoveryRepository {
 
     const [records, totals] = await this.prisma.$transaction([
       this.prisma.$queryRaw<PublicSearchRecord[]>(Prisma.sql`
+        -- Bound photo/amenity hydration to the requested page. Materialization
+        -- prevents these lateral joins from running for every spatial match.
+        WITH page AS MATERIALIZED (
+          SELECT l.id, l.monthly_price, l.published_at,
+                 ST_Distance(p.location, i.location)::double precision AS "distanceMeters"
+          FROM listings l
+          INNER JOIN properties p ON p.id = l.property_id AND p.deleted_at IS NULL
+          INNER JOIN institutions i ON i.id = ${input.institutionId}::uuid AND i.is_active = true
+          WHERE ${filters}
+          ORDER BY ${orderBy}
+          LIMIT ${input.pageSize}
+          OFFSET ${offset}
+        )
         SELECT
           l.id,
           l.slug,
@@ -83,7 +97,7 @@ export class DiscoveryRepository {
           p.city,
           p.latitude::double precision AS latitude,
           p.longitude::double precision AS longitude,
-          ST_Distance(p.location, i.location)::double precision AS "distanceMeters",
+          page."distanceMeters",
           amenities.items AS amenities,
           photo.id AS "primaryImageId",
           photo.public_url AS "primaryImageUrl",
@@ -92,9 +106,9 @@ export class DiscoveryRepository {
           photo.width AS "primaryImageWidth",
           photo.height AS "primaryImageHeight",
           photo.sort_order AS "primaryImageSortOrder"
-        FROM listings l
-        INNER JOIN properties p ON p.id = l.property_id AND p.deleted_at IS NULL
-        INNER JOIN institutions i ON i.id = ${input.institutionId}::uuid AND i.is_active = true
+        FROM page
+        INNER JOIN listings l ON l.id = page.id
+        INNER JOIN properties p ON p.id = l.property_id
         LEFT JOIN LATERAL (
           SELECT jsonb_agg(
             jsonb_build_object(
@@ -105,9 +119,9 @@ export class DiscoveryRepository {
               'category', a.category
             ) ORDER BY a.sort_order, a.id
           ) AS items
-          FROM listing_amenities la
-          INNER JOIN amenities a ON a.id = la.amenity_id AND a.is_active = true
-          WHERE la.listing_id = l.id
+          FROM listing_amenities page_amenities
+          INNER JOIN amenities a ON a.id = page_amenities.amenity_id AND a.is_active = true
+          WHERE page_amenities.listing_id = l.id
         ) amenities ON true
         LEFT JOIN LATERAL (
           SELECT li.id, li.public_url, li.alt_text_km, li.alt_text_en,
@@ -117,10 +131,7 @@ export class DiscoveryRepository {
           ORDER BY li.sort_order, li.id
           LIMIT 1
         ) photo ON true
-        WHERE ${filters}
         ORDER BY ${orderBy}
-        LIMIT ${input.pageSize}
-        OFFSET ${offset}
       `),
       this.prisma.$queryRaw<Array<{ total: bigint }>>(Prisma.sql`
         SELECT COUNT(*)::bigint AS total
@@ -136,12 +147,14 @@ export class DiscoveryRepository {
 }
 
 function searchFilters(input: NormalizedPublicSearchInput): Prisma.Sql {
+  const now = new Date();
   const conditions: Prisma.Sql[] = [
     Prisma.sql`l.status = 'published'`,
     Prisma.sql`l.deleted_at IS NULL`,
     Prisma.sql`l.available_units > 0`,
     Prisma.sql`l.published_at IS NOT NULL`,
-    Prisma.sql`l.availability_confirmed_at IS NOT NULL`,
+    Prisma.sql`l.availability_confirmed_at > ${availabilityCutoff(now)}`,
+    Prisma.sql`l.availability_confirmed_at <= ${now}`,
     Prisma.sql`(l.available_from IS NULL OR l.available_from <= ${input.availableBy}::date)`,
     Prisma.sql`ST_DWithin(p.location, i.location, ${input.radiusMeters})`,
   ];
@@ -178,15 +191,17 @@ function searchFilters(input: NormalizedPublicSearchInput): Prisma.Sql {
     `);
   }
   if (input.amenities.length > 0) {
+    // Check each spatial candidate through listing_amenities' primary key,
+    // instead of grouping the entire marketplace's amenity associations.
+    // DTO uniqueness + unique amenity keys + the join PK make COUNT exact.
     conditions.push(Prisma.sql`
-      l.id IN (
-        SELECT la.listing_id
+      (
+        SELECT COUNT(*)
         FROM listing_amenities la
         INNER JOIN amenities a ON a.id = la.amenity_id AND a.is_active = true
-        WHERE a.key IN (${Prisma.join(input.amenities)})
-        GROUP BY la.listing_id
-        HAVING COUNT(DISTINCT a.key) = ${input.amenities.length}
-      )
+        WHERE la.listing_id = l.id
+          AND a.key IN (${Prisma.join(input.amenities)})
+      ) = ${input.amenities.length}
     `);
   }
   return Prisma.join(conditions, " AND ");

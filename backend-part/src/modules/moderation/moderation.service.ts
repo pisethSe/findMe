@@ -1,3 +1,4 @@
+import { hasCurrentAvailability } from "../listings/availability-policy.js";
 import {
   ConflictException,
   Injectable,
@@ -76,6 +77,13 @@ export class ModerationService {
 }
 
 function assertPublicationReady(listing: AdminPendingListingRecord): void {
+  if (!hasCurrentAvailability(listing.availabilityConfirmedAt)) {
+    throw new ConflictException({
+      code: "LISTING_AVAILABILITY_STALE",
+      message:
+        "The landlord must confirm availability again before publication.",
+    });
+  }
   const hasDescription = Boolean(
     listing.descriptionKm?.trim() || listing.descriptionEn?.trim(),
   );

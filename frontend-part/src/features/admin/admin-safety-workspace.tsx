@@ -1,4 +1,6 @@
 "use client";
+
+import { Localized } from "../preferences/translated-text";
 import type {
   AdminPendingListingDto,
   AdminReportDto,
@@ -129,199 +131,205 @@ export function AdminSafetyWorkspace({
     }
   }
   return (
-    <main className="workspace-page" lang="en">
-      <header className="workspace-header">
-        <BrandMark />
-        <Link href="/search">Browse student rentals</Link>
-      </header>
-      <section className={`workspace-content ${styles.scope}`}>
-        <AdminNavigation />
-        <h1 ref={heading} tabIndex={-1}>
-          {titles[section]}
-        </h1>
-        <p>
-          {section === "reports"
-            ? "Review the rental and report, then record a decision. Resolving a report does not remove the rental; use rental moderation for that."
-            : section === "users"
-              ? "Suspension revokes sessions and pauses published rentals. Reactivation restores access without republishing rentals or extending trials."
-              : "Inspect rental content and remove inaccurate or prohibited supply. Publishing remains in the pending-rental queue."}
-        </p>
-        <p role="status">{notice}</p>
-        {access === "guest" ? (
+    <Localized>
+      <main className="workspace-page" lang="en">
+        <header className="workspace-header">
+          <BrandMark />
+          <Link href="/search">Browse student rentals</Link>
+        </header>
+        <section className={`workspace-content ${styles.scope}`}>
+          <AdminNavigation />
+          <h1 ref={heading} tabIndex={-1}>
+            {titles[section]}
+          </h1>
           <p>
-            <Link href="/login">Sign in with an administrator account</Link>
+            {section === "reports"
+              ? "Review the rental and report, then record a decision. Resolving a report does not remove the rental; use rental moderation for that."
+              : section === "users"
+                ? "Suspension revokes sessions and pauses published rentals. Reactivation restores access without republishing rentals or extending trials."
+                : "Inspect rental content and remove inaccurate or prohibited supply. Publishing remains in the pending-rental queue."}
           </p>
-        ) : access === "denied" ? (
-          <p role="alert">Administrator access is required.</p>
-        ) : (
-          <>
-            <form
-              className={styles.toolbar}
-              onSubmit={(e) => {
-                e.preventDefault();
-                setPage(1);
-                setSearch(query);
-              }}
-            >
-              {section !== "users" && !listingId ? (
-                <label>
-                  Status
-                  <select
-                    value={filter}
-                    disabled={working}
-                    onChange={(e) => {
-                      setFilter(e.target.value);
-                      setPage(1);
-                    }}
-                  >
-                    {(section === "reports"
-                      ? ["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]
-                      : [
-                          "",
-                          "DRAFT",
-                          "PENDING_REVIEW",
-                          "PUBLISHED",
-                          "PAUSED",
-                          "RENTED",
-                          "REJECTED",
-                          "ARCHIVED",
-                        ]
-                    ).map((s) => (
-                      <option key={s} value={s}>
-                        {s ? s.replaceAll("_", " ") : "All statuses"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {section !== "reports" && !listingId ? (
-                <>
+          <p role="status">{notice}</p>
+          {access === "guest" ? (
+            <p>
+              <Link href="/login">Sign in with an administrator account</Link>
+            </p>
+          ) : access === "denied" ? (
+            <p role="alert">Administrator access is required.</p>
+          ) : (
+            <>
+              <form
+                className={styles.toolbar}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setPage(1);
+                  setSearch(query);
+                }}
+              >
+                {section !== "users" && !listingId ? (
                   <label>
-                    {section === "users" ? "Name or user ID" : "Rental title"}
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      maxLength={100}
+                    Status
+                    <select
+                      value={filter}
                       disabled={working}
-                    />
+                      onChange={(e) => {
+                        setFilter(e.target.value);
+                        setPage(1);
+                      }}
+                    >
+                      {(section === "reports"
+                        ? ["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"]
+                        : [
+                            "",
+                            "DRAFT",
+                            "PENDING_REVIEW",
+                            "PUBLISHED",
+                            "PAUSED",
+                            "RENTED",
+                            "REJECTED",
+                            "ARCHIVED",
+                          ]
+                      ).map((s) => (
+                        <option key={s} value={s}>
+                          {s ? s.replaceAll("_", " ") : "All statuses"}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                  <button disabled={working}>Search</button>
-                </>
+                ) : null}
+                {section !== "reports" && !listingId ? (
+                  <>
+                    <label>
+                      {section === "users" ? "Name or user ID" : "Rental title"}
+                      <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        maxLength={100}
+                        disabled={working}
+                      />
+                    </label>
+                    <button disabled={working}>Search</button>
+                  </>
+                ) : null}
+              </form>
+              {error ? (
+                <div role="alert">
+                  <p>{error}</p>
+                  <button onClick={() => setAttempt((n) => n + 1)}>
+                    Retry loading
+                  </button>
+                </div>
+              ) : !rows ? (
+                <p role="status">Loading protected records…</p>
+              ) : rows.length === 0 ? (
+                <p>
+                  No records match this view. Change the filter or search to
+                  review other records.
+                </p>
+              ) : (
+                <ul className={styles.list}>
+                  {rows.map((row) => (
+                    <li key={row.id} className={styles.row}>
+                      {section === "reports" ? (
+                        <ReportSummary row={row as AdminReportDto} />
+                      ) : section === "users" ? (
+                        <UserSummary row={row as AdminUserDto} />
+                      ) : (
+                        <ul className={styles.list}>
+                          <ModerationCard
+                            listing={row as AdminPendingListingDto}
+                            note=""
+                            workingAction={null}
+                            disabled={working}
+                            onNoteChange={() => {}}
+                            onApprove={() => {}}
+                            onReject={() => {}}
+                            reviewOnly
+                          />
+                        </ul>
+                      )}
+                      <Decision
+                        key={`${row.id}-${"status" in row ? row.status : row.accountStatus}`}
+                        row={row}
+                        section={section}
+                        disabled={working}
+                        onAction={act}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {meta && rows ? (
+                <nav className={styles.toolbar} aria-label="Admin record pages">
+                  <button
+                    disabled={page <= 1 || working}
+                    onClick={() => setPage((n) => n - 1)}
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {page} of {Math.max(1, meta.totalPages)} · {meta.total}{" "}
+                    records
+                  </span>
+                  <button
+                    disabled={page >= meta.totalPages || working}
+                    onClick={() => setPage((n) => n + 1)}
+                  >
+                    Next
+                  </button>
+                </nav>
               ) : null}
-            </form>
-            {error ? (
-              <div role="alert">
-                <p>{error}</p>
-                <button onClick={() => setAttempt((n) => n + 1)}>
-                  Retry loading
-                </button>
-              </div>
-            ) : !rows ? (
-              <p role="status">Loading protected records…</p>
-            ) : rows.length === 0 ? (
-              <p>
-                No records match this view. Change the filter or search to
-                review other records.
-              </p>
-            ) : (
-              <ul className={styles.list}>
-                {rows.map((row) => (
-                  <li key={row.id} className={styles.row}>
-                    {section === "reports" ? (
-                      <ReportSummary row={row as AdminReportDto} />
-                    ) : section === "users" ? (
-                      <UserSummary row={row as AdminUserDto} />
-                    ) : (
-                      <ul className={styles.list}>
-                        <ModerationCard
-                          listing={row as AdminPendingListingDto}
-                          note=""
-                          workingAction={null}
-                          disabled={working}
-                          onNoteChange={() => {}}
-                          onApprove={() => {}}
-                          onReject={() => {}}
-                          reviewOnly
-                        />
-                      </ul>
-                    )}
-                    <Decision
-                      key={`${row.id}-${"status" in row ? row.status : row.accountStatus}`}
-                      row={row}
-                      section={section}
-                      disabled={working}
-                      onAction={act}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-            {meta && rows ? (
-              <nav className={styles.toolbar} aria-label="Admin record pages">
-                <button
-                  disabled={page <= 1 || working}
-                  onClick={() => setPage((n) => n - 1)}
-                >
-                  Previous
-                </button>
-                <span>
-                  Page {page} of {Math.max(1, meta.totalPages)} · {meta.total}{" "}
-                  records
-                </span>
-                <button
-                  disabled={page >= meta.totalPages || working}
-                  onClick={() => setPage((n) => n + 1)}
-                >
-                  Next
-                </button>
-              </nav>
-            ) : null}
-          </>
-        )}
-      </section>
-    </main>
+            </>
+          )}
+        </section>
+      </main>
+    </Localized>
   );
 }
 function ReportSummary({ row }: { row: AdminReportDto }) {
   return (
-    <>
-      <h2>{row.reason.replaceAll("_", " ")}</h2>
-      <p>
-        {row.status.replaceAll("_", " ")} ·{" "}
-        {new Date(row.createdAt).toLocaleString("en-GB")}
-      </p>
-      <p className={styles.copy}>
-        {row.details || "No additional details supplied."}
-      </p>
-      <p>
-        <Link href={`/admin/listings?id=${row.listing.id}`}>
-          Review rental:{" "}
-          {row.listing.titleEn ?? row.listing.titleKm ?? row.listing.slug}
-        </Link>
-      </p>
-      <p>
-        <Link href={`/admin/users?query=${row.listing.landlordId}`}>
-          Review landlord account
-        </Link>
-      </p>
-      {row.resolutionNote ? (
-        <p className={styles.copy}>Review note: {row.resolutionNote}</p>
-      ) : null}
-    </>
+    <Localized>
+      <>
+        <h2>{row.reason.replaceAll("_", " ")}</h2>
+        <p>
+          {row.status.replaceAll("_", " ")} ·{" "}
+          {new Date(row.createdAt).toLocaleString("en-GB")}
+        </p>
+        <p className={styles.copy}>
+          {row.details || "No additional details supplied."}
+        </p>
+        <p>
+          <Link href={`/admin/listings?id=${row.listing.id}`}>
+            Review rental:{" "}
+            {row.listing.titleEn ?? row.listing.titleKm ?? row.listing.slug}
+          </Link>
+        </p>
+        <p>
+          <Link href={`/admin/users?query=${row.listing.landlordId}`}>
+            Review landlord account
+          </Link>
+        </p>
+        {row.resolutionNote ? (
+          <p className={styles.copy}>Review note: {row.resolutionNote}</p>
+        ) : null}
+      </>
+    </Localized>
   );
 }
 function UserSummary({ row }: { row: AdminUserDto }) {
   return (
-    <>
-      <h2>{row.displayName}</h2>
-      <p>
-        {row.role ?? "Role not selected"} · {row.accountStatus}
-      </p>
-      <p>User ID: {row.id}</p>
-      {row.role === "ADMIN" ? (
-        <p>Administrator accounts are protected from these actions.</p>
-      ) : null}
-    </>
+    <Localized>
+      <>
+        <h2>{row.displayName}</h2>
+        <p>
+          {row.role ?? "Role not selected"} · {row.accountStatus}
+        </p>
+        <p>User ID: {row.id}</p>
+        {row.role === "ADMIN" ? (
+          <p>Administrator accounts are protected from these actions.</p>
+        ) : null}
+      </>
+    </Localized>
   );
 }
 function Decision({
@@ -380,35 +388,37 @@ function Decision({
     }
   }
   return (
-    <div className={styles.decision}>
-      <label htmlFor={`note-${row.id}`}>Decision note (required)</label>
-      <textarea
-        ref={field}
-        id={`note-${row.id}`}
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        maxLength={2000}
-        rows={3}
-        disabled={disabled}
-        aria-invalid={!!error}
-        aria-describedby={error ? `error-${row.id}` : undefined}
-      />
-      {error ? (
-        <p id={`error-${row.id}`} role="alert">
-          {error}
-        </p>
-      ) : null}
-      <div className={styles.toolbar}>
-        {actions.map(([action, label]) => (
-          <button
-            key={action}
-            disabled={disabled}
-            onClick={() => void decide(action)}
-          >
-            {pending ? "Saving…" : label}
-          </button>
-        ))}
+    <Localized>
+      <div className={styles.decision}>
+        <label htmlFor={`note-${row.id}`}>Decision note (required)</label>
+        <textarea
+          ref={field}
+          id={`note-${row.id}`}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={2000}
+          rows={3}
+          disabled={disabled}
+          aria-invalid={!!error}
+          aria-describedby={error ? `error-${row.id}` : undefined}
+        />
+        {error ? (
+          <p id={`error-${row.id}`} role="alert">
+            {error}
+          </p>
+        ) : null}
+        <div className={styles.toolbar}>
+          {actions.map(([action, label]) => (
+            <button
+              key={action}
+              disabled={disabled}
+              onClick={() => void decide(action)}
+            >
+              {pending ? "Saving…" : label}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </Localized>
   );
 }

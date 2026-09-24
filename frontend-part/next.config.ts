@@ -17,6 +17,7 @@ const listingImageRemotePatterns = getListingImageRemotePatterns({
 });
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@designcodeio/threeui"],
   output: "standalone",
   outputFileTracingRoot: path.join(import.meta.dirname, ".."),
   poweredByHeader: false,

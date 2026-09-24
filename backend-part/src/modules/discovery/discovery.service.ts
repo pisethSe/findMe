@@ -1,3 +1,4 @@
+import { hasCurrentAvailability } from "../listings/availability-policy.js";
 import {
   BadRequestException,
   Injectable,
@@ -74,7 +75,12 @@ export class DiscoveryService {
 
     const cached =
       await this.cache.getSearch<ReturnType<typeof buildPage>>(normalized);
-    if (cached.value) {
+    if (
+      cached.value &&
+      cached.value.data.every((listing) =>
+        hasCurrentAvailability(new Date(listing.availabilityConfirmedAt)),
+      )
+    ) {
       await this.recordSearch(cached.value.meta.total);
       return {
         ...cached.value,

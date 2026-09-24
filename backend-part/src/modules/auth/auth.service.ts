@@ -112,6 +112,86 @@ export class AuthService {
     return this.issueSession(user, metadata);
   }
 
+  /**
+   * Opens a session for an account that was resolved outside the password
+   * flow (currently Google sign-in). The account must still be active.
+   */
+  async createSessionForUserId(
+    userId: string,
+    metadata: RequestMetadata,
+  ): Promise<SessionTokens> {
+    const user = await this.repository.findActiveUserById(userId);
+    if (!user) throw accountUnavailable();
+    return this.issueSession(user, metadata);
+  }
+
+  /**
+   * Creates an account for a first-time Google sign-in and opens its session.
+   *
+   * The stored password placeholder never verifies, so password sign-in stays
+   * unavailable until the account sets a real password through the normal
+   * password-reset flow.
+   */
+  async createGoogleAccount(
+    input: {
+      email: string;
+      googleSubject: string;
+      passwordHash: string;
+      preferredLocale?: "KM" | "EN";
+    },
+    metadata: RequestMetadata,
+  ): Promise<SessionTokens> {
+    const refresh = this.tokens.createRefreshToken();
+    const refreshSession = {
+      tokenHash: refresh.hash,
+      expiresAt: refresh.expiresAt,
+      userAgent: metadata.userAgent,
+      ipHash: this.tokens.hashIpAddress(metadata.ipAddress),
+    };
+
+    let user: PublicUserRecord;
+    try {
+      user = await this.repository.createUserWithRefreshSession(
+        {
+          email: normalizeEmail(input.email),
+          passwordHash: input.passwordHash,
+          googleSubject: input.googleSubject,
+          preferredLocale: input.preferredLocale ?? "KM",
+        },
+        refreshSession,
+      );
+    } catch (error) {
+      if (this.repository.isUniqueConstraintError(error)) {
+        // A concurrent callback may have created or linked this account a
+        // moment earlier; reuse it instead of failing the sign-in.
+        const linked = await this.repository.findUserByGoogleSubject(
+          input.googleSubject,
+        );
+        if (
+          linked &&
+          linked.accountStatus === AccountStatus.ACTIVE &&
+          linked.deletedAt === null
+        ) {
+          return this.issueSession(linked, metadata);
+        }
+        throw new ConflictException({
+          code: "ACCOUNT_ALREADY_EXISTS",
+          message: "An account already uses this email address.",
+        });
+      }
+      throw error;
+    }
+
+    const publicUser = toPublicUser(user);
+    return {
+      accessToken: await this.tokens.createAccessToken(publicUser),
+      accessTokenExpiresInSeconds: this.tokens.accessTokenExpiresInSeconds,
+      refreshToken: refresh.token,
+      refreshTokenExpiresAt: refresh.expiresAt,
+      user: publicUser,
+    };
+  }
+
   async refresh(
     refreshToken: string,
     metadata: RequestMetadata,
@@ -254,6 +334,13 @@ function invalidCredentials(): UnauthorizedException {
   return new UnauthorizedException({
     code: "INVALID_CREDENTIALS",
     message: "The email or password is incorrect.",
+  });
+}
+
+function accountUnavailable(): ForbiddenException {
+  return new ForbiddenException({
+    code: "ACCOUNT_UNAVAILABLE",
+    message: "This account is not available for sign in.",
   });
 }
 

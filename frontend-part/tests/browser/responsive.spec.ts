@@ -101,19 +101,19 @@ for (const viewport of viewports) {
 
     await page.goto("/");
     await expect(
-      page.getByRole("button", { name: "Find nearby rooms" }),
+      page.getByRole("button", { name: "Search", exact: true }),
     ).toBeEnabled();
     await expect(
       page.getByRole("heading", {
-        name: "ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតអ្នកបំផុត.",
+        name: "ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត និងនៅជិតសាលាអ្នកបំផុត",
       }),
     ).toBeVisible();
     await noOverflow(page);
     if (viewport.width <= 960) {
       const action = await page
-        .getByRole("button", { name: "Find nearby rooms" })
+        .getByRole("button", { name: "Search", exact: true })
         .boundingBox();
-      const map = await page.locator(".map-preview").boundingBox();
+      const map = await page.locator("#explore").boundingBox();
       expect(action?.y).toBeLessThan(map?.y ?? 0);
     }
     await capture(page, `landing-${viewport.width}`);
@@ -194,9 +194,11 @@ test("search loading, empty, API failure and card-to-map focus remain usable on 
   });
   await page.goto(searchHref);
   await expect(
-    page.getByText("Loading current published rentals…"),
+    page.getByRole("main").getByText("Loading current published rentals…"),
   ).toBeVisible();
-  await expect(page.locator(".loading-map")).toBeHidden();
+  // Phones never render the map skeleton. Scope to visibility so the assertion
+  // also holds while Next keeps the route-level loading fallback in the DOM.
+  await expect(page.locator(".loading-map:visible")).toHaveCount(0);
   await noOverflow(page);
   await capture(page, "search-loading");
   release?.();

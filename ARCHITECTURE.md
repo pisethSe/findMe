@@ -266,7 +266,7 @@ API keys:
 - load the browser Maps library only inside a dedicated client boundary;
 - use a stable 2D map/listing-card fallback when 3D is unsupported, hardware acceleration is unavailable, reduced motion is requested, the network is constrained, quota fails, or map initialization errors;
 - keep camera motion slow, finite, interruptible, and disabled under `prefers-reduced-motion`;
-- use marker label/icon/shape together with green for available and red for unavailable;
+- use marker label/icon/shape together with blue for available and red for unavailable;
 - the public search default remains published and available inventory. The landing hero may show labelled unavailable demo markers to explain status, but it must not imply that unavailable inventory can be rented;
 - enforce a marker budget and cluster/simplify before rendering dense scenes.
 
@@ -1094,13 +1094,20 @@ Rules:
 
 ### 18.1 Landing and onboarding composition
 
-Desktop landing composition is an asymmetric two-column hero:
+The September 2026 user-approved landing uses a centered composition:
 
-- left: exact Khmer headline `ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតអ្នកបំផុត.` rendered with **Kantumruy Pro**, a concise vertical phrase loop, and clear search/register actions;
-- right: a bounded 3D Phnom Penh rental-map preview with labelled availability markers and restrained camera motion;
-- mobile: stacked content with the headline and search action first, followed by a lighter map preview or static/list alternative.
+- compact single-row rentMe header, with hover location menu, direct language/theme toggles and card-style mobile navigation;
+- large exact Khmer headline `ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតសាលាអ្នកបំផុត` in **Kantumruy Pro**, followed by a fixed-height bilingual phrase introduction;
+- blue-and-white campus search panel with location/distance/type controls, budget dialog and a border-only pointer glow;
+- map preview below search, then clearly illustrative sample rooms, product information and footer; the full Cambodian institution directory lives at `/universities`.
 
-The phrase loop keeps fixed dimensions, changes at a calm interval, uses a static accessible text equivalent with no repetitive live-region announcements, pauses where WCAG timing requires it, and shows one phrase when reduced motion is requested. Primary content is visible before JavaScript hydration.
+The ThreeUI `ribbon-field` implementation is a private workspace package with byte-for-byte source checks. The wrapper runs a short introduction and captures the authored WebGL frame before releasing the animated renderer. Reduced-motion clients skip it. No shader code is recreated or edited. The user-requested white-first treatment and dark city image are host presentation, not changes to the registered source.
+
+Google Maps JavaScript renders synchronized markers when its browser key and map ID are configured. Missing credentials use the public Google location embed (default terrain, satellite, flat road map) and a separate accessible room list; actual PostgreSQL coordinates drive selected current rentals. Demo room choices are explicitly illustrative and do not place fictional pins on the real embedded map. Server-side PostGIS filtering remains authoritative.
+
+`SitePreferences` holds only local appearance/language choices. `Localized` translates authored presentation strings through the Khmer catalog while preserving element identities, form values, URLs, IDs and unknown user content. Registration locale, server role/onboarding and entitlement contracts remain independent.
+
+The phrase introduction has static accessible text and no repetitive live announcements; it ends in under five seconds without a pause button. Primary content renders before enhancement hydration.
 
 After authentication, the server-provided onboarding state determines routing:
 
@@ -1171,6 +1178,17 @@ same NestJS search service
 The map and cards must use the same result IDs so selection stays synchronized.
 
 ### 19.1 Published listing freshness
+
+Availability confirmation uses a 7-day dashboard reminder and a 14-day public
+eligibility limit, measured as elapsed time on the server. Search/detail and new
+favorites/inquiries exclude stale confirmations on reads, without relying on a
+scheduled sweep or changing listing status. Equal-count owner confirmation is
+supported, while expiry and moderation guards remain authoritative. Owned DTOs
+include server-derived freshness state and deadlines; private history survives.
+Admin approval requires a current owner confirmation and does not reset it.
+See [STALE-LISTINGS.md](docs/STALE-LISTINGS.md) for the API, cache boundary,
+reconfirmation, and rollout policy.
+
 
 “Real time on the map” means two separate behaviors:
 
@@ -1356,6 +1374,9 @@ JWT_ACCESS_SECRET=
 JWT_ACCESS_TTL=
 REFRESH_TOKEN_SECRET=
 GOOGLE_MAPS_SERVER_KEY=
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
+GOOGLE_OAUTH_REDIRECT_URL=
 
 # media
 S3_ENDPOINT=

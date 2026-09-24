@@ -32,7 +32,7 @@ export function studentPostAuthPath(
 ): string {
   const safe = safeStudentReturnPath(returnTo);
   if (!safe) return nextPath;
-  if (nextPath === "/search") return safe;
+  if (nextPath === "/" || nextPath === "/search") return safe;
   if (nextPath === "/onboarding/role")
     return `${nextPath}?${new URLSearchParams({ next: safe })}`;
   return nextPath;

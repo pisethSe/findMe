@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { ObservabilityModule } from "./common/observability/observability.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { AmenitiesModule } from "./modules/amenities/amenities.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
@@ -21,6 +22,7 @@ import { RateLimitsModule } from "./modules/rate-limits/rate-limits.module.js";
 
 @Module({
   imports: [
+    ObservabilityModule,
     RateLimitsModule,
     DatabaseModule,
     PublicCacheModule,

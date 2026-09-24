@@ -11,6 +11,7 @@ import type {
 } from "@findme/contracts";
 
 import { isSearchRadius } from "./distance-filter-model.ts";
+import { isRoomType } from "./room-type-options.ts";
 
 interface ErrorEnvelope {
   error?: { code?: string; message?: string };
@@ -363,14 +364,7 @@ export function isPrimaryImage(value: unknown): boolean {
 }
 
 function isPropertyType(value: unknown): value is PropertyType {
-  return [
-    "ROOM",
-    "STUDIO",
-    "APARTMENT",
-    "HOUSE",
-    "DORM_ROOM",
-    "OTHER_STUDENT_RENTAL",
-  ].includes(typeof value === "string" ? value : "");
+  return isRoomType(value);
 }
 
 function isDateOnly(value: unknown): value is string {

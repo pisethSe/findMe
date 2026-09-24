@@ -19,7 +19,10 @@ const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 
 test(
   "admin moderation publishes only ready listings into PostGIS search and audits decisions",
-  { skip: !testDatabaseUrl, timeout: 35_000 },
+  // The test database is a remote Neon endpoint (~50-60ms round trip from this
+  // environment); the flow performs hundreds of queries and measures ~37-40s
+  // standalone. The bound stays finite so genuine hangs still fail fast.
+  { skip: !testDatabaseUrl, timeout: 90_000 },
   async () => {
     const port = 32_180;
     const baseUrl = `http://127.0.0.1:${port}/api/v1`;

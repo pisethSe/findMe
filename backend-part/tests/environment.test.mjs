@@ -6,13 +6,17 @@ import {
   getAuthSecret,
   getDatabaseUrl,
   getGoogleMapsServerKey,
+  getLogLevel,
   getObjectStorageConfig,
+  getOpsMetricsToken,
   getRedisUrl,
   getWebOrigin,
   parseAccessTokenTtl,
   parseApiPort,
   parsePasswordResetTtlMinutes,
   parseRefreshTokenTtlDays,
+  resolveLogLevel,
+  resolveOpsMetricsToken,
   validateApplicationEnvironment,
   validateAuthEnvironment,
 } from "../dist/config/environment.js";
@@ -169,5 +173,58 @@ test("validates Maps configuration as part of application startup", () => {
         REDIS_URL: "rediss://cache.example.test:6380",
       }),
     /GOOGLE_MAPS_SERVER_KEY is required/,
+  );
+});
+
+test("validates the JSON request-log threshold", () => {
+  assert.equal(getLogLevel(undefined, "local"), "warn");
+  assert.equal(getLogLevel(undefined, "production"), "info");
+  assert.equal(getLogLevel("DEBUG", "local"), "debug");
+  assert.equal(getLogLevel("  error  ", "production"), "error");
+  assert.throws(() => getLogLevel("verbose", "local"), /LOG_LEVEL/);
+
+  assert.equal(resolveLogLevel(undefined, "test"), "warn");
+  assert.equal(resolveLogLevel(undefined, "staging"), "info");
+  assert.equal(resolveLogLevel("warn", "test"), "warn");
+  assert.equal(resolveLogLevel("verbose", "test"), "warn");
+  assert.equal(resolveLogLevel("verbose", undefined), "warn");
+});
+
+test("keeps the ops metrics surface disabled unless a strong token is configured", () => {
+  assert.equal(getOpsMetricsToken(undefined), null);
+  assert.equal(getOpsMetricsToken("   "), null);
+  assert.throws(
+    () => getOpsMetricsToken("too-short"),
+    /OPS_METRICS_TOKEN must contain at least 32 characters/,
+  );
+  assert.equal(
+    getOpsMetricsToken("ops-metrics-token-with-at-least-32-characters"),
+    "ops-metrics-token-with-at-least-32-characters",
+  );
+
+  assert.equal(resolveOpsMetricsToken("too-short"), null);
+  assert.equal(resolveOpsMetricsToken(undefined), null);
+  assert.equal(
+    resolveOpsMetricsToken("ops-metrics-token-with-at-least-32-characters"),
+    "ops-metrics-token-with-at-least-32-characters",
+  );
+
+  assert.throws(
+    () =>
+      validateApplicationEnvironment({
+        APP_ENV: "production",
+        NODE_ENV: "production",
+        JWT_ACCESS_SECRET: "a".repeat(32),
+        REFRESH_TOKEN_SECRET: "b".repeat(32),
+        REDIS_URL: "rediss://cache.example.test:6380",
+        GOOGLE_MAPS_SERVER_KEY: `AIza${"s".repeat(35)}`,
+        S3_REGION: "auto",
+        S3_BUCKET: "findme-media",
+        S3_ACCESS_KEY_ID: "access-key",
+        S3_SECRET_ACCESS_KEY: "secret-key",
+        CDN_BASE_URL: "https://cdn.example.test",
+        OPS_METRICS_TOKEN: "short",
+      }),
+    /OPS_METRICS_TOKEN/,
   );
 });

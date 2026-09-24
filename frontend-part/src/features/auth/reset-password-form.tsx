@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
@@ -42,67 +43,71 @@ export function ResetPasswordForm({ token }: { token: string | undefined }) {
 
   if (complete) {
     return (
-      <div className="auth-success" role="status">
-        <h3>Password updated</h3>
-        <p>
-          Existing sessions were signed out. Use your new password to return.
-        </p>
-        <Link className="auth-secondary-action" href="/login">
-          Sign in
-        </Link>
-      </div>
+      <Localized>
+        <div className="auth-success" role="status">
+          <h3>Password updated</h3>
+          <p>
+            Existing sessions were signed out. Use your new password to return.
+          </p>
+          <Link className="auth-secondary-action" href="/login">
+            Sign in
+          </Link>
+        </div>
+      </Localized>
     );
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <div className="form-field">
-        <label htmlFor="reset-password">New password</label>
-        <input
-          id="reset-password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          aria-describedby="reset-password-requirements"
-          disabled={!token}
-          required
-        />
-        <p className="field-help" id="reset-password-requirements">
-          Use at least 12 characters with a letter and a number.
-        </p>
-      </div>
-      <div className="form-field">
-        <label htmlFor="reset-confirm-password">Confirm new password</label>
-        <input
-          id="reset-confirm-password"
-          name="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          disabled={!token}
-          required
-        />
-      </div>
+    <Localized>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="form-field">
+          <label htmlFor="reset-password">New password</label>
+          <input
+            id="reset-password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            aria-describedby="reset-password-requirements"
+            disabled={!token}
+            required
+          />
+          <p className="field-help" id="reset-password-requirements">
+            Use at least 12 characters with a letter and a number.
+          </p>
+        </div>
+        <div className="form-field">
+          <label htmlFor="reset-confirm-password">Confirm new password</label>
+          <input
+            id="reset-confirm-password"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            disabled={!token}
+            required
+          />
+        </div>
 
-      {error ? (
-        <p className="form-message is-error" role="alert">
-          {error}
-        </p>
-      ) : null}
+        {error ? (
+          <p className="form-message is-error" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-      <button
-        className="auth-submit"
-        type="submit"
-        disabled={pending || !token}
-      >
-        {pending ? "Updating password…" : "Update password"}
-      </button>
-      <p className="auth-alternate">
-        <Link href="/forgot-password">Request another reset link</Link>
-      </p>
-    </form>
+        <button
+          className="auth-submit"
+          type="submit"
+          disabled={pending || !token}
+        >
+          {pending ? "Updating password…" : "Update password"}
+        </button>
+        <p className="auth-alternate">
+          <Link href="/forgot-password">Request another reset link</Link>
+        </p>
+      </form>
+    </Localized>
   );
 }

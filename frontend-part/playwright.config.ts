@@ -3,11 +3,18 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/browser",
   fullyParallel: false,
+  forbidOnly: Boolean(process.env.CI),
   workers: 1,
   retries: 0,
   timeout: 45_000,
   expect: { timeout: 10_000 },
-  reporter: "list",
+  reporter: process.env.CI
+    ? [
+        ["list"],
+        ["html", { open: "never" }],
+        ["junit", { outputFile: "test-results/browser-results.xml" }],
+      ]
+    : "list",
   use: {
     baseURL: "http://127.0.0.1:3100",
     browserName: "chromium",

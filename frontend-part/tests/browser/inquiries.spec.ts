@@ -110,7 +110,7 @@ async function inquiryApi(page: Page) {
                   ? "/landlord"
                   : state.role === "INCOMPLETE"
                     ? "/onboarding/role"
-                    : "/search",
+                    : "/",
             },
           });
     if (url.pathname === "/api/v1/me/favorites")

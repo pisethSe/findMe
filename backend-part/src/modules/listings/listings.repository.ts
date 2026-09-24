@@ -243,18 +243,53 @@ export class ListingsRepository {
     listingId: string,
     landlordId: string,
     expectedStatus: ListingStatus,
+    expectedAvailableUnits: number,
     input: {
       availableUnits: number;
       availabilityConfirmedAt: Date;
       status?: ListingStatus;
     },
   ): Promise<LandlordListingRecord | null> {
-    return this.updateWithExpectedStatus(
-      listingId,
-      landlordId,
-      expectedStatus,
-      input,
-    );
+    return this.prisma.$transaction(async (transaction) => {
+      const now = new Date();
+      const requiresAccess =
+        input.availableUnits > expectedAvailableUnits ||
+        (expectedStatus === "PUBLISHED" && input.availableUnits > 0);
+      const updated = await transaction.listing.updateMany({
+        where: {
+          id: listingId,
+          landlordId,
+          deletedAt: null,
+          status: expectedStatus,
+          // A concurrent reduction must not turn an equal-count confirmation
+          // into an unchecked inventory increase.
+          availableUnits: expectedAvailableUnits,
+          ...(requiresAccess
+            ? {
+                landlord: {
+                  accountStatus: "ACTIVE",
+                  deletedAt: null,
+                  landlordEntitlement: {
+                    is: {
+                      status: { in: ["TRIALING", "ACTIVE"] },
+                      OR: [
+                        { accessEndsAt: null },
+                        { accessEndsAt: { gt: now } },
+                      ],
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
+        data: input,
+      });
+      if (updated.count !== 1) return null;
+      return transaction.listing.findFirst({
+        where: { id: listingId, landlordId, deletedAt: null },
+        select: landlordListingSelect,
+      });
+    });
   }
 
   async transition(

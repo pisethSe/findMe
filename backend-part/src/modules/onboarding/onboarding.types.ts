@@ -26,6 +26,7 @@ export interface OnboardingState {
   nextPath:
     | "/onboarding/role"
     | "/onboarding/landlord"
+    | "/"
     | "/search"
     | "/landlord"
     | "/admin";

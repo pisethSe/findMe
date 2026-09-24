@@ -4,7 +4,10 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  HttpException,
+  Logger,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
@@ -19,6 +22,7 @@ import { AuthService } from "./auth.service.js";
 import type { AccessPrincipal, RequestMetadata } from "./auth.types.js";
 import { CurrentUser } from "./current-user.decorator.js";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto.js";
+import { GoogleOAuthService } from "./google-oauth.service.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { RegisterDto } from "./dto/register.dto.js";
 import { ResetPasswordDto } from "./dto/reset-password.dto.js";
@@ -29,7 +33,12 @@ const REFRESH_COOKIE_PATH = "/api/v1/auth";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthController.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly googleOAuth: GoogleOAuthService,
+  ) {}
 
   @Post("register")
   @RateLimit("registration")
@@ -134,6 +143,72 @@ export class AuthController {
   getMe(@CurrentUser() user: AccessPrincipal) {
     return { data: user };
   }
+
+  /** Which sign-in providers this server can complete right now. */
+  @Get("providers")
+  getProviders() {
+    return { data: { google: this.googleOAuth.isConfigured() } };
+  }
+
+  /**
+   * Redirects the browser to Google's consent screen. The signed `state`
+   * carries the relative post-sign-in path, so the flow cannot be used as an
+   * open redirect.
+   */
+  @Get("google/start")
+  @RateLimit("oauthStart")
+  googleStart(
+    @Query("next") next: unknown,
+    @Req() request: Request,
+    @Res() response: Response,
+  ): void {
+    const url = this.googleOAuth.startUrl({
+      next: typeof next === "string" ? next : null,
+      requestOrigin: requestOrigin(request),
+    });
+    response.redirect(url);
+  }
+
+  /**
+   * Receives Google's redirect, opens the session in an httpOnly cookie, and
+   * sends the browser to the SPA callback page with a machine-readable status.
+   */
+  @Get("google/callback")
+  @RateLimit("oauthCallback")
+  async googleCallback(
+    @Req() request: Request,
+    @Res() response: Response,
+  ): Promise<void> {
+    const code = queryValue(request.query.code);
+    const state = queryValue(request.query.state);
+    const providerError = queryValue(request.query.error);
+
+    try {
+      if (providerError && !code) {
+        throw new ForbiddenException({
+          code: "OAUTH_PROVIDER_DENIED",
+          message: "Google sign-in was cancelled or refused.",
+        });
+      }
+      const { session, next } = await this.googleOAuth.completeSignIn(
+        { code, state, requestOrigin: requestOrigin(request) },
+        metadataFrom(request),
+      );
+      setRefreshCookie(
+        response,
+        session.refreshToken,
+        session.refreshTokenExpiresAt,
+      );
+      response.redirect(oauthCallbackUrl({ status: "success", next }));
+    } catch (caught) {
+      const code_ = exceptionCode(caught);
+      if (!(caught instanceof HttpException)) {
+        // Never log authorization codes, tokens, or the signed state value.
+        this.logger.warn(`Google sign-in failed: ${code_}`);
+      }
+      response.redirect(oauthCallbackUrl({ status: "error", code: code_ }));
+    }
+  }
 }
 
 function metadataFrom(request: Request): RequestMetadata {
@@ -141,6 +216,39 @@ function metadataFrom(request: Request): RequestMetadata {
     userAgent: request.header("user-agent")?.slice(0, 500) ?? null,
     ipAddress: request.ip || null,
   };
+}
+
+function queryValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 && value.length <= 4096
+    ? value
+    : undefined;
+}
+
+function requestOrigin(request: Request): string {
+  return `${request.protocol}://${request.header("host") ?? ""}`;
+}
+
+function oauthCallbackUrl(input: {
+  status: "success" | "error";
+  code?: string;
+  next?: string | null;
+}): string {
+  const url = new URL("/auth/callback", getWebOrigin(process.env.WEB_ORIGIN));
+  url.searchParams.set("status", input.status);
+  if (input.code) url.searchParams.set("code", input.code);
+  if (input.next) url.searchParams.set("next", input.next);
+  return url.href;
+}
+
+function exceptionCode(caught: unknown): string {
+  if (caught instanceof HttpException) {
+    const body = caught.getResponse();
+    if (typeof body === "object" && body !== null && "code" in body) {
+      const code = (body as { code?: unknown }).code;
+      if (typeof code === "string") return code;
+    }
+  }
+  return "OAUTH_SIGNIN_FAILED";
 }
 
 function getRefreshToken(request: Request): string | undefined {

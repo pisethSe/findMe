@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -10,6 +11,7 @@ import {
   safeStudentReturnPath,
   studentPostAuthPath,
 } from "./student-return-path";
+import { GoogleSignIn } from "./google-sign-in";
 
 export function LoginForm({ returnTo = null }: { returnTo?: string | null }) {
   const safeReturnTo = safeStudentReturnPath(returnTo);
@@ -43,54 +45,57 @@ export function LoginForm({ returnTo = null }: { returnTo?: string | null }) {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <div className="form-field">
-        <label htmlFor="login-email">Email address</label>
-        <input
-          id="login-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          required
-        />
-      </div>
-      <div className="form-field">
-        <div className="field-label-row">
-          <label htmlFor="login-password">Password</label>
-          <Link href="/forgot-password">Forgot password?</Link>
+    <Localized>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <GoogleSignIn next={safeReturnTo} />
+        <div className="form-field">
+          <label htmlFor="login-email">Email address</label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+          />
         </div>
-        <input
-          id="login-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          maxLength={128}
-          required
-        />
-      </div>
+        <div className="form-field">
+          <div className="field-label-row">
+            <label htmlFor="login-password">Password</label>
+            <Link href="/forgot-password">Forgot password?</Link>
+          </div>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            maxLength={128}
+            required
+          />
+        </div>
 
-      {error ? (
-        <p className="form-message is-error" role="alert">
-          {error}
+        {error ? (
+          <p className="form-message is-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <button className="auth-submit" type="submit" disabled={pending}>
+          {pending ? "Signing in…" : "Sign in"}
+        </button>
+        <p className="auth-alternate">
+          New to FindMe?{" "}
+          <Link
+            href={
+              safeReturnTo
+                ? `/register?${new URLSearchParams({ next: safeReturnTo })}`
+                : "/register"
+            }
+          >
+            Create an account
+          </Link>
         </p>
-      ) : null}
-
-      <button className="auth-submit" type="submit" disabled={pending}>
-        {pending ? "Signing in…" : "Sign in"}
-      </button>
-      <p className="auth-alternate">
-        New to FindMe?{" "}
-        <Link
-          href={
-            safeReturnTo
-              ? `/register?${new URLSearchParams({ next: safeReturnTo })}`
-              : "/register"
-          }
-        >
-          Create an account
-        </Link>
-      </p>
-    </form>
+      </form>
+    </Localized>
   );
 }

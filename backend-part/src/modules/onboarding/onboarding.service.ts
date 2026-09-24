@@ -180,7 +180,7 @@ export function toOnboardingState(user: OnboardingUserRecord): OnboardingState {
     return {
       role: user.role,
       stage: profileComplete ? "COMPLETE" : "STUDENT_PROFILE",
-      nextPath: profileComplete ? "/search" : "/onboarding/role",
+      nextPath: profileComplete ? "/" : "/onboarding/role",
       roleSelectionComplete: true,
       profileComplete,
       landlordTrialActivated: false,

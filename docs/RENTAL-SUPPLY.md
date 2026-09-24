@@ -312,3 +312,12 @@ may omit the complete set; the API then returns
 `MEDIA_STORAGE_UNAVAILABLE` while draft listing creation remains functional.
 The object-storage bucket must allow browser `PUT` requests from the exact web
 origins and allow the `Content-Type` request header required by the signed URL.
+
+
+## Availability age limit
+
+Phase 4 Step 3 adds [stale-listing controls](STALE-LISTINGS.md): dashboard
+reminders after 7 days and public eligibility for confirmations younger than
+14 days. Owned listing data and private history are retained. Explicit owner
+confirmation may keep the same room count, subject to entitlement and moderation
+rules. See the linked policy for cache timing and error behavior.

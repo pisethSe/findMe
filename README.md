@@ -200,7 +200,14 @@ the landing page uses the accessible 2D/list preview, student search keeps its
 complete rental list, and the rental form retains its manual coordinate
 fallback. Staging and production additionally require the
 separate server-only `GOOGLE_MAPS_SERVER_KEY` and complete S3-compatible media
-configuration. Pass the public `CDN_BASE_URL` to both the backend runtime and
+configuration. Optional Google sign-in uses backend-runtime
+`GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` from a single Google
+OAuth web client with `{API_ORIGIN}/api/v1/auth/google/callback` registered as
+the authorized redirect URI; `GOOGLE_OAUTH_REDIRECT_URL` pins that exact URI
+outside local development. All three may stay empty to keep email/password
+sign-in, `GET /api/v1/auth/providers` reports whether Google sign-in is
+available, and the sign-in pages disable the Google option when it is not.
+Pass the public `CDN_BASE_URL` to both the backend runtime and
 frontend build so Next.js can strictly allow and responsively optimize only
 server-issued rental images. Staging and production also require `REDIS_URL`;
 local/test may omit it and public search safely queries PostgreSQL without a

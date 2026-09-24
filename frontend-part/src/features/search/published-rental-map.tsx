@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type {
   InstitutionDto,
   PublicListingDto,
@@ -398,148 +399,150 @@ export function PublishedRentalMap({
   };
 
   return (
-    <section
-      ref={sectionRef}
-      id="rental-map"
-      tabIndex={-1}
-      className="published-map"
-      aria-labelledby="published-map-title"
-    >
-      <div className="published-map-heading">
-        <div>
-          <h2 id="published-map-title">
-            Near {institution.shortName ?? institution.nameEn}
-          </h2>
-          <p>
-            {mapMode === "3d"
-              ? "Explore this result page in 3D. Use 2D search to change the area."
-              : viewport
-                ? "Showing the visible map area"
-                : "Move the map to search this area"}
-          </p>
-        </div>
-        <div className="published-map-heading-actions">
-          {canExplore3D || mapMode === "3d" ? (
-            <div
-              className="published-map-view-switch"
-              role="group"
-              aria-label="Map view"
-            >
-              <button
-                ref={twoDControlRef}
-                type="button"
-                aria-pressed={mapMode === "2d"}
-                onClick={() => setMapMode("2d")}
+    <Localized>
+      <section
+        ref={sectionRef}
+        id="rental-map"
+        tabIndex={-1}
+        className="published-map"
+        aria-labelledby="published-map-title"
+      >
+        <div className="published-map-heading">
+          <div>
+            <h2 id="published-map-title">
+              Near {institution.shortName ?? institution.nameEn}
+            </h2>
+            <p>
+              {mapMode === "3d"
+                ? "Explore this result page in 3D. Use 2D search to change the area."
+                : viewport
+                  ? "Showing the visible map area"
+                  : "Move the map to search this area"}
+            </p>
+          </div>
+          <div className="published-map-heading-actions">
+            {canExplore3D || mapMode === "3d" ? (
+              <div
+                className="published-map-view-switch"
+                role="group"
+                aria-label="Map view"
               >
-                2D search
-              </button>
+                <button
+                  ref={twoDControlRef}
+                  type="button"
+                  aria-pressed={mapMode === "2d"}
+                  onClick={() => setMapMode("2d")}
+                >
+                  2D search
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={mapMode === "3d"}
+                  onClick={() => {
+                    setThreeDError(false);
+                    setMapMode("3d");
+                  }}
+                >
+                  3D explore
+                </button>
+              </div>
+            ) : null}
+            {viewport ? (
               <button
+                className="map-area-reset"
                 type="button"
-                aria-pressed={mapMode === "3d"}
                 onClick={() => {
-                  setThreeDError(false);
-                  setMapMode("3d");
+                  setMapMode("2d");
+                  onClearViewport();
                 }}
               >
-                3D explore
-              </button>
-            </div>
-          ) : null}
-          {viewport ? (
-            <button
-              className="map-area-reset"
-              type="button"
-              onClick={() => {
-                setMapMode("2d");
-                onClearViewport();
-              }}
-            >
-              Show full radius
-            </button>
-          ) : null}
-        </div>
-      </div>
-      <div className="published-map-legend" aria-label="Map legend">
-        <span className="institution-legend">Institution</span>
-        <span className="available-label">
-          <span className="availability-check" aria-hidden="true" />
-          Available rental
-        </span>
-        {state === "ready" && threeDCapability.status === "fallback" ? (
-          <span className="published-map-enhancement-status">
-            {map3DFallbackLabel(threeDCapability.reason)}
-          </span>
-        ) : null}
-      </div>
-      <div className="published-map-frame" data-map-mode={mapMode}>
-        <div
-          className="published-map-fallback"
-          data-visible={showFallback}
-          aria-hidden={!showFallback}
-        >
-          <strong>{listings.length} rentals on this results page</strong>
-          <p>{fallbackMessage}</p>
-          <div className="published-map-fallback-actions">
-            <button type="button" onClick={onShowList}>
-              Back to rental list
-            </button>
-            {viewport ? (
-              <button type="button" onClick={onClearViewport}>
-                Clear map area
-              </button>
-            ) : null}
-            {canRetry ? (
-              <button
-                type="button"
-                onClick={() => setLoadAttempt((current) => current + 1)}
-              >
-                Retry map
+                Show full radius
               </button>
             ) : null}
           </div>
         </div>
-        <div
-          ref={containerRef}
-          className="published-live-map"
-          data-visible={state === "ready"}
-          inert={mapMode === "3d" ? true : undefined}
-          aria-hidden={state !== "ready" || mapMode === "3d"}
-          role={state === "ready" && mapMode === "2d" ? "region" : undefined}
-          aria-label={
-            state === "ready" && mapMode === "2d"
-              ? "Interactive map of matching available rentals"
-              : undefined
-          }
-        />
-        {mapMode === "3d" &&
-        mapVisible &&
-        canExplore3D &&
-        mapsConfig.status === "READY" ? (
-          <PublishedRentalMap3D
-            config={mapsConfig.config}
-            institution={institution}
-            listings={listings}
-            selectedListingId={selectedListingId}
-            focusListingId={focusListingId}
-            onSelectListing={onSelectListing}
-            onUnavailable={handle3DUnavailable}
+        <div className="published-map-legend" aria-label="Map legend">
+          <span className="institution-legend">Institution</span>
+          <span className="available-label">
+            <span className="availability-check" aria-hidden="true" />
+            Available rental
+          </span>
+          {state === "ready" && threeDCapability.status === "fallback" ? (
+            <span className="published-map-enhancement-status">
+              {map3DFallbackLabel(threeDCapability.reason)}
+            </span>
+          ) : null}
+        </div>
+        <div className="published-map-frame" data-map-mode={mapMode}>
+          <div
+            className="published-map-fallback"
+            data-visible={showFallback}
+            aria-hidden={!showFallback}
+          >
+            <strong>{listings.length} rentals on this results page</strong>
+            <p>{fallbackMessage}</p>
+            <div className="published-map-fallback-actions">
+              <button type="button" onClick={onShowList}>
+                Back to rental list
+              </button>
+              {viewport ? (
+                <button type="button" onClick={onClearViewport}>
+                  Clear map area
+                </button>
+              ) : null}
+              {canRetry ? (
+                <button
+                  type="button"
+                  onClick={() => setLoadAttempt((current) => current + 1)}
+                >
+                  Retry map
+                </button>
+              ) : null}
+            </div>
+          </div>
+          <div
+            ref={containerRef}
+            className="published-live-map"
+            data-visible={state === "ready"}
+            inert={mapMode === "3d" ? true : undefined}
+            aria-hidden={state !== "ready" || mapMode === "3d"}
+            role={state === "ready" && mapMode === "2d" ? "region" : undefined}
+            aria-label={
+              state === "ready" && mapMode === "2d"
+                ? "Interactive map of matching available rentals"
+                : undefined
+            }
           />
-        ) : null}
-        {state === "loading" ? (
-          <p className="published-map-status" role="status">
-            Loading map…
-          </p>
-        ) : threeDError ? (
-          <p className="published-map-status" role="status">
-            3D view unavailable. The 2D map and rental list are ready.
-          </p>
-        ) : updating && mapMode === "2d" ? (
-          <p className="published-map-status" role="status">
-            Updating rentals in this area…
-          </p>
-        ) : null}
-      </div>
-    </section>
+          {mapMode === "3d" &&
+          mapVisible &&
+          canExplore3D &&
+          mapsConfig.status === "READY" ? (
+            <PublishedRentalMap3D
+              config={mapsConfig.config}
+              institution={institution}
+              listings={listings}
+              selectedListingId={selectedListingId}
+              focusListingId={focusListingId}
+              onSelectListing={onSelectListing}
+              onUnavailable={handle3DUnavailable}
+            />
+          ) : null}
+          {state === "loading" ? (
+            <p className="published-map-status" role="status">
+              Loading map…
+            </p>
+          ) : threeDError ? (
+            <p className="published-map-status" role="status">
+              3D view unavailable. The 2D map and rental list are ready.
+            </p>
+          ) : updating && mapMode === "2d" ? (
+            <p className="published-map-status" role="status">
+              Updating rentals in this area…
+            </p>
+          ) : null}
+        </div>
+      </section>
+    </Localized>
   );
 }
 

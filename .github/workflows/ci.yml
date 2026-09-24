@@ -96,13 +96,24 @@ jobs:
           pnpm run db:seed
 
       - name: Run unit and database integration tests
-        run: pnpm run test
+        run: pnpm run test:ci
 
-      - name: Install browser for responsive discovery checks
+      - name: Install browser for critical product flows
         run: pnpm --filter @findme/frontend exec playwright install --with-deps chromium
 
-      - name: Verify responsive student discovery
-        run: pnpm --filter @findme/frontend run test:browser
+      - name: Verify browser product flows
+        run: pnpm run test:browser
+
+      - name: Retain browser reports and failure traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-test-results
+          path: |
+            frontend-part/playwright-report/
+            frontend-part/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Build production applications
         env:

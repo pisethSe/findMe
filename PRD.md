@@ -152,14 +152,16 @@ The system uses real-world map coordinates, but “real-time location” means a
 
 ### 7.1 Visitor understands the product from the landing page
 
-1. Visitor opens the website.
-2. The left side of the desktop hero displays the exact Khmer headline: **“ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតអ្នកបំផុត.”**
-3. A calm vertical phrase loop reinforces nearby, affordable, and currently available rentals without shifting the page layout.
-4. The right side displays a clean 3D Google Maps preview centered on a representative Phnom Penh student area.
-5. Available demo rentals use a green marker plus an availability label/icon; unavailable demo rentals use a red marker plus an unavailable label/icon. Color is never the only signal.
-6. The visitor can start searching, register, or sign in. On small screens, the content stacks and the search action remains more prominent than the map.
+1. Visitor opens the white-first rentMe landing page with a compact single-row header, language toggle, theme toggle, and sign-in/register links.
+2. A large centered Khmer headline reads **“ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតសាលាអ្នកបំផុត”** in Kantumruy Pro.
+3. A fixed-size bilingual supporting phrase introduction runs for less than five seconds, exposes static accessible copy and respects reduced motion. The exact registered ThreeUI Ribbon Field provides the requested texture; after the introduction the rendered frame remains still.
+4. A wide blue-and-white search panel contains an active campus picker, Phnom Penh location, distance and room type, with budget filters, map search and search actions. Only its border gets a pointer glow; the form surface is unchanged.
+5. A map below the search offers default, satellite and 2D views. Configured Google Maps uses synchronized rental markers. Without browser credentials, a Google campus/location embed and a separate room list remain usable; the embed does not pretend to show all rental markers.
+6. Available rentals use blue plus a label/icon; unavailable examples use red plus a label/icon. Sample room imagery, prices and availability remain visibly labelled illustrative. Actual search reads only current published, available backend inventory.
+7. A dedicated `/universities` directory contains the supplied Cambodian institutions, while active rental search remains focused on Phnom Penh. The public account and rental routes share the light/dark appearance and persistent Khmer/English preference.
+8. Mobile keeps the header in one row, expands a card-style navigation menu, stacks filters, and places search before maps. The generated house illustration is removed.
 
-The landing map is a product preview. Actual public search defaults to valid published and available listings; unavailable listings appear only when a user deliberately enables that view or in landlord/admin management contexts.
+This composition supersedes the earlier left-copy/right-map hero following the user's September 2026 reference and explicit revisions. User content, proper names, numbers and technical identifiers are preserved during UI localization. Initial light mode is white; a requested private light-image link was inaccessible, so no substitute photograph is presented as that source.
 
 ### 7.2 New account chooses a role
 
@@ -287,9 +289,9 @@ Priority definitions:
 | MAP-07 | Map search responds to viewport/bounding-box changes without reloading the full page. | P0 |
 | MAP-08 | Student may use browser current location only after explicit permission. | P1 |
 | MAP-09 | Walking/driving travel time may be shown using Google Routes where cost and quota permit. | P1 |
-| MAP-10 | The desktop landing hero provides a clean 3D Google Maps rental preview with restrained camera/marker motion. | P0 |
+| MAP-10 | The landing search is followed by Google map views, with 3D as progressive enhancement and usable embed/list fallback. | P0 |
 | MAP-11 | The student search experience may use a 3D map on capable devices, while preserving synchronized rental cards and a usable 2D fallback. | P0 |
-| MAP-12 | Available and unavailable marker states use text/icon/shape as well as green/red color. | P0 |
+| MAP-12 | Available and unavailable marker states use text/icon/shape as well as blue/red color. | P0 |
 | MAP-13 | Reduced-motion, low-power, unsupported, slow-network, or map-error states use a static/2D/list fallback without blocking discovery. | P0 |
 | MAP-14 | The landlord form displays a private live marker preview while location and availability are edited; draft or pending data never enters public student search. | P0 |
 | MAP-15 | After a listing becomes published, cache invalidation and bounded visible-page refetching make it appear in matching student map/list results within 60 seconds under normal service conditions. WebSockets are not required for MVP. | P0 |
@@ -383,7 +385,7 @@ Priority definitions:
 
 ### Public/student-facing
 
-- `/` — landing page with Khmer hero, looping supporting phrase, and 3D rental-map preview
+- `/` — landing page with centered Khmer hero, finite supporting phrase introduction, campus search and map preview
 - `/search` — list + map rental search
 - `/rentals/[slug]` — rental details
 - `/institutions/[slug]` — institution-centered rental discovery (P1)
@@ -566,7 +568,7 @@ Future sponsored listings must be visibly labeled and must not silently override
 - Visible focus states.
 - Map search must also have a list-based alternative so the experience is not map-only.
 - The vertical phrase loop must expose a stable accessible sentence, avoid repetitive screen-reader announcements, stop changing under `prefers-reduced-motion`, and provide a pause mechanism when required by the final timing.
-- Availability cannot be conveyed through red/green color alone.
+- Availability cannot be conveyed through color alone.
 
 ### 14.6 SEO
 

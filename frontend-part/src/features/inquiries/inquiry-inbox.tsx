@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type {
   LandlordInquiryDto,
   OffsetPageMeta,
@@ -162,241 +163,247 @@ export function InquiryInbox({ role }: { role: "STUDENT" | "LANDLORD" }) {
   }
 
   return (
-    <main className={styles.page} lang="en">
-      <header className="site-header">
-        <BrandMark />
-        <nav className="rental-navigation" aria-label="Inquiry navigation">
-          {role === "STUDENT" ? (
-            <>
-              <Link href="/favorites">Saved rentals</Link>
-              <Link href="/search">Find nearby rentals</Link>
-            </>
-          ) : (
-            <Link href="/landlord">Back to dashboard</Link>
-          )}
-        </nav>
-      </header>
-      <section className={styles.shell} aria-labelledby="inbox-title">
-        <header className={styles.heading}>
-          <h1 id="inbox-title" tabIndex={-1}>
-            {title}
-          </h1>
-          <p>
-            {role === "STUDENT"
-              ? "Review the messages you sent and the status recorded by each landlord."
-              : "Read messages about your rentals. Reply using the contact details a student chose to include, then mark the inquiry as replied."}
-          </p>
+    <Localized>
+      <main className={styles.page} lang="en">
+        <header className="site-header">
+          <BrandMark />
+          <nav className="rental-navigation" aria-label="Inquiry navigation">
+            {role === "STUDENT" ? (
+              <>
+                <Link href="/favorites">Saved rentals</Link>
+                <Link href="/search">Find nearby rentals</Link>
+              </>
+            ) : (
+              <Link href="/landlord">Back to dashboard</Link>
+            )}
+          </nav>
         </header>
-        <p role="status" className={styles.notice}>
-          {notice}
-        </p>
-        {access === "loading" ? (
-          <div className={styles.state} role="status">
-            Loading inquiries…
-          </div>
-        ) : access === "guest" ? (
-          <div className={styles.state}>
-            <h2>Sign in to view your inquiries</h2>
-            <p>Inquiry history is private to your account.</p>
-            <Link
-              href={role === "STUDENT" ? "/login?next=%2Finquiries" : "/login"}
-            >
-              Sign in
-            </Link>
-          </div>
-        ) : access === "onboarding" ? (
-          <div className={styles.state}>
-            <h2>Complete your account setup</h2>
-            <Link
-              href={
-                role === "STUDENT"
-                  ? `${onboardingPath}?next=%2Finquiries`
-                  : onboardingPath
-              }
-            >
-              Continue account setup
-            </Link>
-          </div>
-        ) : access === "forbidden" ? (
-          <div className={styles.state}>
-            <h2>
+        <section className={styles.shell} aria-labelledby="inbox-title">
+          <header className={styles.heading}>
+            <h1 id="inbox-title" tabIndex={-1}>
+              {title}
+            </h1>
+            <p>
               {role === "STUDENT"
-                ? "Sent inquiries are for student accounts"
-                : "This inbox is for landlord accounts"}
-            </h2>
-            <Link href="/search">Browse nearby rentals</Link>
-          </div>
-        ) : access === "error" ? (
-          <div className={styles.state} role="alert">
-            <h2>Inquiries could not be loaded</h2>
-            <p>Check your connection and try again.</p>
-            <button type="button" onClick={() => void load()}>
-              Retry inquiries
-            </button>
-          </div>
-        ) : result ? (
-          <>
-            <div className={styles.toolbar}>
-              <p>
-                {result.meta.total}{" "}
-                {result.meta.total === 1 ? "inquiry" : "inquiries"}
-              </p>
-              <button
-                type="button"
-                disabled={pending !== null}
-                onClick={() => void load()}
+                ? "Review the messages you sent and the status recorded by each landlord."
+                : "Read messages about your rentals. Reply using the contact details a student chose to include, then mark the inquiry as replied."}
+            </p>
+          </header>
+          <p role="status" className={styles.notice}>
+            {notice}
+          </p>
+          {access === "loading" ? (
+            <div className={styles.state} role="status">
+              Loading inquiries…
+            </div>
+          ) : access === "guest" ? (
+            <div className={styles.state}>
+              <h2>Sign in to view your inquiries</h2>
+              <p>Inquiry history is private to your account.</p>
+              <Link
+                href={
+                  role === "STUDENT" ? "/login?next=%2Finquiries" : "/login"
+                }
               >
-                Refresh inbox
+                Sign in
+              </Link>
+            </div>
+          ) : access === "onboarding" ? (
+            <div className={styles.state}>
+              <h2>Complete your account setup</h2>
+              <Link
+                href={
+                  role === "STUDENT"
+                    ? `${onboardingPath}?next=%2Finquiries`
+                    : onboardingPath
+                }
+              >
+                Continue account setup
+              </Link>
+            </div>
+          ) : access === "forbidden" ? (
+            <div className={styles.state}>
+              <h2>
+                {role === "STUDENT"
+                  ? "Sent inquiries are for student accounts"
+                  : "This inbox is for landlord accounts"}
+              </h2>
+              <Link href="/search">Browse nearby rentals</Link>
+            </div>
+          ) : access === "error" ? (
+            <div className={styles.state} role="alert">
+              <h2>Inquiries could not be loaded</h2>
+              <p>Check your connection and try again.</p>
+              <button type="button" onClick={() => void load()}>
+                Retry inquiries
               </button>
             </div>
-            {result.data.length === 0 ? (
-              <div className={styles.state}>
-                <h2>
-                  {role === "STUDENT"
-                    ? "No sent inquiries yet"
-                    : "No student inquiries yet"}
-                </h2>
+          ) : result ? (
+            <>
+              <div className={styles.toolbar}>
                 <p>
-                  {role === "STUDENT"
-                    ? "Open a rental to ask about availability, costs, or a visit."
-                    : "Messages from students will appear here when they inquire about your published rentals."}
+                  {result.meta.total}{" "}
+                  {result.meta.total === 1 ? "inquiry" : "inquiries"}
                 </p>
-                <Link href={role === "STUDENT" ? "/search" : "/landlord"}>
-                  {role === "STUDENT"
-                    ? "Find nearby rentals"
-                    : "Manage rentals"}
-                </Link>
+                <button
+                  type="button"
+                  disabled={pending !== null}
+                  onClick={() => void load()}
+                >
+                  Refresh inbox
+                </button>
               </div>
-            ) : (
-              <ol className={styles.list}>
-                {result.data.map((inquiry) => {
-                  const listing = inquiry.listing;
-                  const rentalTitle =
-                    listing?.titleEn ??
-                    listing?.titleKm ??
-                    (listing && "propertyName" in listing
-                      ? listing.propertyName
-                      : "Rental no longer available");
-                  return (
-                    <li
-                      id={`inquiry-${inquiry.id}`}
-                      key={inquiry.id}
-                      tabIndex={-1}
-                      className={styles.inquiry}
-                    >
-                      <div className={styles.meta}>
-                        <p>
-                          {"student" in inquiry
-                            ? inquiry.student.displayName
-                            : "Sent"}{" "}
-                          ·{" "}
-                          <time dateTime={inquiry.createdAt}>
-                            {rentalDate(inquiry.createdAt)}
+              {result.data.length === 0 ? (
+                <div className={styles.state}>
+                  <h2>
+                    {role === "STUDENT"
+                      ? "No sent inquiries yet"
+                      : "No student inquiries yet"}
+                  </h2>
+                  <p>
+                    {role === "STUDENT"
+                      ? "Open a rental to ask about availability, costs, or a visit."
+                      : "Messages from students will appear here when they inquire about your published rentals."}
+                  </p>
+                  <Link href={role === "STUDENT" ? "/search" : "/landlord"}>
+                    {role === "STUDENT"
+                      ? "Find nearby rentals"
+                      : "Manage rentals"}
+                  </Link>
+                </div>
+              ) : (
+                <ol className={styles.list}>
+                  {result.data.map((inquiry) => {
+                    const listing = inquiry.listing;
+                    const rentalTitle =
+                      listing?.titleEn ??
+                      listing?.titleKm ??
+                      (listing && "propertyName" in listing
+                        ? listing.propertyName
+                        : "Rental no longer available");
+                    return (
+                      <li
+                        id={`inquiry-${inquiry.id}`}
+                        key={inquiry.id}
+                        tabIndex={-1}
+                        className={styles.inquiry}
+                      >
+                        <div className={styles.meta}>
+                          <p>
+                            {"student" in inquiry
+                              ? inquiry.student.displayName
+                              : "Sent"}{" "}
+                            ·{" "}
+                            <time dateTime={inquiry.createdAt}>
+                              {rentalDate(inquiry.createdAt)}
+                            </time>
+                          </p>
+                          <strong>
+                            {role === "LANDLORD" && inquiry.status === "NEW"
+                              ? "New"
+                              : inquiryStatusLabel(inquiry.status)}
+                          </strong>
+                        </div>
+                        <h2
+                          lang={
+                            listing?.titleEn
+                              ? "en"
+                              : listing?.titleKm
+                                ? "km"
+                                : "en"
+                          }
+                        >
+                          {listing && "slug" in listing ? (
+                            <Link
+                              href={`/rentals/${encodeURIComponent(listing.slug)}`}
+                              prefetch={false}
+                            >
+                              {rentalTitle}
+                            </Link>
+                          ) : (
+                            rentalTitle
+                          )}
+                        </h2>
+                        {!listing ? (
+                          <p className={styles.muted}>
+                            The rental is no longer publicly available. Your
+                            sent message is still shown below.
+                          </p>
+                        ) : null}
+                        <p className={styles.message} dir="auto">
+                          {inquiry.message}
+                        </p>
+                        <p className={styles.updated}>
+                          Status updated{" "}
+                          <time dateTime={inquiry.updatedAt}>
+                            {rentalDate(inquiry.updatedAt)}
                           </time>
                         </p>
-                        <strong>
-                          {role === "LANDLORD" && inquiry.status === "NEW"
-                            ? "New"
-                            : inquiryStatusLabel(inquiry.status)}
-                        </strong>
-                      </div>
-                      <h2
-                        lang={
-                          listing?.titleEn
-                            ? "en"
-                            : listing?.titleKm
-                              ? "km"
-                              : "en"
-                        }
-                      >
-                        {listing && "slug" in listing ? (
-                          <Link
-                            href={`/rentals/${encodeURIComponent(listing.slug)}`}
-                            prefetch={false}
+                        {role === "LANDLORD" ? (
+                          <div
+                            className={styles.actions}
+                            aria-label="Inquiry status actions"
                           >
-                            {rentalTitle}
-                          </Link>
-                        ) : (
-                          rentalTitle
-                        )}
-                      </h2>
-                      {!listing ? (
-                        <p className={styles.muted}>
-                          The rental is no longer publicly available. Your sent
-                          message is still shown below.
-                        </p>
-                      ) : null}
-                      <p className={styles.message} dir="auto">
-                        {inquiry.message}
-                      </p>
-                      <p className={styles.updated}>
-                        Status updated{" "}
-                        <time dateTime={inquiry.updatedAt}>
-                          {rentalDate(inquiry.updatedAt)}
-                        </time>
-                      </p>
-                      {role === "LANDLORD" ? (
-                        <div
-                          className={styles.actions}
-                          aria-label="Inquiry status actions"
-                        >
-                          {allowedInquiryStatuses(inquiry.status).map(
-                            (status) => (
-                              <button
-                                key={status}
-                                type="button"
-                                disabled={pending !== null}
-                                onClick={() =>
-                                  void changeStatus(inquiry.id, status)
-                                }
-                              >
-                                {pending === inquiry.id
-                                  ? "Updating…"
-                                  : actionLabels[status]}
-                              </button>
-                            ),
-                          )}
-                        </div>
-                      ) : inquiry.status === "RESPONDED" ? (
-                        <p className={styles.muted}>
-                          The landlord marked this as replied. Check the contact
-                          channel you included in your message.
-                        </p>
-                      ) : null}
-                      {errors[inquiry.id] ? (
-                        <p role="alert" className={styles.error}>
-                          {errors[inquiry.id]}
-                        </p>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-            {result.meta.totalPages > 1 ? (
-              <nav className="search-pagination" aria-label="Inquiry pages">
-                <button
-                  type="button"
-                  disabled={page <= 1 || pending !== null}
-                  onClick={() => changePage(page - 1)}
-                >
-                  Previous
-                </button>
-                <p>
-                  Page <strong>{page}</strong> of {result.meta.totalPages}
-                </p>
-                <button
-                  type="button"
-                  disabled={page >= result.meta.totalPages || pending !== null}
-                  onClick={() => changePage(page + 1)}
-                >
-                  Next
-                </button>
-              </nav>
-            ) : null}
-          </>
-        ) : null}
-      </section>
-    </main>
+                            {allowedInquiryStatuses(inquiry.status).map(
+                              (status) => (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  disabled={pending !== null}
+                                  onClick={() =>
+                                    void changeStatus(inquiry.id, status)
+                                  }
+                                >
+                                  {pending === inquiry.id
+                                    ? "Updating…"
+                                    : actionLabels[status]}
+                                </button>
+                              ),
+                            )}
+                          </div>
+                        ) : inquiry.status === "RESPONDED" ? (
+                          <p className={styles.muted}>
+                            The landlord marked this as replied. Check the
+                            contact channel you included in your message.
+                          </p>
+                        ) : null}
+                        {errors[inquiry.id] ? (
+                          <p role="alert" className={styles.error}>
+                            {errors[inquiry.id]}
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+              {result.meta.totalPages > 1 ? (
+                <nav className="search-pagination" aria-label="Inquiry pages">
+                  <button
+                    type="button"
+                    disabled={page <= 1 || pending !== null}
+                    onClick={() => changePage(page - 1)}
+                  >
+                    Previous
+                  </button>
+                  <p>
+                    Page <strong>{page}</strong> of {result.meta.totalPages}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={
+                      page >= result.meta.totalPages || pending !== null
+                    }
+                    onClick={() => changePage(page + 1)}
+                  >
+                    Next
+                  </button>
+                </nav>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+      </main>
+    </Localized>
   );
 }

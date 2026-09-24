@@ -46,7 +46,7 @@ for (const width of [320, 390, 768, 1440]) {
             });
       if (path.endsWith("/me/onboarding"))
         return send({
-          data: { role: "STUDENT", stage: "COMPLETE", nextPath: "/search" },
+          data: { role: "STUDENT", stage: "COMPLETE", nextPath: "/" },
         });
       if (path.endsWith("/me/favorites"))
         return send({
@@ -84,7 +84,12 @@ for (const width of [320, 390, 768, 1440]) {
     await expect(
       page.getByRole("button", { name: "Send inquiry", exact: true }),
     ).toBeVisible();
+    // The streamed rental detail keeps the SSR tree in a hidden wrapper
+    // while suspense-hydration resolves; wait for the single hydrated form
+    // before driving the keyboard flow so the text engine never sees the
+    // transient duplicate.
     const summary = page.getByText("Report this rental", { exact: true });
+    await expect(summary).toHaveCount(1);
     await summary.focus();
     await page.keyboard.press("Enter");
     await page

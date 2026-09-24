@@ -24,6 +24,7 @@ export interface OnboardingState {
   nextPath:
     | "/onboarding/role"
     | "/onboarding/landlord"
+    | "/"
     | "/search"
     | "/landlord"
     | "/admin";
@@ -196,6 +197,28 @@ export async function resetPassword(
 
 export async function getOnboardingState(): Promise<OnboardingState> {
   return authorizedRequest("/me/onboarding", { method: "GET" });
+}
+
+export interface AuthProviders {
+  google: boolean;
+}
+
+/** Which sign-in providers this server can complete right now. */
+export async function fetchAuthProviders(): Promise<AuthProviders> {
+  const data = await request<AuthProviders>("/auth/providers", {
+    method: "GET",
+  });
+  return { google: data.google === true };
+}
+
+/**
+ * Browser entry point for Google sign-in. The backend signs `next` inside the
+ * OAuth state, so only the start URL needs it. `next` must already be a safe
+ * relative path (the auth forms pass `safeStudentReturnPath` results).
+ */
+export function googleSignInUrl(next: string | null): string {
+  const query = next ? `?${new URLSearchParams({ next })}` : "";
+  return `${getApiBaseUrl()}/auth/google/start${query}`;
 }
 
 export async function selectRole(input: {

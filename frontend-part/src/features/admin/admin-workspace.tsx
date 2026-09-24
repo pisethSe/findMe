@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type { AdminPendingListingDto, OffsetPageMeta } from "@findme/contracts";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +23,7 @@ import {
 } from "./admin-moderation-model";
 
 import { AdminNavigation } from "./admin-navigation";
+import { roomTypeEnglishLabel } from "../search/room-type-options";
 
 type ModerationAction = "approve" | "reject";
 
@@ -157,134 +159,136 @@ export function AdminWorkspace() {
   }
 
   return (
-    <main className="workspace-page admin-workspace-page" lang="en">
-      <header className="workspace-header">
-        <BrandMark />
-        <Link href="/search">Browse student rentals</Link>
-      </header>
+    <Localized>
+      <main className="workspace-page admin-workspace-page" lang="en">
+        <header className="workspace-header">
+          <BrandMark />
+          <Link href="/search">Browse student rentals</Link>
+        </header>
 
-      <section className="workspace-content" aria-labelledby="admin-title">
-        <AdminNavigation />
-        <div className="workspace-heading">
-          <div>
-            <p>Administration</p>
-            <h1 id="admin-title">Review rentals before students see them.</h1>
-          </div>
-          {listings ? (
-            <span className="access-status" data-active="true">
-              Admin access
-            </span>
-          ) : null}
-        </div>
-
-        {!listings && !error ? (
-          <div
-            className="workspace-loading"
-            aria-busy="true"
-            aria-live="polite"
-          >
-            <p>Loading the protected moderation queue…</p>
-            <div className="skeleton workspace-panel-skeleton" />
-          </div>
-        ) : error ? (
-          <div className="workspace-error" role="alert">
-            <h2>Moderation queue unavailable</h2>
-            <p>{error}</p>
-            <button
-              type="button"
-              onClick={() => setLoadAttempt((value) => value + 1)}
-            >
-              Try again
-            </button>
-          </div>
-        ) : listings ? (
-          <section className="moderation-queue" aria-labelledby="queue-title">
-            <div className="moderation-queue-heading">
-              <div>
-                <h2 id="queue-title">Pending rentals</h2>
-                <p>
-                  Check the content, property pin, photos, owner, availability,
-                  and price before deciding.
-                </p>
-              </div>
-              <strong>{meta?.total ?? listings.length} waiting</strong>
+        <section className="workspace-content" aria-labelledby="admin-title">
+          <AdminNavigation />
+          <div className="workspace-heading">
+            <div>
+              <p>Administration</p>
+              <h1 id="admin-title">Review rentals before students see them.</h1>
             </div>
+            {listings ? (
+              <span className="access-status" data-active="true">
+                Admin access
+              </span>
+            ) : null}
+          </div>
 
-            {actionError ? (
-              <p
-                className="moderation-action-message"
-                data-error="true"
-                role="alert"
+          {!listings && !error ? (
+            <div
+              className="workspace-loading"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              <p>Loading the protected moderation queue…</p>
+              <div className="skeleton workspace-panel-skeleton" />
+            </div>
+          ) : error ? (
+            <div className="workspace-error" role="alert">
+              <h2>Moderation queue unavailable</h2>
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => setLoadAttempt((value) => value + 1)}
               >
-                {actionError}
-              </p>
-            ) : null}
-            {success ? (
-              <p className="moderation-action-message" role="status">
-                {success}
-              </p>
-            ) : null}
-
-            {listings.length === 0 ? (
-              <div className="moderation-empty">
-                <h3>No rentals are waiting for review.</h3>
-                <p>New landlord submissions will appear here.</p>
+                Try again
+              </button>
+            </div>
+          ) : listings ? (
+            <section className="moderation-queue" aria-labelledby="queue-title">
+              <div className="moderation-queue-heading">
+                <div>
+                  <h2 id="queue-title">Pending rentals</h2>
+                  <p>
+                    Check the content, property pin, photos, owner,
+                    availability, and price before deciding.
+                  </p>
+                </div>
+                <strong>{meta?.total ?? listings.length} waiting</strong>
               </div>
-            ) : (
-              <ul className="moderation-list">
-                {listings.map((listing) => (
-                  <ModerationCard
-                    key={listing.id}
-                    listing={listing}
-                    note={notes[listing.id] ?? ""}
-                    workingAction={
-                      workingAction?.listingId === listing.id
-                        ? workingAction.action
-                        : null
-                    }
-                    disabled={workingAction !== null}
-                    onNoteChange={(value) =>
-                      setNotes((current) => ({
-                        ...current,
-                        [listing.id]: value,
-                      }))
-                    }
-                    onApprove={() => void approve(listing)}
-                    onReject={() => void reject(listing)}
-                  />
-                ))}
-              </ul>
-            )}
-            {meta && meta.totalPages > 1 ? (
-              <nav
-                className="moderation-pagination"
-                aria-label="Moderation queue pages"
-              >
-                <button
-                  type="button"
-                  disabled={queuePage <= 1 || workingAction !== null}
-                  onClick={() => setQueuePage((current) => current - 1)}
+
+              {actionError ? (
+                <p
+                  className="moderation-action-message"
+                  data-error="true"
+                  role="alert"
                 >
-                  Previous
-                </button>
-                <span>
-                  Page {meta.page} of {meta.totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={
-                    queuePage >= meta.totalPages || workingAction !== null
-                  }
-                  onClick={() => setQueuePage((current) => current + 1)}
+                  {actionError}
+                </p>
+              ) : null}
+              {success ? (
+                <p className="moderation-action-message" role="status">
+                  {success}
+                </p>
+              ) : null}
+
+              {listings.length === 0 ? (
+                <div className="moderation-empty">
+                  <h3>No rentals are waiting for review.</h3>
+                  <p>New landlord submissions will appear here.</p>
+                </div>
+              ) : (
+                <ul className="moderation-list">
+                  {listings.map((listing) => (
+                    <ModerationCard
+                      key={listing.id}
+                      listing={listing}
+                      note={notes[listing.id] ?? ""}
+                      workingAction={
+                        workingAction?.listingId === listing.id
+                          ? workingAction.action
+                          : null
+                      }
+                      disabled={workingAction !== null}
+                      onNoteChange={(value) =>
+                        setNotes((current) => ({
+                          ...current,
+                          [listing.id]: value,
+                        }))
+                      }
+                      onApprove={() => void approve(listing)}
+                      onReject={() => void reject(listing)}
+                    />
+                  ))}
+                </ul>
+              )}
+              {meta && meta.totalPages > 1 ? (
+                <nav
+                  className="moderation-pagination"
+                  aria-label="Moderation queue pages"
                 >
-                  Next
-                </button>
-              </nav>
-            ) : null}
-          </section>
-        ) : null}
-      </section>
-    </main>
+                  <button
+                    type="button"
+                    disabled={queuePage <= 1 || workingAction !== null}
+                    onClick={() => setQueuePage((current) => current - 1)}
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {meta.page} of {meta.totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={
+                      queuePage >= meta.totalPages || workingAction !== null
+                    }
+                    onClick={() => setQueuePage((current) => current + 1)}
+                  >
+                    Next
+                  </button>
+                </nav>
+              ) : null}
+            </section>
+          ) : null}
+        </section>
+      </main>
+    </Localized>
   );
 }
 
@@ -316,119 +320,121 @@ export function ModerationCard({
   )}`;
 
   return (
-    <li className="moderation-card">
-      <div className="moderation-card-main">
-        <div className="moderation-card-title">
-          <div>
-            <p>{listing.propertyType.replaceAll("_", " ")}</p>
-            <h3 lang={listing.titleEn ? "en" : "km"}>{title}</h3>
+    <Localized>
+      <li className="moderation-card">
+        <div className="moderation-card-main">
+          <div className="moderation-card-title">
+            <div>
+              <p>{roomTypeEnglishLabel(listing.propertyType)}</p>
+              <h3 lang={listing.titleEn ? "en" : "km"}>{title}</h3>
+            </div>
+            <span>{listing.status.replaceAll("_", " ")}</span>
           </div>
-          <span>{listing.status.replaceAll("_", " ")}</span>
+
+          <dl className="moderation-facts">
+            <div>
+              <dt>Monthly rent</dt>
+              <dd>{formatPrice(listing.monthlyPrice, listing.currency)}</dd>
+            </div>
+            <div>
+              <dt>Availability</dt>
+              <dd>
+                {listing.availableUnits} of {listing.property.totalUnits} rooms
+              </dd>
+            </div>
+            <div>
+              <dt>Landlord</dt>
+              <dd>{listing.landlord.displayName}</dd>
+            </div>
+            <div>
+              <dt>Verification</dt>
+              <dd>{listing.landlord.verificationStatus.toLowerCase()}</dd>
+            </div>
+          </dl>
+
+          <div className="moderation-copy-review">
+            <div>
+              <h4>Location</h4>
+              <p>
+                {listing.property.addressLine}, {listing.property.city}
+              </p>
+              <a href={mapUrl} target="_blank" rel="noreferrer">
+                Check pin at {listing.property.latitude.toFixed(6)},{" "}
+                {listing.property.longitude.toFixed(6)}
+              </a>
+            </div>
+            <div>
+              <h4>Description</h4>
+              {listing.descriptionKm ? (
+                <p lang="km">{listing.descriptionKm}</p>
+              ) : null}
+              {listing.descriptionEn ? <p>{listing.descriptionEn}</p> : null}
+              {!listing.descriptionKm && !listing.descriptionEn ? (
+                <p className="moderation-missing">No description supplied.</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="moderation-photos">
+            <h4>Photos ({readyPhotos.length} ready)</h4>
+            {readyPhotos.length > 0 ? (
+              <ul>
+                {readyPhotos.map((image) => (
+                  <li key={image.id}>
+                    <Image
+                      src={image.publicUrl}
+                      alt={image.altTextEn ?? image.altTextKm ?? title}
+                      fill
+                      sizes="(max-width: 640px) 44vw, 180px"
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="moderation-missing">No ready photo supplied.</p>
+            )}
+          </div>
         </div>
 
-        <dl className="moderation-facts">
-          <div>
-            <dt>Monthly rent</dt>
-            <dd>{formatPrice(listing.monthlyPrice, listing.currency)}</dd>
-          </div>
-          <div>
-            <dt>Availability</dt>
-            <dd>
-              {listing.availableUnits} of {listing.property.totalUnits} rooms
-            </dd>
-          </div>
-          <div>
-            <dt>Landlord</dt>
-            <dd>{listing.landlord.displayName}</dd>
-          </div>
-          <div>
-            <dt>Verification</dt>
-            <dd>{listing.landlord.verificationStatus.toLowerCase()}</dd>
-          </div>
-        </dl>
-
-        <div className="moderation-copy-review">
-          <div>
-            <h4>Location</h4>
-            <p>
-              {listing.property.addressLine}, {listing.property.city}
-            </p>
-            <a href={mapUrl} target="_blank" rel="noreferrer">
-              Check pin at {listing.property.latitude.toFixed(6)},{" "}
-              {listing.property.longitude.toFixed(6)}
-            </a>
-          </div>
-          <div>
-            <h4>Description</h4>
-            {listing.descriptionKm ? (
-              <p lang="km">{listing.descriptionKm}</p>
-            ) : null}
-            {listing.descriptionEn ? <p>{listing.descriptionEn}</p> : null}
-            {!listing.descriptionKm && !listing.descriptionEn ? (
-              <p className="moderation-missing">No description supplied.</p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="moderation-photos">
-          <h4>Photos ({readyPhotos.length} ready)</h4>
-          {readyPhotos.length > 0 ? (
-            <ul>
-              {readyPhotos.map((image) => (
-                <li key={image.id}>
-                  <Image
-                    src={image.publicUrl}
-                    alt={image.altTextEn ?? image.altTextKm ?? title}
-                    fill
-                    sizes="(max-width: 640px) 44vw, 180px"
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="moderation-missing">No ready photo supplied.</p>
-          )}
-        </div>
-      </div>
-
-      {!reviewOnly ? (
-        <div className="moderation-decision">
-          <label htmlFor={`moderation-note-${listing.id}`}>
-            Correction note for rejection
-          </label>
-          <textarea
-            id={`moderation-note-${listing.id}`}
-            value={note}
-            minLength={3}
-            maxLength={2_000}
-            rows={4}
-            placeholder="Explain exactly what the landlord should correct."
-            disabled={disabled}
-            onChange={(event) => onNoteChange(event.target.value)}
-          />
-          <div>
-            <button
-              className="moderation-reject"
-              type="button"
+        {!reviewOnly ? (
+          <div className="moderation-decision">
+            <label htmlFor={`moderation-note-${listing.id}`}>
+              Correction note for rejection
+            </label>
+            <textarea
+              id={`moderation-note-${listing.id}`}
+              value={note}
+              minLength={3}
+              maxLength={2_000}
+              rows={4}
+              placeholder="Explain exactly what the landlord should correct."
               disabled={disabled}
-              onClick={onReject}
-            >
-              {workingAction === "reject" ? "Rejecting…" : "Reject with note"}
-            </button>
-            <button
-              className="moderation-approve"
-              type="button"
-              disabled={disabled}
-              onClick={onApprove}
-            >
-              {workingAction === "approve"
-                ? "Publishing…"
-                : "Approve and publish"}
-            </button>
+              onChange={(event) => onNoteChange(event.target.value)}
+            />
+            <div>
+              <button
+                className="moderation-reject"
+                type="button"
+                disabled={disabled}
+                onClick={onReject}
+              >
+                {workingAction === "reject" ? "Rejecting…" : "Reject with note"}
+              </button>
+              <button
+                className="moderation-approve"
+                type="button"
+                disabled={disabled}
+                onClick={onApprove}
+              >
+                {workingAction === "approve"
+                  ? "Publishing…"
+                  : "Approve and publish"}
+              </button>
+            </div>
           </div>
-        </div>
-      ) : null}
-    </li>
+        ) : null}
+      </li>
+    </Localized>
   );
 }
 

@@ -72,7 +72,7 @@ export class SearchPublicListingsDto {
   @IsOptional()
   @IsArray()
   @ArrayUnique()
-  @ArrayMaxSize(6)
+  @ArrayMaxSize(13)
   @IsEnum(PropertyType, { each: true })
   propertyTypes?: PropertyType[];
 

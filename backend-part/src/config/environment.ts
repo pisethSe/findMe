@@ -136,6 +136,72 @@ export function getAppEnvironment(value: string | undefined): AppEnvironment {
   return environment as AppEnvironment;
 }
 
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
+const LOG_LEVELS: readonly LogLevel[] = ["debug", "info", "warn", "error"];
+
+export function isLogLevel(value: unknown): value is LogLevel {
+  return typeof value === "string" && LOG_LEVELS.includes(value as LogLevel);
+}
+
+/**
+ * Request-time resolution. Invalid values fall back to the environment default
+ * so a misconfigured threshold can never break a request; startup validation
+ * rejects them instead.
+ */
+export function resolveLogLevel(
+  value: string | undefined,
+  appEnvironment: string | undefined,
+): LogLevel {
+  const environment = appEnvironment?.trim();
+  const fallback: LogLevel = ["staging", "production"].includes(
+    environment ?? "",
+  )
+    ? "info"
+    : "warn";
+  const candidate = value?.trim().toLowerCase();
+  return isLogLevel(candidate) ? candidate : fallback;
+}
+
+export function getLogLevel(
+  value: string | undefined,
+  appEnvironment: AppEnvironment,
+): LogLevel {
+  const candidate = value?.trim().toLowerCase();
+  if (candidate && !isLogLevel(candidate)) {
+    throw new TypeError(
+      "LOG_LEVEL must be one of debug, info, warn, or error.",
+    );
+  }
+
+  return resolveLogLevel(value, appEnvironment);
+}
+
+const MINIMUM_OPS_TOKEN_LENGTH = 32;
+
+/**
+ * Request-time resolution. An unset or too-short token keeps the ops route
+ * effectively absent instead of failing a request; startup validation rejects
+ * the misconfiguration loudly.
+ */
+export function resolveOpsMetricsToken(
+  value: string | undefined,
+): string | null {
+  const token = value?.trim();
+  return token && token.length >= MINIMUM_OPS_TOKEN_LENGTH ? token : null;
+}
+
+export function getOpsMetricsToken(value: string | undefined): string | null {
+  const token = value?.trim() ?? "";
+  if (token && token.length < MINIMUM_OPS_TOKEN_LENGTH) {
+    throw new TypeError(
+      "OPS_METRICS_TOKEN must contain at least 32 characters when set.",
+    );
+  }
+
+  return resolveOpsMetricsToken(value);
+}
+
 export function getAuthSecret(
   name: "JWT_ACCESS_SECRET" | "REFRESH_TOKEN_SECRET",
   value: string | undefined,
@@ -252,6 +318,53 @@ export function validateAuthEnvironment(environment = process.env): void {
   parsePasswordResetTtlMinutes(environment.PASSWORD_RESET_TTL_MINUTES);
 }
 
+export interface GoogleOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  /** Exact redirect URI registered with the Google OAuth client. */
+  redirectUrl: string | null;
+}
+
+/**
+ * Optional Google sign-in configuration.
+ *
+ * Returns null while the feature is unconfigured so every other authentication
+ * path keeps working. A half-configured pair fails fast instead of leaving a
+ * button that cannot complete.
+ */
+export function getGoogleOAuthConfig(
+  environment: NodeJS.ProcessEnv,
+): GoogleOAuthConfig | null {
+  const clientId = environment.GOOGLE_OAUTH_CLIENT_ID?.trim() ?? "";
+  const clientSecret = environment.GOOGLE_OAUTH_CLIENT_SECRET?.trim() ?? "";
+  const redirectUrl = environment.GOOGLE_OAUTH_REDIRECT_URL?.trim() ?? "";
+
+  if (!clientId && !clientSecret) {
+    if (redirectUrl) {
+      throw new TypeError(
+        "GOOGLE_OAUTH_REDIRECT_URL requires GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET.",
+      );
+    }
+    return null;
+  }
+  if (!clientId || !clientSecret) {
+    throw new TypeError(
+      "Google sign-in needs GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET together.",
+    );
+  }
+  if (/replace-with|change-before|your[-_ ]?client/i.test(clientId)) {
+    throw new TypeError("GOOGLE_OAUTH_CLIENT_ID is still a placeholder.");
+  }
+
+  if (redirectUrl) assertHttpUrl("GOOGLE_OAUTH_REDIRECT_URL", redirectUrl);
+
+  return {
+    clientId,
+    clientSecret,
+    redirectUrl: redirectUrl || null,
+  };
+}
+
 export function getGoogleMapsServerKey(
   value: string | undefined,
   appEnvironment: AppEnvironment,
@@ -354,6 +467,9 @@ export function validateApplicationEnvironment(
   const appEnvironment = getAppEnvironment(environment.APP_ENV);
   getRedisUrl(environment.REDIS_URL, appEnvironment);
   getTrustedProxyCidrs(environment.TRUSTED_PROXY_CIDRS);
+  getLogLevel(environment.LOG_LEVEL, appEnvironment);
+  getOpsMetricsToken(environment.OPS_METRICS_TOKEN);
   getGoogleMapsServerKey(environment.GOOGLE_MAPS_SERVER_KEY, appEnvironment);
   getObjectStorageConfig(environment, appEnvironment);
+  getGoogleOAuthConfig(environment);
 }

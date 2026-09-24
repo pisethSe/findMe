@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -163,95 +164,99 @@ export function InquiryForm({
   }
 
   return (
-    <section
-      id="rental-inquiry"
-      className={styles.section}
-      aria-labelledby="inquiry-title"
-    >
-      <h2 id="inquiry-title">Send an inquiry</h2>
-      <p>Ask about availability, utility costs, or arranging a visit.</p>
-      {access === "loading" ? (
-        <p role="status">Checking your account…</p>
-      ) : access === "guest" ? (
-        <p>
-          <Link href={`/login?${returnQuery}`}>Sign in to send an inquiry</Link>
-        </p>
-      ) : access === "onboarding" ? (
-        <p>
-          <Link href={`/onboarding/role?${returnQuery}`}>
-            Complete your student profile to send an inquiry
-          </Link>
-        </p>
-      ) : access === "forbidden" ? (
-        <p>Only student accounts can send rental inquiries.</p>
-      ) : access === "error" ? (
-        <div role="alert">
-          <p>Your account could not be checked.</p>
-          <button
-            type="button"
-            className={styles.secondary}
-            onClick={() => setAttempt((value) => value + 1)}
-          >
-            Retry account check
-          </button>
-        </div>
-      ) : sent ? (
-        <div className={styles.success} role="status">
-          <h3>Your inquiry was sent.</h3>
-          <p>The landlord can read it in their FindMe inbox.</p>
-          <Link href="/inquiries">View sent inquiries</Link>
-        </div>
-      ) : (
-        <form onSubmit={submit} noValidate aria-busy={pending}>
-          <label htmlFor="inquiry-message">Your message</label>
-          <textarea
-            id="inquiry-message"
-            ref={textarea}
-            value={message}
-            onChange={(event) => {
-              setMessage(event.target.value);
-              setFieldError(null);
-            }}
-            rows={6}
-            required
-            maxLength={INQUIRY_MESSAGE_MAX}
-            disabled={pending || unavailable}
-            aria-invalid={Boolean(fieldError)}
-            aria-describedby={`inquiry-help inquiry-count${fieldError ? " inquiry-field-error" : ""}`}
-          />
-          <p id="inquiry-help" className={styles.help}>
-            Only this landlord can read your message. Include a phone number or
-            Telegram username if you want a reply. Your account email and phone
-            are not shared automatically.
+    <Localized>
+      <section
+        id="rental-inquiry"
+        className={styles.section}
+        aria-labelledby="inquiry-title"
+      >
+        <h2 id="inquiry-title">Send an inquiry</h2>
+        <p>Ask about availability, utility costs, or arranging a visit.</p>
+        {access === "loading" ? (
+          <p role="status">Checking your account…</p>
+        ) : access === "guest" ? (
+          <p>
+            <Link href={`/login?${returnQuery}`}>
+              Sign in to send an inquiry
+            </Link>
           </p>
-          <p id="inquiry-count" className={styles.count}>
-            {Array.from(message).length.toLocaleString("en-US")} / 2,000
-            characters
+        ) : access === "onboarding" ? (
+          <p>
+            <Link href={`/onboarding/role?${returnQuery}`}>
+              Complete your student profile to send an inquiry
+            </Link>
           </p>
-          {fieldError ? (
-            <p id="inquiry-field-error" role="alert" className={styles.error}>
-              {fieldError}
+        ) : access === "forbidden" ? (
+          <p>Only student accounts can send rental inquiries.</p>
+        ) : access === "error" ? (
+          <div role="alert">
+            <p>Your account could not be checked.</p>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Retry account check
+            </button>
+          </div>
+        ) : sent ? (
+          <div className={styles.success} role="status">
+            <h3>Your inquiry was sent.</h3>
+            <p>The landlord can read it in their FindMe inbox.</p>
+            <Link href="/inquiries">View sent inquiries</Link>
+          </div>
+        ) : (
+          <form onSubmit={submit} noValidate aria-busy={pending}>
+            <label htmlFor="inquiry-message">Your message</label>
+            <textarea
+              id="inquiry-message"
+              ref={textarea}
+              value={message}
+              onChange={(event) => {
+                setMessage(event.target.value);
+                setFieldError(null);
+              }}
+              rows={6}
+              required
+              maxLength={INQUIRY_MESSAGE_MAX}
+              disabled={pending || unavailable}
+              aria-invalid={Boolean(fieldError)}
+              aria-describedby={`inquiry-help inquiry-count${fieldError ? " inquiry-field-error" : ""}`}
+            />
+            <p id="inquiry-help" className={styles.help}>
+              Only this landlord can read your message. Include a phone number
+              or Telegram username if you want a reply. Your account email and
+              phone are not shared automatically.
             </p>
-          ) : null}
-          {error ? (
-            <p role="alert" className={styles.error}>
-              {error}
+            <p id="inquiry-count" className={styles.count}>
+              {Array.from(message).length.toLocaleString("en-US")} / 2,000
+              characters
             </p>
-          ) : null}
-          <button
-            type="submit"
-            className={styles.submit}
-            disabled={pending || unavailable}
-          >
-            {pending
-              ? "Sending…"
-              : unavailable
-                ? "Rental unavailable"
-                : "Send inquiry"}
-          </button>
-          <Link href="/inquiries">View sent inquiries</Link>
-        </form>
-      )}
-    </section>
+            {fieldError ? (
+              <p id="inquiry-field-error" role="alert" className={styles.error}>
+                {fieldError}
+              </p>
+            ) : null}
+            {error ? (
+              <p role="alert" className={styles.error}>
+                {error}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              className={styles.submit}
+              disabled={pending || unavailable}
+            >
+              {pending
+                ? "Sending…"
+                : unavailable
+                  ? "Rental unavailable"
+                  : "Send inquiry"}
+            </button>
+            <Link href="/inquiries">View sent inquiries</Link>
+          </form>
+        )}
+      </section>
+    </Localized>
   );
 }

@@ -1,3 +1,4 @@
+import { publicListingWhere } from "../listings/availability-policy.js";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
@@ -88,13 +89,7 @@ export class ListingDetailRepository {
         const listing = await transaction.listing.findFirst({
           where: {
             slug,
-            status: "PUBLISHED",
-            deletedAt: null,
-            availableUnits: { gt: 0 },
-            publishedAt: { not: null },
-            availabilityConfirmedAt: { not: null },
-            property: { deletedAt: null },
-            landlord: { deletedAt: null, accountStatus: "ACTIVE" },
+            ...publicListingWhere(),
           },
           select: publicDetailSelect,
         });

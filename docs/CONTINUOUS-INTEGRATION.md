@@ -16,15 +16,19 @@ minimum supported Node.js 24 release. It must complete all of these checks:
 5. apply the committed migrations to a disposable PostgreSQL 17 + PostGIS 3.5
    service;
 6. run the reference seed twice to prove it remains idempotent;
-7. run all unit and integration tests with `TEST_DATABASE_URL` present, so the
-   database-backed suites cannot be skipped;
-8. run deterministic Chromium checks for responsive student discovery with a
-   dedicated fixture API, including compact filters, list/map fallback, and
-   rental-detail layouts;
+7. run `test:ci`, which requires explicit PostGIS and Redis test URLs before
+   starting the unit and integration suites;
+8. run deterministic Chromium journeys for student discovery, engagement,
+   moderation, account onboarding and landlord supply, including responsive
+   layouts, loading/error recovery, private map fallback and upload retries;
 9. build the applications with production-mode environment validation enabled.
 
 The Maps values used by the production build are synthetic configuration
 fixtures. CI never needs or receives deployable Google Maps credentials.
+
+Phase 4 Step 1 adds the strict test gate, focused-test rejection, and seven-day
+browser report/trace artifacts. See [Testing](TESTING.md) for the coverage matrix
+and the disposable `deploy-part/compose.test.yaml` setup.
 
 After verification passes, `Build and smoke-test containers` validates the
 Compose file, builds the frontend, backend, and migration images, starts the

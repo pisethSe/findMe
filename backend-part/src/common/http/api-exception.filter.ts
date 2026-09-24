@@ -6,7 +6,12 @@ import {
   type ExceptionFilter,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { randomUUID } from "node:crypto";
+
+import {
+  REQUEST_ID_HEADER,
+  getRequestId,
+  normalizeRequestId,
+} from "../observability/request-context.js";
 
 interface ExceptionPayload {
   code?: unknown;
@@ -16,10 +21,9 @@ interface ExceptionPayload {
 }
 
 function requestIdFrom(request: Request): string {
-  const candidate = request.header("x-request-id")?.trim();
-  return candidate && /^[a-zA-Z0-9._:-]{1,128}$/.test(candidate)
-    ? candidate
-    : randomUUID();
+  return (
+    getRequestId() ?? normalizeRequestId(request.header(REQUEST_ID_HEADER))
+  );
 }
 
 @Catch()

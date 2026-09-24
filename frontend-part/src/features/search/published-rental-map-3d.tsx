@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type { InstitutionDto, PublicListingDto } from "@findme/contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -374,25 +375,27 @@ export function PublishedRentalMap3D({
   }, [focusListingId, focusLatitude, focusLongitude, state]);
 
   return (
-    <div className="published-3d-map" data-ready={state === "ready"}>
-      <div
-        ref={containerRef}
-        className="published-3d-map-host"
-        inert={state !== "ready"}
-        aria-hidden={state !== "ready"}
-        role={state === "ready" ? "region" : undefined}
-        aria-label={
-          state === "ready"
-            ? "Interactive three-dimensional map of matching available rentals"
-            : undefined
-        }
-      />
-      {state === "loading" ? (
-        <p className="published-map-status" role="status">
-          Preparing 3D view…
-        </p>
-      ) : null}
-    </div>
+    <Localized>
+      <div className="published-3d-map" data-ready={state === "ready"}>
+        <div
+          ref={containerRef}
+          className="published-3d-map-host"
+          inert={state !== "ready"}
+          aria-hidden={state !== "ready"}
+          role={state === "ready" ? "region" : undefined}
+          aria-label={
+            state === "ready"
+              ? "Interactive three-dimensional map of matching available rentals"
+              : undefined
+          }
+        />
+        {state === "loading" ? (
+          <p className="published-map-status" role="status">
+            Preparing 3D view…
+          </p>
+        ) : null}
+      </div>
+    </Localized>
   );
 }
 

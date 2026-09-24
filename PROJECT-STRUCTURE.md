@@ -207,3 +207,20 @@ history and retry keys and enforces submission limits during Redis outages.
 `frontend-part/src/features/inquiries` contains the rental form, runtime-checked
 API client, and private `/inquiries` and `/landlord/inquiries` screens.
 See [Inquiries](docs/INQUIRIES.md) for privacy, pagination, status and rate rules.
+
+## Phase 4 quality hardening
+
+Step 1 adds browser regression coverage for Khmer account onboarding, returning
+role routing, rental draft/create/edit, upload recovery, expired access and
+responsive landlord flows. The strict `test:ci` command requires explicit
+PostGIS/Redis test URLs, and Playwright rejects focused tests in CI while
+retaining failure traces and reports. A separate ephemeral test Compose stack
+makes the full gate reproducible locally. See [Testing](docs/TESTING.md) for the
+critical-behavior coverage matrix, commands and external-service limitations.
+
+Step 2 tunes the measured public-search bottlenecks: PostGIS selects a bounded
+page before photo/amenity hydration, amenity matching uses candidate-scoped
+primary-key lookups, and a partial public-listing property index reduces work
+after geographic filtering. Large-data regression tests guard pagination and
+bounded hydration; `benchmark:search` records repeatable query timings and plans.
+See [Performance](docs/PERFORMANCE.md) for measured results and migration notes.

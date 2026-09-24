@@ -17,7 +17,10 @@
     "build": "corepack pnpm -r --if-present build",
     "typecheck": "corepack pnpm run db:generate && corepack pnpm -r --if-present typecheck",
     "test": "corepack pnpm -r --if-present test",
-    "lint": "corepack pnpm -r --if-present lint",
+    "test:ci": "node scripts/verify-test-environment.mjs && corepack pnpm run test",
+    "test:browser": "corepack pnpm --filter @findme/frontend run test:browser",
+    "benchmark:search": "corepack pnpm --filter @findme/backend run benchmark:search",
+    "lint": "oxlint scripts && corepack pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

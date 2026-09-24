@@ -32,7 +32,7 @@ test("routes each server-owned onboarding state to its appropriate product area"
     {
       role: "STUDENT",
       stage: "COMPLETE",
-      nextPath: "/search",
+      nextPath: "/",
       roleSelectionComplete: true,
       profileComplete: true,
       landlordTrialActivated: false,

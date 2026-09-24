@@ -1,16 +1,22 @@
-import type { PublicListingDetailDto } from "@findme/contracts";
+import type { PropertyType, PublicListingDetailDto } from "@findme/contracts";
+import type { LandingLocale } from "../landing/landing-icons";
+import { ROOM_TYPE_OPTIONS } from "../search/room-type-options.ts";
 
 export const RENTAL_TYPE_LABELS: Record<
   PublicListingDetailDto["propertyType"],
   string
-> = {
-  ROOM: "Room",
-  STUDIO: "Studio",
-  APARTMENT: "Apartment",
-  HOUSE: "House",
-  DORM_ROOM: "Dorm room",
-  OTHER_STUDENT_RENTAL: "Other student rental",
-};
+> = Object.fromEntries(
+  ROOM_TYPE_OPTIONS.map((option) => [option.value, option.en]),
+) as Record<PropertyType, string>;
+
+export function rentalTypeLabel(
+  value: PropertyType,
+  locale: LandingLocale,
+): string {
+  const option = ROOM_TYPE_OPTIONS.find((entry) => entry.value === value);
+  if (!option) return value.replaceAll("_", " ").toLowerCase();
+  return locale === "km" ? option.km : option.en;
+}
 
 export function rentalDetailHref(
   slug: string,

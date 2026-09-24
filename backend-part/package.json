@@ -8,6 +8,7 @@
     "build": "corepack pnpm --filter @findme/database generate && nest build",
     "start": "node dist/main.js",
     "test": "corepack pnpm run build && node --test tests/*.test.mjs",
+    "benchmark:search": "corepack pnpm run build && node tests/performance/search-benchmark.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "oxlint src tests",
     "format:check": "prettier --check src tests nest-cli.json tsconfig.json tsconfig.build.json package.json"

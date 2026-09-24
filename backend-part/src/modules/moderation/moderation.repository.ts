@@ -1,3 +1,4 @@
+import { availabilityCutoff } from "../listings/availability-policy.js";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma.service.js";
@@ -75,6 +76,7 @@ export class ModerationRepository {
           status: ListingStatus.PENDING_REVIEW,
           deletedAt: null,
           availableUnits: { gt: 0 },
+          availabilityConfirmedAt: { gt: availabilityCutoff(now), lte: now },
           images: { some: { status: ImageStatus.READY } },
           OR: [
             { descriptionKm: { not: null } },

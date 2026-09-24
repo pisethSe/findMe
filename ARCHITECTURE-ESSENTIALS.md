@@ -199,11 +199,13 @@ Do not duplicate authoritative marketplace logic in the frontend.
 
 Landing/onboarding rules:
 
-- `/` uses the exact Khmer headline `ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតអ្នកបំផុត.` in Kantumruy Pro;
-- desktop hero places copy/actions left and a clean 3D rental-map preview right; mobile stacks content and prioritizes search;
+- `/` uses the exact Khmer headline `ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​ និងនៅជិតសាលាអ្នកបំផុត` in Kantumruy Pro;
+- white-first desktop hero centers a larger headline above the blue-and-white campus search panel, with maps below; mobile uses one-row navigation with expanding cards and prioritizes search;
 - 3D maps must fall back to a usable 2D map/list when unsupported, slow, failed, or reduced motion is requested;
-- green available and red unavailable markers also require a label/icon/shape because color alone is insufficient;
-- the vertical phrase loop has fixed layout, a static accessible equivalent, no repetitive live announcements, and a reduced-motion state;
+- blue available and red unavailable markers also require a label/icon/shape because color alone is insufficient;
+- the phrase introduction ends within five seconds, has fixed layout, a static accessible equivalent and a reduced-motion state; the exact Ribbon Field source is vendored without byte changes, with lifecycle/static-frame handling in its wrapper;
+- appearance and Khmer/English UI preferences are presentation-only context, persisted locally; they never determine roles, auth, entitlement or data ownership;
+- missing Google Maps credentials use a Google location embed plus the listing alternative, with custom multi-listing markers reserved for configured Maps JavaScript;
 - after authentication, incomplete users go to `/onboarding/role`; the role question and primary choices are Khmer-first (`តើអ្នកជាសិស្ស/និស្សិត ឬជាម្ចាស់ផ្ទះជួល?`);
 - completed students route to discovery; a newly activated landlord continues to the guided first-rental form, while returning landlords route to the dashboard, all from server-provided role/profile state.
 
@@ -211,6 +213,8 @@ Rental publishing and map freshness rules:
 
 - form edits may update a private live map preview, but drafts and pending listings never appear in public search;
 - only backend-authorized `PUBLISHED` listings with available inventory appear by default for students;
+- availability confirmation expires after 14 elapsed days, with dashboard reminders after 7 days; server reads enforce this for search, detail, and new student engagement, independently of background jobs;
+- explicit owner confirmation may keep the same room count but cannot bypass entitlement expiry or moderation; stale records and private histories are preserved;
 - after a publication or availability transaction commits, invalidate/version relevant public caches;
 - visible student search views refetch on a bounded interval, targeting published map/list freshness within 60 seconds under normal conditions; MVP does not require WebSockets;
 - animate only the new/selected marker with restrained motion, and use an instant non-motion state when reduced motion is requested.

@@ -1,5 +1,6 @@
 "use client";
 
+import { Localized } from "../preferences/translated-text";
 import type { InstitutionDto } from "@findme/contracts";
 import {
   type ChangeEvent,
@@ -16,26 +17,37 @@ import {
   institutionTypeLabel,
   nextInstitutionOptionIndex,
 } from "./institution-search-model";
+import { InstitutionHintLoop } from "./institution-hint-loop";
 import { searchInstitutions } from "./search-api";
 
 interface InstitutionPickerProps {
   id: string;
   label: string;
+  locale?: "en" | "km";
   selectedInstitution: InstitutionDto | null;
   onSelect: (institution: InstitutionDto) => void;
   onSelectionValidityChange: (valid: boolean) => void;
   disabled?: boolean;
   name?: string;
+  /**
+   * Active campus names for the looping hint under the field. Only the landing
+   * search panel passes these; other pickers keep the plain help text.
+   */
+  hintLoop?: readonly string[];
+  hintLoopLabel?: string;
 }
 
 export function InstitutionPicker({
   id,
   label,
+  locale = "en",
   selectedInstitution,
   onSelect,
   onSelectionValidityChange,
   disabled = false,
   name = "institution",
+  hintLoop,
+  hintLoopLabel,
 }: InstitutionPickerProps) {
   const generatedId = useId().replaceAll(":", "");
   const listboxId = `${id}-${generatedId}-results`;
@@ -192,100 +204,119 @@ export function InstitutionPicker({
     activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
 
   return (
-    <div className="institution-picker" ref={wrapperRef}>
-      <label htmlFor={id}>{label}</label>
-      <div className="institution-picker-control">
+    <Localized>
+      <div className="institution-picker" ref={wrapperRef}>
+        <label htmlFor={id}>{label}</label>
+        <div className="institution-picker-control">
+          <input
+            id={id}
+            type="search"
+            role="combobox"
+            autoComplete="off"
+            maxLength={100}
+            placeholder={
+              locale === "km"
+                ? "ស្វែងរកជាខ្មែរ ឬអង់គ្លេស"
+                : "Search in Khmer or English"
+            }
+            value={query}
+            disabled={disabled}
+            aria-autocomplete="list"
+            aria-controls={open && options.length > 0 ? listboxId : undefined}
+            aria-expanded={open}
+            aria-activedescendant={activeOptionId}
+            aria-describedby={helpId}
+            aria-invalid={!selectionValid && query.length > 0}
+            onChange={changeQuery}
+            onFocus={() => setOpen(true)}
+            onBlur={leavePicker}
+            onKeyDown={handleKeyDown}
+          />
+
+          {open ? (
+            <div className="institution-picker-popover">
+              {searching ? (
+                <p className="institution-picker-state" role="status">
+                  {locale === "km"
+                    ? "កំពុងស្វែងរកគ្រឹះស្ថាន…"
+                    : "Searching active institutions…"}
+                </p>
+              ) : searchError ? (
+                <div className="institution-picker-state" role="alert">
+                  <p>{searchError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setRetry((value) => value + 1)}
+                  >
+                    {locale === "km"
+                      ? "សាកល្បងស្វែងរកម្ដងទៀត"
+                      : "Try institution search again"}
+                  </button>
+                </div>
+              ) : options.length === 0 ? (
+                <p className="institution-picker-state" role="status">
+                  {locale === "km"
+                    ? "មិនមានគ្រឹះស្ថានត្រូវនឹងឈ្មោះនេះ។ សាកល្បងខ្មែរ អង់គ្លេស ឬអក្សរកាត់។"
+                    : "No active institutions match this name. Try Khmer, English, or an abbreviation."}
+                </p>
+              ) : (
+                <ul
+                  ref={listboxRef}
+                  id={listboxId}
+                  role="listbox"
+                  aria-label="Active institutions"
+                >
+                  {options.map((institution, index) => (
+                    <li
+                      id={`${listboxId}-option-${index}`}
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      key={institution.id}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={() => {
+                        keyboardNavigationRef.current = false;
+                        setActiveIndex(index);
+                      }}
+                      onClick={() => choose(institution)}
+                    >
+                      <strong lang="km">{institution.nameKm}</strong>
+                      <span>{institution.nameEn}</span>
+                      <small>
+                        {institution.shortName
+                          ? `${institution.shortName} · `
+                          : ""}
+                        {institutionTypeLabel(institution.type)} ·{" "}
+                        {institution.city}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : null}
+        </div>
         <input
-          id={id}
-          type="search"
-          role="combobox"
-          autoComplete="off"
-          maxLength={100}
-          placeholder="Search in Khmer or English"
-          value={query}
-          disabled={disabled}
-          aria-autocomplete="list"
-          aria-controls={open && options.length > 0 ? listboxId : undefined}
-          aria-expanded={open}
-          aria-activedescendant={activeOptionId}
-          aria-describedby={helpId}
-          aria-invalid={!selectionValid && query.length > 0}
-          onChange={changeQuery}
-          onFocus={() => setOpen(true)}
-          onBlur={leavePicker}
-          onKeyDown={handleKeyDown}
+          type="hidden"
+          name={name}
+          value={selectionValid ? (selectedInstitution?.slug ?? "") : ""}
         />
 
-        {open ? (
-          <div className="institution-picker-popover">
-            {searching ? (
-              <p className="institution-picker-state" role="status">
-                Searching active institutions…
-              </p>
-            ) : searchError ? (
-              <div className="institution-picker-state" role="alert">
-                <p>{searchError}</p>
-                <button
-                  type="button"
-                  onClick={() => setRetry((value) => value + 1)}
-                >
-                  Try institution search again
-                </button>
-              </div>
-            ) : options.length === 0 ? (
-              <p className="institution-picker-state" role="status">
-                No active institutions match this name. Try Khmer, English, or
-                an abbreviation.
-              </p>
-            ) : (
-              <ul
-                ref={listboxRef}
-                id={listboxId}
-                role="listbox"
-                aria-label="Active institutions"
-              >
-                {options.map((institution, index) => (
-                  <li
-                    id={`${listboxId}-option-${index}`}
-                    role="option"
-                    aria-selected={index === activeIndex}
-                    key={institution.id}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onMouseEnter={() => {
-                      keyboardNavigationRef.current = false;
-                      setActiveIndex(index);
-                    }}
-                    onClick={() => choose(institution)}
-                  >
-                    <strong lang="km">{institution.nameKm}</strong>
-                    <span>{institution.nameEn}</span>
-                    <small>
-                      {institution.shortName
-                        ? `${institution.shortName} · `
-                        : ""}
-                      {institutionTypeLabel(institution.type)} ·{" "}
-                      {institution.city}
-                    </small>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : null}
+        <p id={helpId} className="institution-picker-help">
+          {!selectionValid && query.length > 0 ? (
+            "Choose an institution from the search results."
+          ) : hintLoop && hintLoop.length > 0 ? (
+            <InstitutionHintLoop
+              names={hintLoop}
+              label={hintLoopLabel ?? (locale === "km" ? "សាកល្បង៖" : "Try:")}
+              paused={open || disabled}
+            />
+          ) : selectedInstitution ? (
+            selectedInstitution.nameKm
+          ) : (
+            "Enter a school, university, college, or abbreviation."
+          )}
+        </p>
       </div>
-      <input
-        type="hidden"
-        name={name}
-        value={selectionValid ? (selectedInstitution?.slug ?? "") : ""}
-      />
-
-      <p id={helpId} className="institution-picker-help">
-        {!selectionValid && query.length > 0
-          ? "Choose an institution from the search results."
-          : selectedInstitution
-            ? selectedInstitution.nameKm
-            : "Enter a school, university, college, or abbreviation."}
-      </p>
-    </div>
+    </Localized>
   );
 }
