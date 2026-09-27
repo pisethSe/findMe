@@ -271,6 +271,16 @@ popover options can wrap. Phone campus inputs use 16px text. Native selects
 remain usable on touch; hover menus enrich pointer use. Budget filters open a
 dialog with focus containment, Escape/close behavior and an explicit Apply action.
 
+The landing campus field reserves one fixed height for its label, its running
+examples and a comfortable touch target, so focusing never shifts the panel.
+While the field is idle, a Khmer line and an English line run inside it with a
+short slide/fade cycle: before the first interaction they run over the default
+campus, afterwards only over an empty field, so typed text and a chosen campus
+are never covered. The running layer is decorative, ignores pointer input and
+reduced motion keeps one static example. Typed text keeps its own case, and
+institution matching stays case-insensitive for English and substring based for
+Khmer.
+
 ### Navigation
 
 The rentMe wordmark is compact; icons communicate actions rather than decorate
@@ -306,12 +316,34 @@ equivalent remains available; visual phrases are hidden from assistive technolog
 and never produce repeated live announcements. Reduced motion skips the motion.
 The main headline and search controls must not wait for the enhancement.
 
-The white hero uses a faint inverted/multiplied ribbon texture; dark appearance
-uses the city image beneath a screened ribbon. The generated house illustration
-is removed. The requested private light-image URL returned 403, so the white
+The white hero shows the day photograph cleanly behind the headline. The
+captured Ribbon Field texture is not rendered in light appearance: its
+inset panel read as a messy blurred rectangle over the day photo
+(user-directed revision), so no ribbon canvas mounts in the light theme.
+Instead the light hero layers a small first-party cloud shader
+(`src/components/ui/cloud-shader.tsx`, the Aceternity UI cloud shader ported to
+this frontend's CSS Modules) into the open sky at the top of the photograph:
+the band is 28% of the hero capped at 152px, measured to end above the skyline,
+and the clouds render at 0.6 of the authored size so they stay small sky
+details. The layer is decorative and layout-neutral: aria-hidden, absolutely
+positioned, clipped, and never a pointer target, so the headline, search form
+and map never wait for it. Reduced motion mounts neither canvas.
+Third-party DOM markers never reach hydration: the development-only root-layout
+guard clears extension-injected attributes (`bis_skin_checked`, `bis_register`,
+`__processed_<uuid>__`, and similar) while the document is parsed, so the hero
+never reports a hydration mismatch caused by an extension the product does not
+control. Production builds skip the guard, because React only reports
+attribute-only mismatches in its development build.
+The dark appearance uses the city image beneath a screened ribbon. The generated house illustration is
+removed. The requested private light-image URL returned 403, so the white
 surface does not pretend to contain that image. The dark city edit is 1672×941,
 not the requested 4K. Preserve these asset limitations and provenance until actual
 replacement assets are supplied.
+
+User-directed hero type colors: the supporting intro line is white in both
+appearances, with a dark halo over the day photograph so the small type stays
+readable, and the Khmer headline is near-black (`#0a0a0a`) in light appearance
+while staying white in dark appearance.
 
 ### Map and availability
 

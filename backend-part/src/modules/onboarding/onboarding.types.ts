@@ -15,9 +15,33 @@ export interface OnboardingUserRecord {
   accountStatus: AccountStatus;
   onboardingCompletedAt: Date | null;
   deletedAt: Date | null;
-  studentProfile: { displayName: string } | null;
+  studentProfile: {
+    displayName: string;
+    institutionId: string | null;
+    preferredRadiusMeters: number | null;
+    institution: {
+      id: string;
+      slug: string;
+      nameEn: string;
+      nameKm: string;
+      isActive: boolean;
+    } | null;
+  } | null;
   landlordProfile: { userId: string } | null;
   landlordEntitlement: { landlordId: string } | null;
+}
+
+/**
+ * The student's saved search default. The server derives the canonical campus
+ * identity so the browser can build a valid search URL without trusting a
+ * client-supplied institution id.
+ */
+export interface StudentPreferenceRecord {
+  institutionId: string;
+  institutionSlug: string;
+  institutionNameEn: string;
+  institutionNameKm: string;
+  preferredRadiusMeters: number | null;
 }
 
 export interface OnboardingState {
@@ -33,6 +57,7 @@ export interface OnboardingState {
   roleSelectionComplete: boolean;
   profileComplete: boolean;
   landlordTrialActivated: boolean;
+  studentPreference: StudentPreferenceRecord | null;
 }
 
 export interface LandlordProfileRecord {

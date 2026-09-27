@@ -129,6 +129,7 @@ AppModule
 ├── AuditModule
 ├── AnalyticsModule
 ├── CacheModule
+├── TelegramModule
 └── HealthModule
 ```
 
@@ -1035,6 +1036,8 @@ Use database constraints in addition to application checks wherever feasible.
 ### 16.5 Admin security
 
 - all admin routes require server-side `ADMIN` role checks;
+- the administrator Telegram support bot is read-only, allow-listed by Telegram
+  user id, and cannot approve, reject, suspend, publish, or delete anything;
 - sensitive actions create audit logs;
 - high-risk bulk operations need explicit confirmation and should be idempotent where possible.
 
@@ -1103,11 +1106,15 @@ The September 2026 user-approved landing uses a centered composition:
 
 The ThreeUI `ribbon-field` implementation is a private workspace package with byte-for-byte source checks. The wrapper runs a short introduction and captures the authored WebGL frame before releasing the animated renderer. Reduced-motion clients skip it. No shader code is recreated or edited. The user-requested white-first treatment and dark city image are host presentation, not changes to the registered source.
 
+The light-appearance hero layers a small first-party cloud shader (`frontend-part/src/components/ui/cloud-shader.tsx`, adapted from the Aceternity UI cloud shader and ported to this frontend's CSS Modules) into the top sky band of the day photograph, sized below the authored cloud size and clipped above the skyline. It is a separate component, not a change to the registered `ribbon-field` source, and each appearance mounts at most one decorative canvas: clouds in light, ribbon in dark, none under reduced motion.
+
 Google Maps JavaScript renders synchronized markers when its browser key and map ID are configured. Missing credentials use the public Google location embed (default terrain, satellite, flat road map) and a separate accessible room list; actual PostgreSQL coordinates drive selected current rentals. Demo room choices are explicitly illustrative and do not place fictional pins on the real embedded map. Server-side PostGIS filtering remains authoritative.
 
 `SitePreferences` holds only local appearance/language choices. `Localized` translates authored presentation strings through the Khmer catalog while preserving element identities, form values, URLs, IDs and unknown user content. Registration locale, server role/onboarding and entitlement contracts remain independent.
 
 The phrase introduction has static accessible text and no repetitive live announcements; it ends in under five seconds without a pause button. Primary content renders before enhancement hydration.
+
+Browser extensions (web-protection, wallet, grammar, and similar add-ons) stamp marker attributes such as `bis_skin_checked`, `bis_register`, `cz-shortcut-listen`, or `__processed_<uuid>__` onto parsed elements before React hydrates. React compares those attributes against the server HTML and reports a mismatch no product code caused. The root layout mounts `frontend-part/src/features/diagnostics/extension-hydration-guard.tsx`, which runs before any Next.js code, clears those markers while the document is parsed, and stops shortly after load, so it never races React's own DOM writes and only removes attributes no product code reads. React ships that attribute-only report in its development build only (the message does not exist in the production bundle), so the guard is skipped in production builds and user extensions are left untouched for real visitors.
 
 After authentication, the server-provided onboarding state determines routing:
 
@@ -1377,6 +1384,11 @@ GOOGLE_MAPS_SERVER_KEY=
 GOOGLE_OAUTH_CLIENT_ID=
 GOOGLE_OAUTH_CLIENT_SECRET=
 GOOGLE_OAUTH_REDIRECT_URL=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_INQUIRIES_CHAT_ID=
+TELEGRAM_SUPPORT_ADMIN_IDS=
+TELEGRAM_SUPPORT_POLLING=
+TELEGRAM_WEBHOOK_SECRET=
 
 # media
 S3_ENDPOINT=

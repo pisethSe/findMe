@@ -12,7 +12,7 @@ import {
 } from "../src/features/inquiries/inquiries-api.ts";
 import {
   safeStudentReturnPath,
-  studentPostAuthPath,
+  studentDestination,
 } from "../src/features/auth/student-return-path.ts";
 
 const row = {
@@ -82,8 +82,38 @@ test("inquiry form limits and status actions express the server workflow", () =>
   assert.deepEqual(allowedInquiryStatuses("CLOSED"), []);
   assert.equal(inquiryStatusLabel("RESPONDED"), "Marked replied");
   assert.equal(safeStudentReturnPath("/inquiries"), "/inquiries");
-  assert.equal(studentPostAuthPath("/search", "/inquiries"), "/inquiries");
-  assert.equal(studentPostAuthPath("/", "/inquiries"), "/inquiries");
-  assert.equal(studentPostAuthPath("/", null), "/");
-  assert.equal(studentPostAuthPath("/landlord", "/inquiries"), "/landlord");
+  assert.equal(
+    studentDestination(
+      { nextPath: "/search", studentPreference: null },
+      "/inquiries",
+    ),
+    "/inquiries",
+  );
+  assert.equal(
+    studentDestination(
+      { nextPath: "/", studentPreference: null },
+      "/inquiries",
+    ),
+    "/inquiries",
+  );
+  assert.equal(
+    studentDestination({ nextPath: "/", studentPreference: null }, null),
+    "/",
+  );
+  // A completed landlord may still follow a safe return path.
+  assert.equal(
+    studentDestination(
+      { nextPath: "/landlord", studentPreference: null },
+      "/inquiries",
+    ),
+    "/inquiries",
+  );
+  // Unfinished landlord onboarding is server-owned and must not be skipped.
+  assert.equal(
+    studentDestination(
+      { nextPath: "/onboarding/landlord", studentPreference: null },
+      "/inquiries",
+    ),
+    "/onboarding/landlord",
+  );
 });

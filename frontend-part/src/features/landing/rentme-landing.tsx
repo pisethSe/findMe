@@ -23,6 +23,10 @@ import {
 } from "./landing-controls";
 import { LandingMap, listingToMapRoom, SAMPLE_MAP_ROOMS } from "./landing-map";
 import { InstitutionPicker } from "../search/institution-picker";
+import {
+  CAMPUS_SEARCH_PHRASES,
+  type CampusRunningPhrase,
+} from "../search/campus-running-phrases";
 import { ROOM_TYPE_OPTIONS } from "../search/room-type-options";
 import {
   findInstitutionBySlug,
@@ -32,15 +36,22 @@ import {
 import styles from "./rentme.module.css";
 
 const PHRASES = [
-  { km: "នៅជិតសាលារបស់អ្នក", en: "Near your university." },
-  { km: "សមនឹងថវិការបស់អ្នក", en: "Within your monthly budget." },
+  { km: "នៅជិតសាលារបស់អ្នក។", en: "Near your university." },
+  { km: "សមនឹងថវិការបស់អ្នក។", en: "Within your monthly budget." },
 ] as const;
+
+/** How long each phrase rests before the next flip begins. */
+const PHRASE_INTERVAL_MS = 2600;
+
+/** Cloud size multiplier for the light hero sky. The user asked for a smaller
+    cloud, so this sky detail stays well below the authored size instead of
+    covering the photograph. */
+const CLOUD_SCALE = 0.6;
 
 export function RentMeLanding() {
   const { locale, theme } = useSitePreferences();
   const router = useRouter();
   const [reducedMotion, setReducedMotion] = useState(true);
-  const [introFinished, setIntroFinished] = useState(false);
   const [phrase, setPhrase] = useState(0);
   const [institution, setInstitution] = useState<InstitutionDto | null>(null);
   const [institutionStatus, setInstitutionStatus] = useState<
@@ -59,7 +70,9 @@ export function RentMeLanding() {
   >("idle");
   const [attempt, setAttempt] = useState(0);
   const [campusAttempt, setCampusAttempt] = useState(0);
-  const [campusHints, setCampusHints] = useState<readonly string[]>([]);
+  const [campusPhrases, setCampusPhrases] = useState<
+    readonly CampusRunningPhrase[]
+  >([]);
   const [selectedId, setSelectedId] = useState<string | null>(
     SAMPLE_MAP_ROOMS[0]?.id ?? null,
   );
@@ -75,15 +88,13 @@ export function RentMeLanding() {
   }, []);
   useEffect(() => {
     if (reducedMotion) return;
-    setIntroFinished(false);
-    setPhrase(0);
-    const phraseTimer = window.setTimeout(() => setPhrase(1), 2400);
-    const finishTimer = window.setTimeout(() => setIntroFinished(true), 4800);
-    return () => {
-      window.clearTimeout(phraseTimer);
-      window.clearTimeout(finishTimer);
-    };
-  }, [reducedMotion, theme]);
+    // Loop the supporting phrases for the whole visit. The ribbon capture
+    // has its own timer inside RibbonScene, so this runs independently.
+    const interval = window.setInterval(() => {
+      setPhrase((current) => (current + 1) % PHRASES.length);
+    }, PHRASE_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [reducedMotion]);
   useEffect(() => {
     const controller = new AbortController();
     setInstitutionStatus("loading");
@@ -109,18 +120,22 @@ export function RentMeLanding() {
     return () => controller.abort();
   }, [campusAttempt]);
   useEffect(() => {
-    // The looping campus hint lists active campuses a student can really search.
+    // Real, active campus names feed the looping hint and the running text
+    // inside the campus field, so the examples are never invented.
     const controller = new AbortController();
     void searchInstitutions({ limit: 12 }, controller.signal)
       .then((page) => {
         if (controller.signal.aborted) return;
-        const names = page.data
-          .map((entry) => entry.nameEn)
-          .filter((name): name is string => Boolean(name?.trim()));
-        if (names.length > 1) setCampusHints(names);
+        const names: CampusRunningPhrase[] = [];
+        for (const entry of page.data) {
+          const km = entry.nameKm?.trim();
+          const en = entry.nameEn?.trim();
+          if (km && en) names.push({ km, en });
+        }
+        if (names.length > 1) setCampusPhrases(names.slice(0, 8));
       })
       .catch(() => {
-        // Without a campus list the field keeps its plain help text.
+        // Without a campus list the field keeps its authored examples.
       });
     return () => controller.abort();
   }, [campusAttempt]);
@@ -171,6 +186,12 @@ export function RentMeLanding() {
           : [],
     [submitted, results, institution, locale],
   );
+  const campusHints = useMemo(
+    () => campusPhrases.map((entry) => entry.en),
+    [campusPhrases],
+  );
+  const runningPhrases =
+    campusPhrases.length > 1 ? campusPhrases : CAMPUS_SEARCH_PHRASES;
   const searchParams = new URLSearchParams({
     institution: institution?.slug ?? "royal-university-of-phnom-penh",
     maxDistanceKm: String(radius / 1000),
@@ -200,29 +221,26 @@ export function RentMeLanding() {
       <main>
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.heroBackdrop} aria-hidden="true" />
-          {theme === "light" ? (
-            <div className={styles.dotTexture} aria-hidden="true" />
-          ) : null}
-          {/* Small warm-tinted clouds drift over the day photograph only.
-              The layer is decorative, keeps the headline readable, and the
-              shader freezes to a static frame for reduced-motion users. */}
-          {theme === "light" ? (
-            <div className={styles.heroClouds} aria-hidden="true">
-              <CloudShader
-                transparent
-                count={3}
-                scale={0.62}
-                speed={0.5}
-                cloudColor="#fdf7ee"
-                skyTopColor="#7fb0dd"
-                skyBottomColor="#f0d6a8"
-              />
+          {/* The registered ribbon-field intro plays over the dark hero, where
+              its screen blend reads as light. The light appearance instead
+              layers a small cloud shader into the open sky at the top of the
+              day photograph, so each theme mounts at most one canvas and
+              reduced-motion clients mount none (ARCHITECTURE 18.1, landing
+              E2E). Both layers are decorative: the headline, search form and
+              map never wait for them. */}
+          <RibbonScene
+            key={theme}
+            enabled={!reducedMotion && theme === "dark"}
+          />
+          {theme === "light" && !reducedMotion ? (
+            <div
+              className={styles.heroClouds}
+              data-hero-layer="clouds"
+              aria-hidden="true"
+            >
+              <CloudShader transparent scale={CLOUD_SCALE} speed={0.6} />
             </div>
           ) : null}
-          {/* The registered ribbon-field intro plays in both themes, captures
-              its frame, and releases the renderer; reduced-motion clients
-              never mount a canvas (ARCHITECTURE 18.1, landing E2E). */}
-          <RibbonScene key={theme} enabled={!reducedMotion} />
           <div className={styles.heroContent}>
             <p className={styles.heroIntro}>
               {t(
@@ -231,20 +249,31 @@ export function RentMeLanding() {
                 "ស្វែងរកបន្ទប់នៅភ្នំពេញ ជិតសាកលវិទ្យាល័យរបស់អ្នក។",
               )}
             </p>
-            <h1 id="hero-title" lang="km">
-              ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​
-              <br className={styles.desktopBreak} /> និងនៅជិតសាលាអ្នកបំផុត
+            <h1 id="hero-title" lang={locale}>
+              {t(
+                locale,
+                "Find the room you love",
+                "ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត​",
+              )}
+              <br className={styles.desktopBreak} />{" "}
+              {t(locale, "and near your school.", "និងនៅជិតសាលាអ្នកបំផុត")}
             </h1>
             <div className={styles.phraseLoop}>
-              <p className="sr-only">
-                នៅជិតសាលារបស់អ្នក។ សមនឹងថវិការបស់អ្នក។ Near your university.
-                Within your monthly budget.
+              {/* One stable, complete sentence for assistive technology.
+                  The rotating phrase below is decorative and aria-hidden,
+                  so it is never announced and never changes mid-read. */}
+              <p className="sr-only" lang={locale}>
+                {t(
+                  locale,
+                  PHRASES.map((entry) => entry.en).join(" "),
+                  PHRASES.map((entry) => entry.km).join(" "),
+                )}
               </p>
               <div className={styles.phraseWindow} aria-hidden="true">
                 <div
                   key={activePhrase.en}
                   className={styles.phrase}
-                  data-paused={introFinished || reducedMotion}
+                  data-paused={reducedMotion}
                 >
                   <span lang="km">{activePhrase.km}</span>
                   <span lang="en">{activePhrase.en}</span>
@@ -310,6 +339,7 @@ export function RentMeLanding() {
                       locale={locale}
                       hintLoop={campusHints}
                       hintLoopLabel={t(locale, "Try:", "សាកល្បង៖")}
+                      runningPhrases={runningPhrases}
                     />
                   </div>
                   <label className={styles.panelField}>
@@ -733,7 +763,12 @@ export function RentMeLanding() {
           </div>
         </div>
         <div className={styles.footerBottom}>
-          <span>© {new Date().getFullYear()} rentMe</span>
+          {/* The year is rendered on the server and again on the client, so a
+              clock difference across a new year (or a different timezone) must
+              not surface as a hydration mismatch. */}
+          <span suppressHydrationWarning>
+            © {new Date().getFullYear()} rentMe
+          </span>
           <span>
             {t(
               locale,

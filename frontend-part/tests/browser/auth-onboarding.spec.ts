@@ -39,6 +39,15 @@ test("registration validates confirmation, offers only the approved roles in the
   await page.keyboard.press("Space");
   await expect(student).toBeChecked();
   await page.getByLabel("Your display name").fill("សុភា");
+  // A student picks their campus once, so the first search is already local.
+  const campus = page.getByRole("combobox", { name: /សាលវិទ្យា/ });
+  await campus.click();
+  await campus.fill("Royal");
+  await expect(
+    page.getByRole("listbox", { name: "Active institutions" }),
+  ).toBeVisible();
+  await campus.press("ArrowDown");
+  await campus.press("Enter");
   await page.getByRole("button", { name: "Continue as student" }).click();
   await expect(page).toHaveURL(/\/search\?maxRentUsd=150$/);
   expect(state.writes.map(({ path, body }) => ({ path, body }))).toEqual([
@@ -52,9 +61,35 @@ test("registration validates confirmation, offers only the approved roles in the
     },
     {
       path: "/me/onboarding/role",
-      body: { role: "STUDENT", displayName: "សុភា" },
+      body: {
+        role: "STUDENT",
+        displayName: "សុភា",
+        institutionId: "a77388a1-a003-4c84-9ce9-cc2eaf801dea",
+        preferredRadiusMeters: 5_000,
+      },
     },
   ]);
+});
+
+test("a student without a saved campus cannot complete role selection", async ({
+  page,
+}) => {
+  const state = await supplyApi(page);
+  state.onboarding = onboarding(null);
+  await page.goto("/onboarding/role");
+  await page.getByRole("radio", { name: /^Student/ }).click();
+  await page.getByLabel("Your display name").fill("សុភា");
+  const continueButton = page.getByRole("button", {
+    name: "Continue as student",
+  });
+  await expect(continueButton).toBeDisabled();
+  await page.getByRole("radio", { name: /^Landlord/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Continue as landlord" }),
+  ).toBeEnabled();
+  expect(
+    state.writes.filter(({ path }) => path === "/me/onboarding/role"),
+  ).toHaveLength(0);
 });
 
 test("sign-in pages offer Google sign-in only when the server supports it", async ({
@@ -124,6 +159,7 @@ for (const role of ["STUDENT", "LANDLORD"] as const) {
     state.onboarding = onboarding(role);
     state.failLogin = true;
     await page.goto("/login?next=https%3A%2F%2Funtrusted.example%2Fadmin");
+    const origin = new URL(page.url()).origin;
     await page.getByLabel("Email address").fill("returning@example.test");
     await page
       .getByLabel("Password", { exact: true })
@@ -135,7 +171,7 @@ for (const role of ["STUDENT", "LANDLORD"] as const) {
     state.failLogin = false;
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${state.onboarding.nextPath}$`));
-    expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3100");
+    expect(new URL(page.url()).origin).toBe(origin);
     await page.goto("/onboarding/role?role=ADMIN");
     await expect(page).toHaveURL(new RegExp(`${state.onboarding.nextPath}$`));
     expect(

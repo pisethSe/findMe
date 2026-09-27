@@ -11,10 +11,14 @@ import type {
   LandlordInquiryDto,
   LandlordInquiryRecord,
 } from "./inquiries.types.js";
+import { TelegramNotifier } from "./telegram-notifier.js";
 
 @Injectable()
 export class InquiriesService {
-  constructor(private readonly repository: InquiriesRepository) {}
+  constructor(
+    private readonly repository: InquiriesRepository,
+    private readonly telegram: TelegramNotifier,
+  ) {}
 
   async create(
     user: AccessPrincipal,
@@ -22,11 +26,22 @@ export class InquiriesService {
     input: CreateInquiryDto,
   ) {
     this.requireStudent(user);
-    return {
-      data: toStudentInquiryDto(
-        await this.repository.create(user.id, listingId, input),
-      ),
-    };
+    const result = await this.repository.create(user.id, listingId, input);
+    if (result.created) {
+      // Best-effort alert only for fresh inserts: idempotent replays must not
+      // re-notify, and a notification failure must never fail the response.
+      const { inquiry } = result;
+      void this.telegram.notifyNewInquiry({
+        inquiryId: inquiry.id,
+        listingId,
+        listingSlug: inquiry.listing?.slug ?? null,
+        titleKm: inquiry.listing?.titleKm ?? null,
+        titleEn: inquiry.listing?.titleEn ?? null,
+        message: inquiry.message,
+        createdAt: inquiry.createdAt,
+      });
+    }
+    return { data: toStudentInquiryDto(result.inquiry) };
   }
 
   async listForStudent(user: AccessPrincipal, query: ListLandlordInquiriesDto) {
@@ -84,7 +99,7 @@ export class InquiriesService {
 }
 
 function toStudentInquiryDto(
-  row: Awaited<ReturnType<InquiriesRepository["create"]>>,
+  row: Awaited<ReturnType<InquiriesRepository["create"]>>["inquiry"],
 ) {
   return {
     ...row,

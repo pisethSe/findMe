@@ -70,6 +70,9 @@ The repository currently includes:
 - private inquiry submission and student/landlord inboxes, forward-only status
   updates, durable retry protection, and Redis-backed spam limits with a
   PostgreSQL fallback;
+- an allow-listed Telegram administrator support bot with read-only status,
+  moderation-queue, report, and anonymous-activity commands, a signed webhook,
+  and a local polling transport;
 - Redis generation-based public-search caching with post-commit invalidation
   and a 30-second cache TTL that keeps PostgreSQL authoritative;
 - retry-safe landlord entitlement expiry that atomically records the transition,
@@ -102,6 +105,9 @@ are documented in [Rate limits](docs/RATE-LIMITS.md).
 Anonymous server events and the protected daily summary API are documented in
 [Basic analytics events](docs/ANALYTICS.md).
 
+The administrator support bot commands, transports, and authorization rules are
+documented in [Telegram support bot](docs/TELEGRAM-BOT.md).
+
 Rental data ownership and the landlord publication flow are documented in
 [Rental data sourcing](docs/DATA-SOURCING.md).
 
@@ -109,8 +115,13 @@ Authentication behavior, environment requirements, and the local
 password-reset workflow are documented in
 [Authentication foundation](docs/AUTHENTICATION.md).
 
-Role selection, profile activation, and Landlord trial behavior are documented
-in [Onboarding and landlord access](docs/ONBOARDING.md).
+Role selection, student campus preference, profile activation, and Landlord
+trial behavior are documented in
+[Onboarding and landlord access](docs/ONBOARDING.md).
+
+Response headers and the Content Security Policy applied to the web app and the
+API are documented in
+[Security headers](docs/SECURITY-HEADERS.md).
 
 Landlord listing endpoints, validation, ownership, lifecycle, and entitlement
 behavior are documented in [Rental supply API](docs/RENTAL-SUPPLY.md).
@@ -128,6 +139,9 @@ requirements are documented in
 
 The complete folder map and ownership rules are documented in
 [Project structure](PROJECT-STRUCTURE.md).
+
+Staging environment configuration, container deployment order, TLS, and rollback
+are documented in [Deployment](docs/DEPLOYMENT.md).
 
 Run the current checks with:
 
@@ -183,6 +197,7 @@ The NestJS API exposes:
 - `GET /api/v1/admin/listings/pending`
 - `POST /api/v1/admin/listings/:id/approve`
 - `POST /api/v1/admin/listings/:id/reject`
+- `POST /api/v1/telegram/webhook` (signed, administrator support bot)
 
 The frontend retains the earlier temporary demonstration route handlers for
 the Phase 0 contract tests, but `/search` now reads the NestJS public discovery
@@ -207,6 +222,10 @@ the authorized redirect URI; `GOOGLE_OAUTH_REDIRECT_URL` pins that exact URI
 outside local development. All three may stay empty to keep email/password
 sign-in, `GET /api/v1/auth/providers` reports whether Google sign-in is
 available, and the sign-in pages disable the Google option when it is not.
+Optional Telegram alerts for student inquiries use backend-runtime
+`TELEGRAM_BOT_TOKEN` and `TELEGRAM_INQUIRIES_CHAT_ID` (numeric chat ID or
+`@username`). Set both together or leave both empty; an alert failure never
+affects the inquiry record.
 Pass the public `CDN_BASE_URL` to both the backend runtime and
 frontend build so Next.js can strictly allow and responsively optimize only
 server-issued rental images. Staging and production also require `REDIS_URL`;

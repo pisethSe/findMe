@@ -21,6 +21,17 @@ async function noOverflow(page: Page) {
   ).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
 }
 
+/**
+ * Leaving the map returns focus to the results: the selected rental card when
+ * one is selected, otherwise the list region itself. Either way focus must be
+ * inside `#rental-list`, never dropped back to the page body.
+ */
+async function expectResultsFocus(page: Page) {
+  await expect(
+    page.locator("#rental-list:focus, #rental-list :focus"),
+  ).toBeFocused();
+}
+
 async function capture(page: Page, name: string) {
   const directory = process.env.FINDME_QA_SCREENSHOTS;
   if (!directory) return;
@@ -88,7 +99,7 @@ for (const viewport of viewports) {
         page.getByText("Map preview is off.", { exact: false }),
       ).toBeVisible();
       await page.getByRole("button", { name: "Back to rental list" }).click();
-      await expect(page.locator("#rental-list")).toBeFocused();
+      await expectResultsFocus(page);
       await expect(page.locator("#rental-list")).toBeVisible();
     } else {
       await expect(page.locator("#rental-map")).toBeVisible();
@@ -103,11 +114,18 @@ for (const viewport of viewports) {
     await expect(
       page.getByRole("button", { name: "Search", exact: true }),
     ).toBeEnabled();
-    await expect(
-      page.getByRole("heading", {
-        name: "ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត និងនៅជិតសាលាអ្នកបំផុត",
-      }),
-    ).toBeVisible();
+    // The hero headline follows the locale toggle, so the Khmer copy and its
+    // wider glyph metrics are verified at this viewport before the test
+    // continues in the default English locale.
+    const heroHeading = page.getByRole("heading", { level: 1 });
+    await expect(heroHeading).toContainText("Find the room you love");
+    await page.getByRole("button", { name: "Switch to Khmer" }).click();
+    await expect(heroHeading).toContainText(
+      "ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត និងនៅជិតសាលាអ្នកបំផុត",
+    );
+    await noOverflow(page);
+    await page.getByRole("button", { name: "Switch to English" }).click();
+    await expect(heroHeading).toContainText("Find the room you love");
     await noOverflow(page);
     if (viewport.width <= 960) {
       const action = await page
@@ -210,7 +228,7 @@ test("search loading, empty, API failure and card-to-map focus remain usable on 
   await expect(page.locator("#rental-map")).toBeFocused();
   await capture(page, "map-fallback");
   await page.getByRole("button", { name: "Back to rental list" }).click();
-  await expect(page.locator("#rental-list")).toBeFocused();
+  await expectResultsFocus(page);
 
   await page.goto(`${searchHref}&maxRentUsd=1`);
   await expect(

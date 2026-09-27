@@ -14,6 +14,7 @@ import { MediaModule } from "./modules/media/media.module.js";
 import { ModerationModule } from "./modules/moderation/moderation.module.js";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module.js";
 import { PublicCacheModule } from "./modules/public-cache/public-cache.module.js";
+import { TelegramModule } from "./modules/telegram/telegram.module.js";
 
 import { ReportsModule } from "./modules/reports/reports.module.js";
 
@@ -26,6 +27,7 @@ import { RateLimitsModule } from "./modules/rate-limits/rate-limits.module.js";
     RateLimitsModule,
     DatabaseModule,
     PublicCacheModule,
+    TelegramModule,
     AmenitiesModule,
     DiscoveryModule,
     AuthModule,

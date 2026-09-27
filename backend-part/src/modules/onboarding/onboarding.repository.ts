@@ -19,7 +19,22 @@ const onboardingStateSelect = {
   accountStatus: true,
   onboardingCompletedAt: true,
   deletedAt: true,
-  studentProfile: { select: { displayName: true } },
+  studentProfile: {
+    select: {
+      displayName: true,
+      institutionId: true,
+      preferredRadiusMeters: true,
+      institution: {
+        select: {
+          id: true,
+          slug: true,
+          nameEn: true,
+          nameKm: true,
+          isActive: true,
+        },
+      },
+    },
+  },
   landlordProfile: { select: { userId: true } },
   landlordEntitlement: { select: { landlordId: true } },
 } as const;
@@ -73,10 +88,27 @@ export class OnboardingRepository {
     });
   }
 
+  async findActiveInstitution(
+    institutionId: string,
+  ): Promise<{ id: string; slug: string } | null> {
+    // The campus must be an active institution. A client-supplied id never
+    // becomes a search origin without this server-side check.
+    return this.prisma.institution.findFirst({
+      where: { id: institutionId, isActive: true },
+      select: { id: true, slug: true },
+    });
+  }
+
   async selectRole(
     userId: string,
     role: "STUDENT" | "LANDLORD",
-    studentDisplayName: string | undefined,
+    studentProfile:
+      | {
+          displayName: string;
+          institutionId?: string;
+          preferredRadiusMeters?: number;
+        }
+      | undefined,
     now: Date,
   ): Promise<RoleSelectionResult> {
     return this.prisma.$transaction(async (transaction) => {
@@ -92,13 +124,22 @@ export class OnboardingRepository {
       });
 
       if (selected.count === 1 && role === UserRole.STUDENT) {
-        if (!studentDisplayName) {
+        if (!studentProfile) {
           throw new Error(
             "Student role selection requires a validated display name.",
           );
         }
         await transaction.studentProfile.create({
-          data: { userId, displayName: studentDisplayName },
+          data: {
+            userId,
+            displayName: studentProfile.displayName,
+            ...(studentProfile.institutionId
+              ? { institutionId: studentProfile.institutionId }
+              : {}),
+            ...(studentProfile.preferredRadiusMeters !== undefined
+              ? { preferredRadiusMeters: studentProfile.preferredRadiusMeters }
+              : {}),
+          },
         });
       }
 
@@ -124,10 +165,21 @@ export class OnboardingRepository {
         if (
           role === UserRole.STUDENT &&
           !user.studentProfile &&
-          studentDisplayName
+          studentProfile
         ) {
           await transaction.studentProfile.create({
-            data: { userId, displayName: studentDisplayName },
+            data: {
+              userId,
+              displayName: studentProfile.displayName,
+              ...(studentProfile.institutionId
+                ? { institutionId: studentProfile.institutionId }
+                : {}),
+              ...(studentProfile.preferredRadiusMeters !== undefined
+                ? {
+                    preferredRadiusMeters: studentProfile.preferredRadiusMeters,
+                  }
+                : {}),
+            },
           });
           user = await transaction.user.findUniqueOrThrow({
             where: { id: userId },

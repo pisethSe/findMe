@@ -13,10 +13,13 @@ import { loadGoogleMaps } from "../../lib/maps/google-maps-loader";
 import { map3DFallbackLabel } from "../../lib/maps/map-3d-capability";
 import { useMap3DCapability } from "../../lib/maps/use-map-3d-capability";
 import { PublishedRentalMap3D } from "./published-rental-map-3d";
+import { SelectedRentalPopup } from "./selected-rental-popup";
 import {
+  appearedListingIds,
   canRetryPublishedMap,
   MAP_VIEWPORT_DEBOUNCE_MS,
   type PublishedMapState,
+  type SearchSelectionSource,
 } from "./search-ui-state";
 import {
   normalizeSearchViewport,
@@ -28,10 +31,13 @@ interface PublishedRentalMapProps {
   listings: readonly PublicListingDto[];
   selectedListingId: string | null;
   focusListingId: string | null;
+  selectionSource: SearchSelectionSource;
   viewport: SearchViewport | null;
   active: boolean;
   updating: boolean;
+  detailHrefFor: (listing: PublicListingDto) => string;
   onSelectListing: (listingId: string) => void;
+  onClearSelection: () => void;
   onViewportChange: (viewport: SearchViewport) => void;
   onClearViewport: () => void;
   onShowList: () => void;
@@ -47,16 +53,20 @@ export function PublishedRentalMap({
   listings,
   selectedListingId,
   focusListingId,
+  selectionSource,
   viewport,
   active,
   updating,
+  detailHrefFor,
   onSelectListing,
+  onClearSelection,
   onViewportChange,
   onClearViewport,
   onShowList,
 }: PublishedRentalMapProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const twoDControlRef = useRef<HTMLButtonElement>(null);
   const markersRef = useRef<
@@ -64,6 +74,8 @@ export function PublishedRentalMap({
   >(new Map());
   const institutionMarkerRef =
     useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+  const previousListingIdsRef = useRef<readonly string[] | null>(null);
+  const lastPopupFocusRef = useRef<string | null>(null);
   const onSelectRef = useRef(onSelectListing);
   const onViewportChangeRef = useRef(onViewportChange);
   const viewportRef = useRef(viewport);
@@ -80,8 +92,21 @@ export function PublishedRentalMap({
   const focusedListing = listings.find(
     (listing) => listing.id === focusListingId,
   );
+  const selectedListing = listings.find(
+    (listing) => listing.id === selectedListingId,
+  );
   const focusLatitude = focusedListing?.location.latitude;
   const focusLongitude = focusedListing?.location.longitude;
+  const popupOpen =
+    selectedListing !== undefined && state === "ready" && mapMode === "2d";
+
+  const closePopup = () => {
+    const marker = selectedListingId
+      ? markersRef.current.get(selectedListingId)
+      : undefined;
+    onClearSelection();
+    marker?.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -162,6 +187,7 @@ export function PublishedRentalMap({
       clearMarkers(markersRef.current, institutionMarkerRef.current);
       markersRef.current = new Map();
       institutionMarkerRef.current = null;
+      previousListingIdsRef.current = null;
       mapRef.current = null;
       container.replaceChildren();
     };
@@ -207,6 +233,12 @@ export function PublishedRentalMap({
       institutionMarker.append(createInstitutionMarker(institution));
       institutionMarkerRef.current = institutionMarker;
 
+      const appearedIds = new Set(
+        appearedListingIds(
+          previousListingIdsRef.current,
+          listings.map((listing) => listing.id),
+        ),
+      );
       listings.forEach((listing) => {
         const selected = listing.id === selectedListingId;
         const marker = new AdvancedMarkerElement({
@@ -219,7 +251,9 @@ export function PublishedRentalMap({
           gmpClickable: true,
           zIndex: selected ? 30 : 10,
         });
-        marker.append(createRentalMarker(listing, selected));
+        marker.append(
+          createRentalMarker(listing, selected, appearedIds.has(listing.id)),
+        );
         marker.addEventListener(
           "gmp-click",
           () => onSelectRef.current(listing.id),
@@ -227,6 +261,7 @@ export function PublishedRentalMap({
         );
         nextMarkers.set(listing.id, marker);
       });
+      previousListingIdsRef.current = listings.map((listing) => listing.id);
       markersRef.current = nextMarkers;
       const focusTarget = focusRequested ? focusListingId : previouslyFocusedId;
       if (focusTarget && mapMode === "2d") {
@@ -378,6 +413,14 @@ export function PublishedRentalMap({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [active, institution, listings, state]);
+
+  useEffect(() => {
+    if (!popupOpen || selectionSource !== "marker") return;
+    const focusKey = `${selectionSource}:${selectedListingId ?? ""}`;
+    if (lastPopupFocusRef.current === focusKey) return;
+    lastPopupFocusRef.current = focusKey;
+    popupRef.current?.focus({ preventScroll: true });
+  }, [popupOpen, selectedListingId, selectionSource]);
 
   const fallbackMessage =
     state === "error"
@@ -540,6 +583,16 @@ export function PublishedRentalMap({
               Updating rentals in this area…
             </p>
           ) : null}
+          {popupOpen && selectedListing ? (
+            <SelectedRentalPopup
+              listing={selectedListing}
+              institution={institution}
+              detailHref={detailHrefFor(selectedListing)}
+              popupRef={popupRef}
+              onClose={closePopup}
+              onShowList={onShowList}
+            />
+          ) : null}
         </div>
       </section>
     </Localized>
@@ -598,10 +651,12 @@ function createInstitutionMarker(institution: InstitutionDto): HTMLDivElement {
 function createRentalMarker(
   listing: PublicListingDto,
   selected: boolean,
+  appeared: boolean,
 ): HTMLDivElement {
   const marker = document.createElement("div");
   marker.className = "search-rental-marker";
   marker.dataset.selected = String(selected);
+  if (appeared) marker.dataset.appear = "true";
 
   const check = document.createElement("span");
   check.className = "search-rental-marker-check";

@@ -12,6 +12,7 @@ import type {
   CreateLandlordListingInput,
   UpdateLandlordListingInput,
 } from "../../src/features/landlord-listings/landlord-listing-api";
+import { institution } from "./fixtures.ts";
 
 export const listingId = "00000000-0000-4000-8000-000000000041";
 export const titleKm = "បន្ទប់ជួលសម្រាប់និស្សិតជិតសាកលវិទ្យាល័យ";
@@ -118,6 +119,7 @@ export function onboarding(
     roleSelectionComplete: role !== null,
     profileComplete: role !== null && complete,
     landlordTrialActivated: role === "LANDLORD" && complete,
+    studentPreference: null,
   };
 }
 
@@ -189,6 +191,24 @@ export async function supplyApi(page: Page) {
         ? send({ data: session() })
         : error("SESSION_REQUIRED", 401);
     if (path === "/me/onboarding") return send({ data: state.onboarding });
+    if (path === "/institutions") {
+      // The student campus picker runs during role selection, so onboarding
+      // tests do not depend on the shared fixture server staying reachable.
+      const query = new URL(request.url()).searchParams.get("query");
+      const matches =
+        !query ||
+        institution.nameEn.toLowerCase().includes(query.toLowerCase()) ||
+        institution.nameKm.includes(query);
+      return send({
+        data: matches ? [institution] : [],
+        meta: {
+          count: matches ? 1 : 0,
+          query,
+          selectedSlug: null,
+          limit: Number(new URL(request.url()).searchParams.get("limit") ?? 20),
+        },
+      });
+    }
     if (path === "/me/onboarding/role") {
       const input = request.postDataJSON() as { role: "STUDENT" | "LANDLORD" };
       state.onboarding = onboarding(input.role, input.role === "STUDENT");

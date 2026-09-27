@@ -15,6 +15,7 @@ import type {
   LandlordActivationRecord,
   OnboardingState,
   OnboardingUserRecord,
+  StudentPreferenceRecord,
 } from "./onboarding.types.js";
 
 const LANDLORD_TRIAL_MILLISECONDS = 7 * 24 * 60 * 60 * 1_000;
@@ -47,6 +48,28 @@ export class OnboardingService {
       });
     }
 
+    // Campus and radius are student-only search defaults. A landlord request
+    // must never carry them, so a cross-role client cannot seed supply state.
+    if (
+      input.role === "LANDLORD" &&
+      (input.institutionId !== undefined ||
+        input.preferredRadiusMeters !== undefined)
+    ) {
+      throw new BadRequestException({
+        code: "ROLE_PROFILE_FIELDS_INVALID",
+        message: "Student campus preferences are not accepted for landlords.",
+        fields: [
+          {
+            field:
+              input.institutionId !== undefined
+                ? "institutionId"
+                : "preferredRadiusMeters",
+            message: "Remove this field when continuing as a landlord.",
+          },
+        ],
+      });
+    }
+
     if (input.role === "STUDENT" && !input.displayName) {
       const current = await this.repository.findUserState(userId);
       if (!current) throw accountUnavailable();
@@ -68,12 +91,31 @@ export class OnboardingService {
       });
     }
 
+    // The server resolves the campus so an inactive, unknown, or foreign id
+    // cannot become a student's saved search origin.
+    if (input.institutionId) {
+      const institution = await this.repository.findActiveInstitution(
+        input.institutionId,
+      );
+      if (!institution) throw institutionUnavailable();
+    }
+
     const role =
       input.role === "STUDENT" ? UserRole.STUDENT : UserRole.LANDLORD;
     const result = await this.repository.selectRole(
       userId,
       role,
-      input.displayName,
+      role === UserRole.STUDENT && input.displayName
+        ? {
+            displayName: input.displayName,
+            ...(input.institutionId
+              ? { institutionId: input.institutionId }
+              : {}),
+            ...(input.preferredRadiusMeters !== undefined
+              ? { preferredRadiusMeters: input.preferredRadiusMeters }
+              : {}),
+          }
+        : undefined,
       new Date(),
     );
 
@@ -163,6 +205,7 @@ export class OnboardingService {
 export function toOnboardingState(user: OnboardingUserRecord): OnboardingState {
   const roleSelectionComplete =
     user.role !== null && user.onboardingCompletedAt !== null;
+  const studentPreference = toStudentPreference(user);
 
   if (!roleSelectionComplete) {
     return {
@@ -172,6 +215,7 @@ export function toOnboardingState(user: OnboardingUserRecord): OnboardingState {
       roleSelectionComplete: false,
       profileComplete: false,
       landlordTrialActivated: false,
+      studentPreference: null,
     };
   }
 
@@ -184,6 +228,7 @@ export function toOnboardingState(user: OnboardingUserRecord): OnboardingState {
       roleSelectionComplete: true,
       profileComplete,
       landlordTrialActivated: false,
+      studentPreference,
     };
   }
 
@@ -198,6 +243,7 @@ export function toOnboardingState(user: OnboardingUserRecord): OnboardingState {
       roleSelectionComplete: true,
       profileComplete,
       landlordTrialActivated,
+      studentPreference: null,
     };
   }
 
@@ -208,6 +254,27 @@ export function toOnboardingState(user: OnboardingUserRecord): OnboardingState {
     roleSelectionComplete: true,
     profileComplete: true,
     landlordTrialActivated: false,
+    studentPreference: null,
+  };
+}
+
+/**
+ * Only an active campus the student actually selected is returned. A missing,
+ * inactive, or deleted institution leaves the student without a saved campus,
+ * and the browser falls back to its normal institution picker.
+ */
+function toStudentPreference(
+  user: OnboardingUserRecord,
+): StudentPreferenceRecord | null {
+  const profile = user.studentProfile;
+  const institution = profile?.institution;
+  if (!profile || !institution || !institution.isActive) return null;
+  return {
+    institutionId: institution.id,
+    institutionSlug: institution.slug,
+    institutionNameEn: institution.nameEn,
+    institutionNameKm: institution.nameKm,
+    preferredRadiusMeters: profile.preferredRadiusMeters,
   };
 }
 
@@ -223,5 +290,18 @@ function accountUnavailable(): UnauthorizedException {
   return new UnauthorizedException({
     code: "ACCOUNT_UNAVAILABLE",
     message: "This account is no longer available.",
+  });
+}
+
+function institutionUnavailable(): BadRequestException {
+  return new BadRequestException({
+    code: "STUDENT_INSTITUTION_INVALID",
+    message: "Choose a university or college that is currently active.",
+    fields: [
+      {
+        field: "institutionId",
+        message: "Select your university or college from the list.",
+      },
+    ],
   });
 }

@@ -392,6 +392,151 @@ export function getGoogleMapsServerKey(
   return key;
 }
 
+/**
+ * A Telegram bot token is a secret credential. It is validated once and never
+ * logged, echoed in a response, or included in an error message.
+ */
+export function assertTelegramBotToken(botToken: string): void {
+  if (
+    !/^\d{5,}:[A-Za-z0-9_-]{30,}$/.test(botToken) ||
+    /replace-with|change-before|your[-_ ]?token/i.test(botToken)
+  ) {
+    throw new TypeError(
+      "TELEGRAM_BOT_TOKEN is malformed or still a placeholder.",
+    );
+  }
+}
+
+export interface TelegramNotificationsConfig {
+  botToken: string;
+  inquiriesChatId: string;
+}
+
+/**
+ * Optional Telegram notification configuration for new inquiries (INQ-07).
+ *
+ * Returns null while the feature is unconfigured so inquiry submission keeps
+ * working without any external dependency. A half-configured pair fails fast
+ * at startup instead of silently never notifying. The bot token is a secret:
+ * it is never logged or included in responses.
+ */
+export function getTelegramNotificationsConfig(
+  environment: NodeJS.ProcessEnv,
+): TelegramNotificationsConfig | null {
+  const botToken = environment.TELEGRAM_BOT_TOKEN?.trim() ?? "";
+  const inquiriesChatId = environment.TELEGRAM_INQUIRIES_CHAT_ID?.trim() ?? "";
+
+  if (!botToken && !inquiriesChatId) return null;
+  if (!botToken || !inquiriesChatId) {
+    throw new TypeError(
+      "TELEGRAM_BOT_TOKEN and TELEGRAM_INQUIRIES_CHAT_ID must be set together.",
+    );
+  }
+  assertTelegramBotToken(botToken);
+  if (!/^(-?\d{1,20}|@[A-Za-z0-9_]{5,32})$/.test(inquiriesChatId)) {
+    throw new TypeError(
+      "TELEGRAM_INQUIRIES_CHAT_ID must be a numeric chat ID or an @username.",
+    );
+  }
+
+  return { botToken, inquiriesChatId };
+}
+
+export interface TelegramSupportConfig {
+  botToken: string;
+  adminUserIds: string[];
+  webhookSecret: string | null;
+  polling: boolean;
+}
+
+const MAX_TELEGRAM_ADMIN_USER_IDS = 10;
+const MINIMUM_TELEGRAM_WEBHOOK_SECRET_LENGTH = 16;
+
+/**
+ * Optional Telegram support bot for platform administrators.
+ *
+ * The inbound surface only exists while `TELEGRAM_SUPPORT_ADMIN_IDS` lists at
+ * least one numeric Telegram user id, and every instruction must come from one
+ * of those administrators. It reuses `TELEGRAM_BOT_TOKEN`, and a half-configured
+ * setup fails at startup instead of silently ignoring administrator commands.
+ *
+ * Deployed environments receive updates through the signed webhook, so long
+ * polling is rejected there: Telegram serves either the webhook or `getUpdates`
+ * for one bot, never both.
+ */
+export function getTelegramSupportConfig(
+  environment: NodeJS.ProcessEnv,
+  appEnvironment: AppEnvironment,
+): TelegramSupportConfig | null {
+  const adminUserIds = (environment.TELEGRAM_SUPPORT_ADMIN_IDS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const botToken = environment.TELEGRAM_BOT_TOKEN?.trim() ?? "";
+  const webhookSecret = environment.TELEGRAM_WEBHOOK_SECRET?.trim() ?? "";
+  const pollingValue = environment.TELEGRAM_SUPPORT_POLLING?.trim() ?? "";
+
+  if (pollingValue && !["true", "false"].includes(pollingValue.toLowerCase())) {
+    throw new TypeError("TELEGRAM_SUPPORT_POLLING must be true or false.");
+  }
+  const polling = pollingValue.toLowerCase() === "true";
+
+  if (adminUserIds.length === 0) {
+    if (webhookSecret || polling) {
+      throw new TypeError(
+        "TELEGRAM_SUPPORT_ADMIN_IDS is required when Telegram support bot settings are present.",
+      );
+    }
+    return null;
+  }
+  if (adminUserIds.length > MAX_TELEGRAM_ADMIN_USER_IDS) {
+    throw new TypeError(
+      `TELEGRAM_SUPPORT_ADMIN_IDS accepts at most ${MAX_TELEGRAM_ADMIN_USER_IDS} administrator ids.`,
+    );
+  }
+  for (const adminUserId of adminUserIds) {
+    if (!/^\d{5,20}$/.test(adminUserId)) {
+      throw new TypeError(
+        "TELEGRAM_SUPPORT_ADMIN_IDS must list numeric Telegram user ids separated by commas.",
+      );
+    }
+  }
+  if (new Set(adminUserIds).size !== adminUserIds.length) {
+    throw new TypeError("TELEGRAM_SUPPORT_ADMIN_IDS must not repeat an id.");
+  }
+  if (!botToken) {
+    throw new TypeError(
+      "TELEGRAM_BOT_TOKEN is required when the Telegram support bot is enabled.",
+    );
+  }
+  assertTelegramBotToken(botToken);
+
+  if (webhookSecret && !/^[A-Za-z0-9_-]{16,256}$/.test(webhookSecret)) {
+    throw new TypeError(
+      `TELEGRAM_WEBHOOK_SECRET must be ${MINIMUM_TELEGRAM_WEBHOOK_SECRET_LENGTH}-256 characters of A-Z, a-z, 0-9, _ or -.`,
+    );
+  }
+  if (["staging", "production"].includes(appEnvironment)) {
+    if (polling) {
+      throw new TypeError(
+        "TELEGRAM_SUPPORT_POLLING must be false in staging and production; use the signed webhook.",
+      );
+    }
+    if (!webhookSecret) {
+      throw new TypeError(
+        "TELEGRAM_WEBHOOK_SECRET is required in staging and production.",
+      );
+    }
+  }
+
+  return {
+    botToken,
+    adminUserIds,
+    webhookSecret: webhookSecret || null,
+    polling,
+  };
+}
+
 export function getObjectStorageConfig(
   environment: NodeJS.ProcessEnv,
   appEnvironment: AppEnvironment,
@@ -472,4 +617,6 @@ export function validateApplicationEnvironment(
   getGoogleMapsServerKey(environment.GOOGLE_MAPS_SERVER_KEY, appEnvironment);
   getObjectStorageConfig(environment, appEnvironment);
   getGoogleOAuthConfig(environment);
+  getTelegramNotificationsConfig(environment);
+  getTelegramSupportConfig(environment, appEnvironment);
 }

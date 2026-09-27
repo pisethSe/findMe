@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { AuthApiError, getPostAuthenticationPath, login } from "./auth-api";
+import { AuthApiError, getPostAuthenticationState, login } from "./auth-api";
 
 import {
   safeStudentReturnPath,
-  studentPostAuthPath,
+  studentDestination,
 } from "./student-return-path";
 import { GoogleSignIn } from "./google-sign-in";
 
@@ -31,7 +31,7 @@ export function LoginForm({ returnTo = null }: { returnTo?: string | null }) {
         password: String(formData.get("password") ?? ""),
       });
       router.replace(
-        studentPostAuthPath(await getPostAuthenticationPath(), safeReturnTo),
+        studentDestination(await getPostAuthenticationState(), safeReturnTo),
       );
     } catch (caught) {
       setError(

@@ -23,9 +23,15 @@ import { SiteHeader } from "../landing/site-header";
 import { rentalDetailHref } from "../rentals/rental-detail-model";
 import { formatSearchRadius, nextSearchRadius } from "./distance-filter-model";
 import { InstitutionPicker } from "./institution-picker";
-import { SearchFilters, PROPERTY_TYPE_OPTIONS } from "./search-filters";
+import { SearchFilters } from "./search-filters";
 import { buildInstitutionSearchHref } from "./institution-search-model";
 import { PublishedRentalMap } from "./published-rental-map";
+import {
+  formatAvailabilityDate,
+  formatListingDistance,
+  formatListingPrice,
+  rentalPropertyTypeLabel,
+} from "./rental-card-format";
 import {
   findInstitutionBySlug,
   searchInstitutions,
@@ -38,8 +44,9 @@ import {
 import {
   resultScrollBehavior,
   type MobileResultsView,
+  type SearchSelectionSource,
+  RESULTS_VIEW_AFTER_SELECTION,
   visibleResultRange,
-  viewAfterResultSelection,
 } from "./search-ui-state";
 import {
   buildDistanceSearchHref,
@@ -49,10 +56,6 @@ import {
 } from "./search-url-state";
 
 const RESULT_PAGE_SIZE = 12;
-
-const PROPERTY_TYPE_LABELS = Object.fromEntries(
-  PROPERTY_TYPE_OPTIONS.map(({ value, label }) => [value, label]),
-) as Record<PropertyType, string>;
 
 interface PublishedRentalSearchProps {
   institutionSlug: string;
@@ -75,6 +78,7 @@ export function PublishedRentalSearch({
 }: PublishedRentalSearchProps) {
   const { locale } = useSitePreferences();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [institution, setInstitution] = useState<InstitutionDto | null>(null);
   const [institutionLoading, setInstitutionLoading] = useState(true);
   const [institutionEmpty, setInstitutionEmpty] = useState(false);
@@ -92,6 +96,8 @@ export function PublishedRentalSearch({
   const [selectedListingId, setSelectedListingId] = useState<string | null>(
     null,
   );
+  const [selectionSource, setSelectionSource] =
+    useState<SearchSelectionSource>("card");
   const [focusListingId, setFocusListingId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<MobileResultsView>("list");
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -284,24 +290,17 @@ export function PublishedRentalSearch({
   const selectFromMap = useCallback((listingId: string) => {
     setSelectedListingId(listingId);
     setFocusListingId(null);
-    setMobileView(viewAfterResultSelection("marker"));
-    window.requestAnimationFrame(() => {
-      const prefersReducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-      const card = document.getElementById(`rental-${listingId}`);
-      card?.scrollIntoView({
-        behavior: resultScrollBehavior(prefersReducedMotion),
-        block: "nearest",
-      });
-      card?.focus({ preventScroll: true });
-    });
+    setSelectionSource("marker");
+    // The map keeps the selected rental in its own popup, so the map stays
+    // visible. The popup's "Show in list" action returns to the card list.
+    setMobileView(RESULTS_VIEW_AFTER_SELECTION);
   }, []);
 
   const selectFromCard = useCallback((listingId: string) => {
     setSelectedListingId(listingId);
     setFocusListingId(listingId);
-    setMobileView(viewAfterResultSelection("card"));
+    setSelectionSource("card");
+    setMobileView(RESULTS_VIEW_AFTER_SELECTION);
     window.requestAnimationFrame(() => {
       const prefersReducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
@@ -314,6 +313,21 @@ export function PublishedRentalSearch({
       map?.focus({ preventScroll: true });
     });
   }, []);
+
+  const clearMapSelection = useCallback(() => {
+    setSelectedListingId(null);
+    setFocusListingId(null);
+  }, []);
+
+  const detailHrefFor = useCallback(
+    (listing: PublicListingDto) =>
+      rentalDetailHref(
+        listing.slug,
+        institution?.slug ?? institutionSlug,
+        searchParams.toString(),
+      ),
+    [institution?.slug, institutionSlug, searchParams],
+  );
 
   const updateViewport = useCallback(
     (nextViewport: SearchViewport) => {
@@ -604,16 +618,25 @@ export function PublishedRentalSearch({
                   listings={page.data}
                   selectedListingId={selectedListingId}
                   focusListingId={focusListingId}
+                  selectionSource={selectionSource}
                   viewport={viewport}
                   active={mobileView === "map"}
                   updating={refreshing}
+                  detailHrefFor={detailHrefFor}
                   onSelectListing={selectFromMap}
+                  onClearSelection={clearMapSelection}
                   onViewportChange={updateViewport}
                   onClearViewport={clearViewport}
                   onShowList={() => {
                     setMobileView("list");
                     window.requestAnimationFrame(() => {
-                      document.getElementById("rental-list")?.focus();
+                      const card = selectedListingId
+                        ? document.getElementById(`rental-${selectedListingId}`)
+                        : null;
+                      const target =
+                        card ?? document.getElementById("rental-list");
+                      target?.scrollIntoView({ block: "nearest" });
+                      target?.focus({ preventScroll: true });
                     });
                   }}
                 />
@@ -765,7 +788,7 @@ function RentalCard({
         <div className="rental-card-copy">
           <div className="price-row">
             <strong>
-              {formatPrice(listing.monthlyPrice, listing.currency)}/month
+              {formatListingPrice(listing.monthlyPrice, listing.currency)}/month
             </strong>
             <span className="available-label">
               <span className="availability-check" aria-hidden="true" />
@@ -778,8 +801,8 @@ function RentalCard({
             </Link>
           </h3>
           <p>
-            {PROPERTY_TYPE_LABELS[listing.propertyType]} ·{" "}
-            {formatDistance(listing.distanceMeters)} from{" "}
+            {rentalPropertyTypeLabel(listing.propertyType)} ·{" "}
+            {formatListingDistance(listing.distanceMeters)} from{" "}
             {institution.shortName ?? institution.nameEn}
           </p>
           <p className="location-context">{location}</p>
@@ -797,7 +820,8 @@ function RentalCard({
           />
           <div className="rental-card-footer">
             <small>
-              Last confirmed {formatDate(listing.availabilityConfirmedAt)}
+              Last confirmed{" "}
+              {formatAvailabilityDate(listing.availabilityConfirmedAt)}
             </small>
             <button
               type="button"
@@ -832,28 +856,6 @@ function SearchLoading() {
       </section>
     </Localized>
   );
-}
-
-function formatPrice(amount: number, currency: "USD" | "KHR"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: currency === "KHR" ? 0 : 2,
-  }).format(amount);
-}
-
-function formatDistance(distanceMeters: number): string {
-  if (distanceMeters < 1_000) return `${Math.round(distanceMeters)} m`;
-  return `${(distanceMeters / 1_000).toFixed(1)} km`;
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Phnom_Penh",
-  }).format(new Date(value));
 }
 
 function formatTime(value: string): string {

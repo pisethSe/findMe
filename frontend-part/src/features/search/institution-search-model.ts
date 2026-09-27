@@ -1,5 +1,17 @@
 import type { InstitutionDto } from "@findme/contracts";
 
+/**
+ * Shape the typed campus text before it leaves the browser.
+ *
+ * Khmer, Latin and mixed case are all kept exactly as typed: normalization only
+ * unifies unicode forms and collapses whitespace so "Royal  University" and its
+ * Khmer equivalent reach the API in a predictable shape. Matching itself stays
+ * case-insensitive and bilingual on the server.
+ */
+export function normalizeInstitutionQuery(value: string): string {
+  return value.normalize("NFKC").replace(/\s+/g, " ").trim();
+}
+
 export function institutionInputValue(institution: InstitutionDto): string {
   return institution.nameEn;
 }

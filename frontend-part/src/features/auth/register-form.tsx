@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { AuthApiError, getPostAuthenticationPath, register } from "./auth-api";
+import { AuthApiError, getPostAuthenticationState, register } from "./auth-api";
 
 import {
   safeStudentReturnPath,
-  studentPostAuthPath,
+  studentDestination,
 } from "./student-return-path";
 import { GoogleSignIn } from "./google-sign-in";
 
@@ -43,7 +43,7 @@ export function RegisterForm({
         preferredLocale: formData.get("preferredLocale") === "EN" ? "EN" : "KM",
       });
       router.replace(
-        studentPostAuthPath(await getPostAuthenticationPath(), safeReturnTo),
+        studentDestination(await getPostAuthenticationState(), safeReturnTo),
       );
     } catch (caught) {
       setError(

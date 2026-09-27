@@ -72,6 +72,7 @@ test(
         roleSelectionComplete: false,
         profileComplete: false,
         landlordTrialActivated: false,
+        studentPreference: null,
       });
 
       const selfAssignedAdmin = await apiPost(

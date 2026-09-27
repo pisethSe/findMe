@@ -49,6 +49,15 @@ and probes the frontend and backend before every change can merge. See
 [Continuous integration](../docs/CONTINUOUS-INTEGRATION.md) for the exact
 contract and local reproduction commands.
 
+## Staging
+
+`compose.staging.yaml` runs the same images against managed Neon and managed
+Redis instead of local containers, with `APP_ENV=staging` and secrets supplied
+from a git-ignored `.env.staging`. Required values use `${NAME:?...}`, so
+`docker compose config` fails before a stack can start with a missing secret.
+The full setup, TLS, verification, migration, and rollback runbook is
+[Deployment](../docs/DEPLOYMENT.md).
+
 The one-shot `database-migrate` service applies committed migrations after
 PostgreSQL becomes healthy and before the backend starts. Seed reference data
 from the host when needed:

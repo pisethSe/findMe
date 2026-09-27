@@ -5,8 +5,8 @@ history at `/inquiries`. Landlords see received inquiries in the dashboard and
 manage the full inbox at `/landlord/inquiries`.
 
 This implements INQ-01 through INQ-06. The supported notification surface is the
-landlord's in-app inbox. Email, SMS and Telegram notifications remain optional
-later work (INQ-07); this step does not send external messages or provide a chat
+landlord's in-app inbox, plus an optional Telegram alert for newly created
+inquiries (INQ-07, below); email and SMS remain later work. There is no chat
 thread. A student may deliberately include contact details in their message.
 Their account email and phone are never shared automatically. Landlords reply
 through the contact channel the student supplies, then mark the inquiry replied.
@@ -91,6 +91,27 @@ outage, restart or reset therefore cannot erase inquiry history, create
 duplicates or bypass submission limits. Connections/commands have bounded
 waits and failed connections back off for 30 seconds. No message text is stored
 in Redis.
+
+## Telegram alerts (INQ-07)
+
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_INQUIRIES_CHAT_ID` are both configured,
+each freshly created inquiry triggers a best-effort Telegram `sendMessage` to
+the configured chat, containing the rental title, inquiry ID, timestamp, and
+the student's message as plain text (capped at 3,500 characters). The alert
+fires only when a new row is inserted: idempotent replays of the same
+`clientRequestId` do not re-alert. Either variable set without the other
+rejects startup validation; both absent disables the feature with no effect on
+inquiry submission.
+
+Notification delivery never participates in the write path. The request does
+not wait on Telegram, a network failure or non-2xx response is swallowed with
+a generic warning (no token, chat ID, payload, or message text is logged), and
+a 30-second backoff suppresses alert spam during outages. Losing an alert
+never affects the inquiry record, which remains authoritative in the in-app
+inbox. The bot token is a backend runtime secret and must never be committed
+or exposed to the browser. The same token drives the administrator support bot
+described in [Telegram support bot](TELEGRAM-BOT.md), which answers allow-listed
+administrator commands over a signed webhook or the local polling transport.
 
 ## Migration and verification
 

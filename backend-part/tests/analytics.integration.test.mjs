@@ -92,7 +92,7 @@ test(
               await onboarding.selectRole(
                 student.id,
                 "STUDENT",
-                "Private Student",
+                { displayName: "Private Student" },
                 now,
               );
               await onboarding.selectRole(

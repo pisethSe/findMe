@@ -8,6 +8,8 @@ coverage/
 .env.*
 !.env.example
 !**/.env.example
+!.env.staging.example
+!**/.env.staging.example
 *.log
 *.tsbuildinfo
 **/next-env.d.ts

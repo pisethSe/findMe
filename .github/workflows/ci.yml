@@ -141,6 +141,33 @@ jobs:
       - name: Validate Compose configuration
         run: docker compose -f deploy-part/compose.local.yaml config --quiet
 
+      # The staging file is never started in CI (it needs managed Neon, Redis,
+      # object storage and Google credentials), but resolving every ${...}
+      # expression keeps its required-variable contracts and syntax honest.
+      - name: Validate staging Compose configuration
+        run: |
+          sed \
+            -e 's|^NEXT_PUBLIC_API_BASE_URL=.*|NEXT_PUBLIC_API_BASE_URL=https://api.example.test/api/v1|' \
+            -e 's|^API_INTERNAL_BASE_URL=.*|API_INTERNAL_BASE_URL=http://backend:3001/api/v1|' \
+            -e 's|^SITE_URL=.*|SITE_URL=https://example.test|' \
+            -e 's|^WEB_ORIGIN=.*|WEB_ORIGIN=https://example.test|' \
+            -e 's|^NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY=$|NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY=ci_browser_key_12345678901234567890|' \
+            -e 's|^NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=$|NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=ci_map_id_123456|' \
+            -e 's|^GOOGLE_MAPS_SERVER_KEY=$|GOOGLE_MAPS_SERVER_KEY=ci_server_key_1234567890123456789012345|' \
+            -e 's|^DATABASE_URL=.*|DATABASE_URL=postgresql://user:pass@example.test:5432/findme|' \
+            -e 's|^DATABASE_URL_UNPOOLED=.*|DATABASE_URL_UNPOOLED=postgresql://user:pass@example.test:5432/findme|' \
+            -e 's|^REDIS_URL=.*|REDIS_URL=rediss://example.test:6380|' \
+            -e 's|^JWT_ACCESS_SECRET=.*|JWT_ACCESS_SECRET=ci-access-secret-0123456789012345678901234567890|' \
+            -e 's|^REFRESH_TOKEN_SECRET=.*|REFRESH_TOKEN_SECRET=ci-refresh-secret-012345678901234567890123456789|' \
+            -e 's|^S3_REGION=.*|S3_REGION=us-east-1|' \
+            -e 's|^S3_BUCKET=.*|S3_BUCKET=findme-staging-media|' \
+            -e 's|^S3_ACCESS_KEY_ID=.*|S3_ACCESS_KEY_ID=ci-access-key|' \
+            -e 's|^S3_SECRET_ACCESS_KEY=.*|S3_SECRET_ACCESS_KEY=ci-secret-access-key|' \
+            -e 's|^CDN_BASE_URL=.*|CDN_BASE_URL=https://media.example.test/findme|' \
+            .env.staging.example > "$RUNNER_TEMP/findme-staging.env"
+          docker compose --env-file "$RUNNER_TEMP/findme-staging.env" \
+            -f deploy-part/compose.staging.yaml config --quiet
+
       - name: Build and start local stack
         run: >-
           docker compose -f deploy-part/compose.local.yaml

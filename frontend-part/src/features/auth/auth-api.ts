@@ -18,6 +18,14 @@ export interface AuthSession {
 export type OnboardingStage =
   "ROLE_SELECTION" | "STUDENT_PROFILE" | "LANDLORD_PROFILE" | "COMPLETE";
 
+export interface StudentPreference {
+  institutionId: string;
+  institutionSlug: string;
+  institutionNameEn: string;
+  institutionNameKm: string;
+  preferredRadiusMeters: number | null;
+}
+
 export interface OnboardingState {
   role: UserRole | null;
   stage: OnboardingStage;
@@ -31,6 +39,7 @@ export interface OnboardingState {
   roleSelectionComplete: boolean;
   profileComplete: boolean;
   landlordTrialActivated: boolean;
+  studentPreference: StudentPreference | null;
 }
 
 export interface LandlordEntitlement {
@@ -224,6 +233,8 @@ export function googleSignInUrl(next: string | null): string {
 export async function selectRole(input: {
   role: "STUDENT" | "LANDLORD";
   displayName?: string;
+  institutionId?: string;
+  preferredRadiusMeters?: number;
 }): Promise<OnboardingState> {
   return authorizedRequest("/me/onboarding/role", {
     method: "POST",
@@ -247,10 +258,8 @@ export async function getLandlordEntitlement(): Promise<LandlordEntitlement> {
   return authorizedRequest("/landlord/entitlement", { method: "GET" });
 }
 
-export async function getPostAuthenticationPath(): Promise<
-  OnboardingState["nextPath"]
-> {
-  return (await getOnboardingState()).nextPath;
+export async function getPostAuthenticationState(): Promise<OnboardingState> {
+  return getOnboardingState();
 }
 
 export async function authorizedRequest<TData>(

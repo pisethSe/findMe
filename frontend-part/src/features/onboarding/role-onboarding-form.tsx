@@ -1,6 +1,7 @@
 "use client";
 
 import { Localized } from "../preferences/translated-text";
+import type { InstitutionDto } from "@findme/contracts";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -11,9 +12,25 @@ import {
   selectRole,
 } from "../auth/auth-api";
 
-import { studentPostAuthPath } from "../auth/student-return-path";
+import { InstitutionPicker } from "../search/institution-picker";
+import { studentDestination } from "../auth/student-return-path";
 
 type SelectableRole = "STUDENT" | "LANDLORD";
+
+/**
+ * Campus search presets. These mirror the public search radius bounds so the
+ * saved default always produces a URL the search page accepts.
+ */
+const CAMPUS_RADIUS_OPTIONS = [
+  { value: "1000", label: "1 km" },
+  { value: "2000", label: "2 km" },
+  { value: "3000", label: "3 km" },
+  { value: "5000", label: "5 km" },
+  { value: "10000", label: "10 km" },
+  { value: "20000", label: "20 km" },
+] as const;
+
+const DEFAULT_CAMPUS_RADIUS_METERS = 5_000;
 
 export function RoleOnboardingForm() {
   const router = useRouter();
@@ -23,6 +40,11 @@ export function RoleOnboardingForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [campus, setCampus] = useState<InstitutionDto | null>(null);
+  const [campusValid, setCampusValid] = useState(false);
+  const [campusRadius, setCampusRadius] = useState(
+    String(DEFAULT_CAMPUS_RADIUS_METERS),
+  );
 
   useEffect(() => {
     let active = true;
@@ -37,9 +59,10 @@ export function RoleOnboardingForm() {
           state.stage !== "ROLE_SELECTION" &&
           state.stage !== "STUDENT_PROFILE"
         ) {
+          // A returning student is routed straight to their saved campus.
           router.replace(
-            studentPostAuthPath(
-              state.nextPath,
+            studentDestination(
+              state,
               new URLSearchParams(window.location.search).get("next"),
             ),
           );
@@ -72,6 +95,14 @@ export function RoleOnboardingForm() {
     }
 
     setError(null);
+
+    // The campus is what makes the first search useful for a student moving
+    // from another province, so it is required before the account is created.
+    if (role === "STUDENT" && !campusValid) {
+      setError("សូមជ្រើសរើសសាលវិទ្យា ឬសាកលវិទ្យាល័យរបស់អ្នក ដើម្បីបន្ត។");
+      return;
+    }
+
     setPending(true);
     const formData = new FormData(event.currentTarget);
 
@@ -79,12 +110,16 @@ export function RoleOnboardingForm() {
       const state = await selectRole({
         role,
         ...(role === "STUDENT"
-          ? { displayName: String(formData.get("displayName") ?? "") }
+          ? {
+              displayName: String(formData.get("displayName") ?? ""),
+              ...(campus ? { institutionId: campus.id } : {}),
+              preferredRadiusMeters: Number(campusRadius),
+            }
           : {}),
       });
       router.replace(
-        studentPostAuthPath(
-          state.nextPath,
+        studentDestination(
+          state,
           new URLSearchParams(window.location.search).get("next"),
         ),
       );
@@ -168,23 +203,63 @@ export function RoleOnboardingForm() {
         </fieldset>
 
         {role === "STUDENT" ? (
-          <div className="form-field onboarding-profile-field">
-            <label htmlFor="student-display-name" lang="km">
-              ឈ្មោះដែលអ្នកចង់បង្ហាញ
-            </label>
-            <input
-              id="student-display-name"
-              name="displayName"
-              type="text"
-              autoComplete="name"
-              minLength={2}
-              maxLength={120}
-              required
-            />
-            <p className="field-help" lang="km">
-              ឈ្មោះនេះប្រើសម្រាប់គណនីឯកជនរបស់អ្នក
-              ហើយមិនបង្ហាញជាមួយបន្ទប់ដែលអ្នកបានរក្សាទុកទេ។
-            </p>
+          <div className="onboarding-campus-fields">
+            <div className="form-field onboarding-profile-field">
+              <label htmlFor="student-display-name" lang="km">
+                ឈ្មោះដែលអ្នកចង់បង្ហាញ
+              </label>
+              <input
+                id="student-display-name"
+                name="displayName"
+                type="text"
+                autoComplete="name"
+                minLength={2}
+                maxLength={120}
+                required
+              />
+              <p className="field-help" lang="km">
+                ឈ្មោះនេះប្រើសម្រាប់គណនីឯកជនរបស់អ្នក
+                ហើយមិនបង្ហាញជាមួយបន្ទប់ដែលអ្នកបានរក្សាទុកទេ។
+              </p>
+            </div>
+
+            <div className="form-field onboarding-campus-field">
+              <InstitutionPicker
+                id="student-campus"
+                label="សាលវិទ្យា ឬ សាកលវិទ្យាល័យរបស់អ្នក"
+                locale="km"
+                selectedInstitution={campus}
+                onSelect={setCampus}
+                onSelectionValidityChange={setCampusValid}
+                disabled={pending}
+              />
+              <p className="field-help" lang="km">
+                យើងនឹងបង្ហាញបន្ទប់ជួលនៅជិតសាលវិទ្យានេះជាលក់ដំបូង។
+                អ្នកអាចប្តូរសាលវិទ្យានៅពេលក្រោយ។
+              </p>
+            </div>
+
+            <div className="form-field onboarding-campus-field">
+              <label htmlFor="student-campus-radius" lang="km">
+                ចម្ងាយស្វែងរកដែលត្រូវបាន
+              </label>
+              <select
+                id="student-campus-radius"
+                name="preferredRadiusMeters"
+                value={campusRadius}
+                disabled={pending}
+                onChange={(event) => setCampusRadius(event.target.value)}
+              >
+                {CAMPUS_RADIUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="field-help" lang="km">
+                អ្នកអាចប្តូរចម្ងាយនៅលើទំព័រស្វែងរកបាននៅពេលក្រោយ។
+              </p>
+            </div>
           </div>
         ) : null}
 
@@ -205,7 +280,7 @@ export function RoleOnboardingForm() {
         <button
           className="auth-submit"
           type="submit"
-          disabled={pending || !role}
+          disabled={pending || !role || (role === "STUDENT" && !campusValid)}
         >
           {pending
             ? "កំពុងរក្សាទុកជម្រើស…"

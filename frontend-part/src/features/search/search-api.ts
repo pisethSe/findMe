@@ -11,6 +11,7 @@ import type {
 } from "@findme/contracts";
 
 import { isSearchRadius } from "./distance-filter-model.ts";
+import { normalizeInstitutionQuery } from "./institution-search-model.ts";
 import { isRoomType } from "./room-type-options.ts";
 
 interface ErrorEnvelope {
@@ -32,7 +33,8 @@ export async function searchInstitutions(
   signal?: AbortSignal,
 ): Promise<InstitutionSearchPage> {
   const query = new URLSearchParams();
-  if (input.query?.trim()) query.set("query", input.query.trim());
+  const normalizedQuery = normalizeInstitutionQuery(input.query ?? "");
+  if (normalizedQuery) query.set("query", normalizedQuery);
   if (input.slug) query.set("slug", input.slug);
   query.set("limit", String(input.limit ?? 20));
   const response = await fetch(`${apiBaseUrl()}/institutions?${query}`, {

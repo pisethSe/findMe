@@ -6,6 +6,7 @@ import {
   institutionInputValue,
   institutionTypeLabel,
   nextInstitutionOptionIndex,
+  normalizeInstitutionQuery,
 } from "../src/features/search/institution-search-model.ts";
 
 const institution = {
@@ -31,6 +32,27 @@ test("institution picker keyboard navigation wraps in both directions", () => {
   assert.equal(nextInstitutionOptionIndex(2, 3, "next"), 0);
   assert.equal(nextInstitutionOptionIndex(0, 3, "previous"), 2);
   assert.equal(nextInstitutionOptionIndex(-1, 0, "next"), -1);
+});
+
+test("campus query normalization keeps Khmer, Latin and typed case intact", () => {
+  assert.equal(
+    normalizeInstitutionQuery("  Royal\t University  "),
+    "Royal University",
+  );
+  assert.equal(
+    normalizeInstitutionQuery("ROYAL university"),
+    "ROYAL university",
+  );
+  assert.equal(
+    normalizeInstitutionQuery("royal university"),
+    "royal university",
+  );
+  assert.equal(normalizeInstitutionQuery("RUPP"), "RUPP");
+  assert.equal(
+    normalizeInstitutionQuery("សាកលវិទ្យាល័យ   ភូមិន្ទ"),
+    "សាកលវិទ្យាល័យ ភូមិន្ទ",
+  );
+  assert.equal(normalizeInstitutionQuery("   "), "");
 });
 
 test("selected institution persists canonically while preserving filters", () => {

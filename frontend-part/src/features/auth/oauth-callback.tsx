@@ -6,13 +6,13 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   AuthApiError,
-  getPostAuthenticationPath,
+  getPostAuthenticationState,
   refreshSession,
 } from "./auth-api";
 import { oauthErrorMessage } from "./oauth-errors";
 import {
   safeStudentReturnPath,
-  studentPostAuthPath,
+  studentDestination,
 } from "./student-return-path";
 
 /**
@@ -41,8 +41,8 @@ export function OAuthCallback() {
     (async () => {
       try {
         await refreshSession();
-        const path = studentPostAuthPath(
-          await getPostAuthenticationPath(),
+        const path = studentDestination(
+          await getPostAuthenticationState(),
           safeStudentReturnPath(next),
         );
         router.replace(path);

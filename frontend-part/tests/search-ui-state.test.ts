@@ -2,16 +2,29 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  appearedListingIds,
   canRetryPublishedMap,
   MAP_VIEWPORT_DEBOUNCE_MS,
+  RESULTS_VIEW_AFTER_SELECTION,
   resultScrollBehavior,
   visibleResultRange,
-  viewAfterResultSelection,
 } from "../src/features/search/search-ui-state.ts";
 
-test("mobile result selection hands off between the complete list and map", () => {
-  assert.equal(viewAfterResultSelection("card"), "map");
-  assert.equal(viewAfterResultSelection("marker"), "list");
+test("mobile result selection keeps the map active", () => {
+  assert.equal(RESULTS_VIEW_AFTER_SELECTION, "map");
+});
+
+test("identifies listings that are newly appearing on the map", () => {
+  // First map render without prior knowledge: no markers animate
+  assert.deepEqual(appearedListingIds(null, ["l1", "l2"]), []);
+
+  // When listings update, only brand-new ones are flagged for appearance
+  assert.deepEqual(appearedListingIds(["l1", "l2"], ["l1", "l2", "l3"]), [
+    "l3",
+  ]);
+
+  // If no new listings appear, list is empty
+  assert.deepEqual(appearedListingIds(["l1", "l2"], ["l1", "l2"]), []);
 });
 
 test("map movement waits for a bounded quiet period", () => {

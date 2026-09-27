@@ -1210,6 +1210,77 @@ footer p {
   }
 }
 
+/* Bilingual examples that run inside the campus field while it is idle.
+   The layer never receives pointer input and is hidden from assistive
+   technology: the label and the typed query stay the accessible content. */
+.institution-picker-running {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  padding: 0 14px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.institution-picker-running-km,
+.institution-picker-running-en {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* While examples run, the field's own value stays in the DOM but is not
+   painted, so two lines of text never overlap. */
+.institution-picker-control input[data-running="true"] {
+  color: transparent;
+}
+
+.institution-picker-running-km {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.institution-picker-running-en {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.institution-picker-running[data-motion="cycle"] {
+  animation: institutionRunningCycle 3000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes institutionRunningCycle {
+  0% {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  76% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .institution-picker-running[data-motion="cycle"] {
+    animation: none;
+  }
+}
+
 .institution-start-feedback {
   margin: 10px 0 0;
   color: var(--muted);
@@ -1970,6 +2041,32 @@ footer p {
 
 .onboarding-profile-field {
   padding-top: 4px;
+}
+
+.onboarding-campus-fields {
+  display: grid;
+  gap: 4px;
+}
+
+.onboarding-campus-field {
+  padding-top: 4px;
+}
+
+.onboarding-campus-field select {
+  min-height: 44px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.onboarding-campus-field select:disabled {
+  cursor: wait;
+  color: var(--muted);
 }
 
 .trial-note,
@@ -5123,6 +5220,205 @@ footer p {
   font-size: 0.62rem;
   white-space: nowrap;
   transform: translateX(-50%);
+}
+
+/* Only a marker that is new to the current results page animates. */
+@media (prefers-reduced-motion: no-preference) {
+  .search-rental-marker[data-appear="true"] {
+    animation: search-rental-marker-appear 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes search-rental-marker-appear {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.published-map-popup {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 3;
+  width: min(320px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.published-map-popup:focus-visible {
+  outline: 3px solid var(--primary-strong);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .published-map-popup {
+    animation: published-map-popup-open 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes published-map-popup-open {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.published-map-popup-photo {
+  position: relative;
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-strong);
+}
+
+.published-map-popup-photo img {
+  object-fit: cover;
+}
+
+.published-map-popup-photo > span {
+  padding: 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.published-map-popup-copy {
+  min-width: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.published-map-popup-copy .price-row {
+  gap: 6px;
+}
+
+.published-map-popup-copy .price-row > strong {
+  font-size: 1rem;
+}
+
+.published-map-popup-copy .available-label {
+  font-size: 0.7rem;
+}
+
+.published-map-popup-copy .available-label[data-available="false"] {
+  color: var(--unavailable);
+}
+
+.availability-cross {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.availability-cross::before,
+.availability-cross::after {
+  position: absolute;
+  width: 7px;
+  height: 2px;
+  top: 6px;
+  left: 4px;
+  background: var(--bg);
+  content: "";
+}
+
+.availability-cross::before {
+  transform: rotate(45deg);
+}
+
+.availability-cross::after {
+  transform: rotate(-45deg);
+}
+
+.published-map-popup-copy h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.published-map-popup-copy h3 a {
+  color: var(--ink);
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+}
+
+.published-map-popup-copy h3 a:hover {
+  color: var(--primary-strong);
+  text-decoration-color: currentColor;
+}
+
+.published-map-popup-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.published-map-popup-copy small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.published-map-popup-actions {
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.published-map-popup-actions a,
+.published-map-popup-actions button {
+  min-height: 36px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.published-map-popup-actions a {
+  border-color: var(--primary-strong);
+  color: var(--bg);
+  background: var(--primary-strong);
+}
+
+.published-map-popup-actions a:hover,
+.published-map-popup-actions button:hover {
+  color: var(--bg);
+  border-color: var(--ink);
+  background: var(--ink);
 }
 
 .published-rental-results {

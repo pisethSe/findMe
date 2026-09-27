@@ -36,11 +36,22 @@ const server = createServer((request, response) => {
     return;
   }
   if (url.pathname === "/api/v1/institutions") {
+    // Mirrors the production search contract: English and abbreviation matches
+    // ignore case, Khmer matches by substring, so the picker can be exercised
+    // with both languages and with upper or lower case text.
+    const requestedQuery = (url.searchParams.get("query") ?? "").trim();
+    const requestedSlug = url.searchParams.get("slug");
+    const normalizedQuery = requestedQuery.toLocaleLowerCase("en-US");
+    const matchesQuery =
+      normalizedQuery.length === 0 ||
+      institution.nameEn.toLocaleLowerCase("en-US").includes(normalizedQuery) ||
+      institution.nameKm.includes(requestedQuery);
+    const matchesSlug = !requestedSlug || institution.slug === requestedSlug;
     response.end(
       JSON.stringify({
-        data: [institution],
+        data: matchesQuery && matchesSlug ? [institution] : [],
         meta: {
-          count: 1,
+          count: matchesQuery && matchesSlug ? 1 : 0,
           query: url.searchParams.get("query"),
           selectedSlug: url.searchParams.get("slug"),
           limit: Number(url.searchParams.get("limit") ?? 20),

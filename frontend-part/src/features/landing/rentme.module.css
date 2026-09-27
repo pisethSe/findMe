@@ -284,8 +284,10 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  transform-origin: center;
-  animation: phraseFlip 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: 50% 60%;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  animation: phraseFlip 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .phrase span:first-child {
   font-size: 21px;
@@ -300,10 +302,12 @@
 }
 @keyframes phraseFlip {
   from {
-    transform: translateY(24px) rotateX(-35deg);
+    opacity: 0;
+    transform: translateY(26px) rotateX(-68deg) scale(0.96);
   }
   to {
-    transform: translateY(0) rotateX(0);
+    opacity: 1;
+    transform: translateY(0) rotateX(0) scale(1);
   }
 }
 .house {
@@ -1751,7 +1755,7 @@
   padding-top: 42px;
 }
 .heroIntro {
-  color: var(--secondary);
+  color: #ffffff;
   font-size: 14px;
   letter-spacing: 0.015em;
 }
@@ -1841,7 +1845,9 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 14px;
-  min-height: 67px;
+  /* The label, the running examples and a comfortable touch target share one
+     reserved height, so focusing the field never shifts the panel. */
+  min-height: 78px;
 }
 .campusInput :global(.institution-picker label) {
   font-size: 11px;
@@ -1850,9 +1856,23 @@
 .campusInput :global(.institution-picker-control input) {
   font-size: 14px;
   font-weight: 400;
-  height: 29px;
-  min-height: 29px;
+  height: 44px;
+  min-height: 44px;
   padding: 0;
+}
+.campusInput :global(.institution-picker-control input[data-running="true"]) {
+  color: transparent;
+}
+.campusInput :global(.institution-picker-running) {
+  padding-inline: 0;
+}
+.campusInput :global(.institution-picker-running-km) {
+  color: var(--secondary);
+  font-size: 11px;
+}
+.campusInput :global(.institution-picker-running-en) {
+  color: var(--text);
+  font-size: 14px;
 }
 .campusInput :global(.institution-picker-popover) {
   top: calc(100% + 20px);
@@ -2135,7 +2155,7 @@
     padding: 18px 17px 0;
   }
   .campusInput :global(.institution-picker) {
-    min-height: 64px;
+    min-height: 78px;
     padding: 8px 11px;
   }
   .campusInput :global(.institution-picker-control input) {
@@ -2287,92 +2307,79 @@
   z-index: -2;
   background-size: cover;
   background-position: center 58%;
-  filter: blur(1.5px);
 }
 .page[data-theme="light"] .heroBackdrop {
   background-image: url("/images/landing/phnom-penh-day.png");
   background-position: center 42%;
+  filter: none;
 }
 .page[data-theme="dark"] .heroBackdrop {
   background-image:
     linear-gradient(#07111eb3, #101820bd),
     url("/images/landing/phnom-penh-night.png");
+  filter: blur(1.5px);
 }
-/* Light appearance keeps a slow drifting dot field in place of the ribbon. */
-.dotTexture {
-  position: absolute;
-  inset: -12px;
-  z-index: -1;
-  pointer-events: none;
-  color: #0b6c8c;
-  opacity: 0.14;
-  background-image:
-    radial-gradient(circle at 1px 1px, currentColor 1.1px, transparent 1.5px),
-    radial-gradient(circle at 1px 1px, currentColor 0.9px, transparent 1.4px);
-  background-size:
-    18px 18px,
-    27px 27px;
-  mask-image: linear-gradient(180deg, #000 0%, #000000cc 42%, transparent 92%);
-  animation: dotDrift 26s linear infinite;
+.page[data-theme="light"] .hero h1 {
+  color: #0a0a0a;
+  /* Subtle dark separation, matching the dark appearance: no white haze
+     behind the headline over the day photograph. */
+  text-shadow: 0 2px 14px rgb(0 0 0 / 35%);
 }
-.page[data-theme="dark"] .dotTexture {
+.page[data-theme="light"] .heroIntro {
+  /* The intro stays white over the day photograph, so a dark halo keeps the
+     small type readable against bright sky. */
+  color: #ffffff;
+  text-shadow:
+    0 1px 3px rgb(0 0 0 / 80%),
+    0 0 12px rgb(0 0 0 / 55%);
+}
+.page[data-theme="light"] .phrase span {
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 42%);
+}
+
+/* The shader is a decorative accent, never a data layer. It eases between
+   themes so switching light/dark does not pop or hard-cut. */
+.ribbon {
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Light mode renders no ribbon layer at all. Over the day photograph the
+   shader's dark base read as a hazy blurred panel behind the headline, so the
+   hero stays a clean photograph; dark appearance keeps the full-bleed
+   screen-blended ribbon. */
+.page[data-theme="light"] .ribbon {
   display: none;
 }
-/* Small sun-lit clouds drifting across the open sky of the day photograph.
-   The fade mask melts the lowest cloud into the skyline haze. */
+.page[data-theme="dark"] .ribbon {
+  inset: 0;
+  border-radius: 0;
+  mix-blend-mode: screen;
+  filter: none;
+  opacity: 0.4;
+}
+/* Light appearance layers a small cloud shader into the open sky at the top of
+   the day photograph (user-directed addition). The band is a slice of the hero
+   measured to end above the skyline, so the clouds never cover the city or the
+   headline, and the layer is layout-neutral: absolutely positioned, clipped and
+   never a pointer target. Reduced-motion clients and the dark appearance never
+   get this layer at all. */
 .heroClouds {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 300px;
+  height: 28%;
+  max-height: 152px;
   z-index: -1;
+  overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(180deg, #000 52%, transparent 96%);
-  mask-image: linear-gradient(180deg, #000 52%, transparent 96%);
-}
-@media (max-width: 640px) {
-  .heroClouds {
-    height: 220px;
-  }
-}
-@keyframes dotDrift {
-  from {
-    background-position:
-      0 0,
-      0 0;
-  }
-  to {
-    background-position:
-      18px 36px,
-      -27px 27px;
-  }
-}
-.page[data-theme="light"] .hero h1 {
-  text-shadow: 0 1px 14px #ffffffcc;
-}
-@media (max-width: 640px) {
-  .dotTexture {
-    opacity: 0.11;
-    background-size:
-      15px 15px,
-      23px 23px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dotTexture {
-    animation: none;
+  .ribbon {
+    transition: none;
   }
-}
-
-.page[data-theme="light"] .ribbon {
-  mix-blend-mode: multiply;
-  filter: invert(1);
-  opacity: 0.13;
-}
-.page[data-theme="dark"] .ribbon {
-  mix-blend-mode: screen;
-  opacity: 0.4;
 }
 .searchSection {
   margin-top: 22px;

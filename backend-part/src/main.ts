@@ -7,14 +7,17 @@ import {
 } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
+import type { NextFunction, Request, Response } from "express";
 
 import { AppModule } from "./app.module.js";
 import { ApiExceptionFilter } from "./common/http/api-exception.filter.js";
+import { getApiSecurityHeaders } from "./common/http/security-headers.js";
 import { MetricsService } from "./common/observability/metrics.service.js";
 import { requestContextMiddleware } from "./common/observability/request-context.middleware.js";
 import { requestLogMiddleware } from "./common/observability/request-log.middleware.js";
 import { createRequestMetricsMiddleware } from "./common/observability/request-metrics.middleware.js";
 import {
+  getAppEnvironment,
   getWebOrigin,
   getTrustedProxyCidrs,
   parseApiPort,
@@ -50,6 +53,19 @@ async function bootstrap(): Promise<void> {
   app.use(requestContextMiddleware);
   app.use(requestLogMiddleware);
   app.use(createRequestMetricsMiddleware(app.get(MetricsService)));
+
+  // Defensive headers on every response, including errors and health probes.
+  const securityHeaders = getApiSecurityHeaders(
+    getAppEnvironment(process.env.APP_ENV),
+  );
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    for (const [name, value] of securityHeaders)
+      response.setHeader(name, value);
+    next();
+  });
+  // Stop the framework advertising itself. The public web app already sets
+  // `poweredByHeader: false`; the API must not fingerprint its stack either.
+  app.disable("x-powered-by");
 
   app.enableShutdownHooks();
   app.setGlobalPrefix("api/v1");

@@ -3,7 +3,7 @@ import test from "node:test";
 import { isFavoritesPage } from "../src/features/favorites/favorites-api.ts";
 import {
   safeStudentReturnPath,
-  studentPostAuthPath,
+  studentDestination,
 } from "../src/features/auth/student-return-path.ts";
 import { listings } from "./browser/fixtures.ts";
 
@@ -60,11 +60,35 @@ test("student return paths cannot override server role routing or leave the site
     "/favorites?" + "a".repeat(4096),
   ])
     assert.equal(safeStudentReturnPath(path), null, path);
-  assert.equal(studentPostAuthPath("/search", "/favorites"), "/favorites");
   assert.equal(
-    studentPostAuthPath("/onboarding/role", "/favorites"),
+    studentDestination(
+      { nextPath: "/search", studentPreference: null },
+      "/favorites",
+    ),
+    "/favorites",
+  );
+  assert.equal(
+    studentDestination(
+      { nextPath: "/onboarding/role", studentPreference: null },
+      "/favorites",
+    ),
     "/onboarding/role?next=%2Ffavorites",
   );
-  for (const path of ["/landlord", "/admin", "/onboarding/landlord"] as const)
-    assert.equal(studentPostAuthPath(path, "/favorites"), path);
+  // Unfinished onboarding is server-owned and must not be skipped for a
+  // return target. Completed landlord and admin routes may still follow one.
+  assert.equal(
+    studentDestination(
+      { nextPath: "/onboarding/landlord", studentPreference: null },
+      "/favorites",
+    ),
+    "/onboarding/landlord",
+  );
+  for (const path of ["/landlord", "/admin"] as const)
+    assert.equal(
+      studentDestination(
+        { nextPath: path, studentPreference: null },
+        "/favorites",
+      ),
+      "/favorites",
+    );
 });

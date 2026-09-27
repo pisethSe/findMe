@@ -4,11 +4,13 @@ export type PublishedMapState = "fallback" | "loading" | "ready" | "error";
 
 export const MAP_VIEWPORT_DEBOUNCE_MS = 450;
 
-export function viewAfterResultSelection(
-  source: SearchSelectionSource,
-): MobileResultsView {
-  return source === "card" ? "map" : "list";
-}
+/**
+ * Both card and marker activation keep the map visible on phones: activating a
+ * card pans to its pin, and activating a marker opens the selected-rental popup
+ * instead of hiding the map. The popup's "Show in list" action is the route back
+ * to the full card list.
+ */
+export const RESULTS_VIEW_AFTER_SELECTION: MobileResultsView = "map";
 
 export function resultScrollBehavior(
   prefersReducedMotion: boolean,
@@ -21,6 +23,20 @@ export function canRetryPublishedMap(
   state: PublishedMapState,
 ): boolean {
   return mapsConfigured && state === "error";
+}
+
+/**
+ * Listings that were not on the map during the previous marker pass. Only these
+ * markers receive the short appear transition; unchanged results stay still.
+ * `null` means no pass has completed yet, so the first render is not animated.
+ */
+export function appearedListingIds(
+  previousIds: readonly string[] | null,
+  currentIds: readonly string[],
+): readonly string[] {
+  if (previousIds === null) return [];
+  const known = new Set(previousIds);
+  return currentIds.filter((listingId) => !known.has(listingId));
 }
 
 export function visibleResultRange(

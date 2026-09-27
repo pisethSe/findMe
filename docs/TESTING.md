@@ -66,6 +66,11 @@ delete records. `test:ci` rejects absent or malformed `TEST_DATABASE_URL` and
 suites from silently skipping in CI. It does not certify that a URL is safe or
 local. `test` remains the infrastructure-optional unit/developer command.
 
+The API pins its PostgreSQL session to UTC because the schema stores timestamps
+as `timestamptz`. A database server running in a local zone otherwise shifts
+availability and freshness windows by that offset, so freshly published rentals
+can read as unavailable. Keep test and development servers on UTC.
+
 The browser server reserves ports 3100/3102 and the Next.js development lock;
 stop an existing frontend dev server first. Run a subset without the extra `--`:
 
@@ -103,3 +108,12 @@ Phase 4 Step 3 adds [stale-listing controls](STALE-LISTINGS.md), with boundary/c
 unit tests, PostgreSQL/HTTP eligibility and confirmation tests, and dashboard
 browser coverage at all four required widths. Run `stale-listings.spec.ts` for a
 focused browser check, or the full browser suite for regression coverage.
+
+The [administrator Telegram support bot](TELEGRAM-BOT.md) adds a read-only,
+allow-listed command surface with a signed webhook. `telegram-bot.test.mjs`
+covers admin-only authorization, command parsing, bounded arguments, single-line
+label sanitization, deduplicated update ids, empty and populated queues, and
+bounded failures; `telegram-webhook.http.test.mjs` covers the hidden route, the
+missing or wrong secret, and an accepted update through the real global
+validation pipe. The live Bot API, a real administrator chat, and the polling
+transport still require configured credentials.

@@ -185,12 +185,15 @@ export class InquiriesRepository {
     });
     const row = result.inquiry;
     return {
-      id: row.id,
-      message: row.message,
-      status: row.status,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      listing,
+      created: result.created,
+      inquiry: {
+        id: row.id,
+        message: row.message,
+        status: row.status,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        listing,
+      },
     };
   }
 

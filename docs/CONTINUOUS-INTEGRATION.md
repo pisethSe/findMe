@@ -34,6 +34,12 @@ After verification passes, `Build and smoke-test containers` validates the
 Compose file, builds the frontend, backend, and migration images, starts the
 complete local stack, and probes the frontend plus the API readiness endpoint.
 Failure logs are printed before the stack and its disposable volume are removed.
+That job also resolves `deploy-part/compose.staging.yaml` against synthetic
+values derived from `.env.staging.example`. The staging stack is never started
+in CI because it needs managed Neon, Redis, object storage, and Google
+credentials, but interpolation still fails the build if a required variable,
+reference, or the YAML structure breaks. See
+[Deployment](DEPLOYMENT.md) for the real staging runbook.
 
 ## Run checks locally
 
