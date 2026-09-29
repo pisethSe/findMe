@@ -685,9 +685,28 @@ function RentalEmptyState({ canCreate }: { canCreate: boolean }) {
             : "Your existing rentals will remain visible here. New rentals cannot be added while access is inactive."}
         </p>
         {canCreate ? (
-          <Link className="dashboard-add-rental" href="/landlord/listings/new">
-            Add your first rental
-          </Link>
+          <>
+            <ol className="dashboard-steps">
+              <li>
+                <strong>Step 1 — Add your rental</strong>
+                <span>Location, price and photos take about five minutes.</span>
+              </li>
+              <li>
+                <strong>Step 2 — Submit for review</strong>
+                <span>Our team checks it, usually within a day.</span>
+              </li>
+              <li>
+                <strong>Step 3 — Answer students</strong>
+                <span>Inquiries arrive in your Messages tab.</span>
+              </li>
+            </ol>
+            <Link
+              className="dashboard-add-rental"
+              href="/landlord/listings/new"
+            >
+              Add your first rental
+            </Link>
+          </>
         ) : (
           <Link className="dashboard-text-link" href="/landlord/trial">
             Review access

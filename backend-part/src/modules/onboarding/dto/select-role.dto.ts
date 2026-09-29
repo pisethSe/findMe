@@ -2,6 +2,7 @@ import { Transform, Type } from "class-transformer";
 import {
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -18,6 +19,14 @@ import {
  */
 const MIN_PREFERRED_RADIUS_METERS = 100;
 const MAX_PREFERRED_RADIUS_METERS = 20_000;
+
+/**
+ * Monthly room budget bounds in USD. They stay well above the public search
+ * minimum and cap the preference at a realistic monthly rent so the saved
+ * value remains a useful search default.
+ */
+const MIN_PREFERRED_PRICE_USD = 0.01;
+const MAX_PREFERRED_PRICE_USD = 100_000;
 
 export class SelectRoleDto {
   @IsIn(["STUDENT", "LANDLORD"], {
@@ -50,4 +59,38 @@ export class SelectRoleDto {
     message: `Preferred radius must be at most ${MAX_PREFERRED_RADIUS_METERS} metres.`,
   })
   preferredRadiusMeters?: number;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message:
+        "Preferred minimum price must be a number with at most 2 decimals.",
+    },
+  )
+  @Min(MIN_PREFERRED_PRICE_USD, {
+    message: "Preferred minimum price must be at least 0.01 USD.",
+  })
+  @Max(MAX_PREFERRED_PRICE_USD, {
+    message: "Preferred minimum price must be at most 100000 USD.",
+  })
+  preferredMinPrice?: number;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message:
+        "Preferred maximum price must be a number with at most 2 decimals.",
+    },
+  )
+  @Min(MIN_PREFERRED_PRICE_USD, {
+    message: "Preferred maximum price must be at least 0.01 USD.",
+  })
+  @Max(MAX_PREFERRED_PRICE_USD, {
+    message: "Preferred maximum price must be at most 100000 USD.",
+  })
+  preferredMaxPrice?: number;
 }

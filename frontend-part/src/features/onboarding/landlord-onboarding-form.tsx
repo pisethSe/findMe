@@ -129,9 +129,7 @@ export function LandlordOnboardingForm() {
             trial.
           </p>
           <Link className="auth-secondary-action" href={result.successNextPath}>
-            {result.successNextPath === "/landlord/listings/new"
-              ? "Add your first rental"
-              : "Open landlord workspace"}
+            Open landlord workspace
           </Link>
         </div>
       </Localized>

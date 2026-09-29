@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { BrandMark } from "./brand-mark";
 import { LandingIcon, translate as t } from "./landing-icons";
 import { useSitePreferences } from "../preferences/site-preferences";
+import {
+  getCurrentUser,
+  peekAccount,
+  signOut,
+  type AuthUser,
+} from "../auth/auth-api";
 import styles from "./rentme.module.css";
 
 export function SiteHeader() {
@@ -13,7 +19,22 @@ export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuButton = useRef<HTMLButtonElement>(null);
   const locationDropdown = useRef<HTMLDetailsElement>(null);
+  const profileDropdown = useRef<HTMLDetailsElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const [account, setAccount] = useState<AuthUser | null>(() => peekAccount());
+  useEffect(() => {
+    let active = true;
+    getCurrentUser()
+      .then((user) => {
+        if (active) setAccount(user);
+      })
+      .catch(() => {
+        if (active) setAccount(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   useEffect(() => {
     function close(event: PointerEvent) {
       if (!(event.target instanceof Node)) return;
@@ -23,6 +44,11 @@ export function SiteHeader() {
         !locationDropdown.current.contains(event.target)
       )
         locationDropdown.current.open = false;
+      if (
+        profileDropdown.current &&
+        !profileDropdown.current.contains(event.target)
+      )
+        profileDropdown.current.open = false;
     }
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
@@ -31,6 +57,13 @@ export function SiteHeader() {
     setMobileMenuOpen(false);
     if (locationDropdown.current) locationDropdown.current.open = false;
     router.push("/universities");
+  }
+  async function handleSignOut() {
+    if (profileDropdown.current) profileDropdown.current.open = false;
+    setMobileMenuOpen(false);
+    await signOut();
+    setAccount(null);
+    router.replace("/");
   }
   return (
     <header
@@ -109,9 +142,11 @@ export function SiteHeader() {
         <a className={styles.navCard} href="/#contact">
           {t(locale, "Contact", "ទំនាក់ទំនង")}
         </a>
-        <Link className={styles.mobileSignup} href="/register">
-          {t(locale, "Sign up", "ចុះឈ្មោះ")}
-        </Link>
+        {account ? null : (
+          <Link className={styles.mobileSignup} href="/register">
+            {t(locale, "Sign up", "ចុះឈ្មោះ")}
+          </Link>
+        )}
       </nav>
       <div className={styles.headerActions}>
         <button
@@ -135,12 +170,87 @@ export function SiteHeader() {
         >
           <LandingIcon name={theme === "light" ? "moon" : "sun"} />
         </button>
-        <Link className={styles.signIn} href="/login">
-          {t(locale, "Sign in", "ចូលគណនី")}
-        </Link>
-        <Link className={styles.signup} href="/register">
-          {t(locale, "Sign up", "ចុះឈ្មោះ")}
-        </Link>
+        {account ? (
+          <details
+            className={styles.profileDropdown}
+            ref={profileDropdown}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && profileDropdown.current) {
+                profileDropdown.current.open = false;
+                profileDropdown.current.querySelector("summary")?.focus();
+              }
+            }}
+          >
+            <summary
+              className={styles.profileTrigger}
+              data-testid="profile-trigger"
+              aria-label={account.email ?? t(locale, "Account", "គណនី")}
+            >
+              <LandingIcon name="user" />
+            </summary>
+            <div
+              className={styles.profileMenu}
+              data-testid="profile-menu"
+              onClick={(event) => {
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest("a") &&
+                  profileDropdown.current
+                )
+                  profileDropdown.current.open = false;
+              }}
+            >
+              <div className={styles.profileMenuHead}>
+                <strong>{account.email ?? t(locale, "Account", "គណនី")}</strong>
+                <small>
+                  {account.role === "LANDLORD"
+                    ? t(locale, "Landlord account", "គណនីម្ចាស់ផ្ទះជួល")
+                    : account.role === "ADMIN"
+                      ? t(locale, "Administrator account", "គណនីអ្នកគ្រប់គ្រង")
+                      : t(locale, "Student account", "គណនីនិស្សិត")}
+                </small>
+              </div>
+              {account.role === "LANDLORD" ? (
+                <>
+                  <Link href="/landlord">
+                    {t(locale, "Dashboard", "ផ្ទាំងគ្រប់គ្រង")}
+                  </Link>
+                  <Link href="/landlord/listings">
+                    {t(locale, "My listings", "បន្ទប់របស់ខ្ញុំ")}
+                  </Link>
+                  <Link href="/landlord/inquiries">
+                    {t(locale, "Messages", "សារសួរ")}
+                  </Link>
+                </>
+              ) : account.role === "ADMIN" ? (
+                <Link href="/admin">
+                  {t(locale, "Admin panel", "ផ្ទាំងអ្នកគ្រប់គ្រង")}
+                </Link>
+              ) : (
+                <>
+                  <Link href="/favorites">
+                    {t(locale, "Saved rentals", "បន្ទប់ដែលរក្សាទុក")}
+                  </Link>
+                  <Link href="/inquiries">
+                    {t(locale, "My inquiries", "សំណួររបស់ខ្ញុំ")}
+                  </Link>
+                </>
+              )}
+              <button type="button" onClick={() => void handleSignOut()}>
+                {t(locale, "Sign out", "ចាក់ចេញ")}
+              </button>
+            </div>
+          </details>
+        ) : (
+          <>
+            <Link className={styles.signIn} href="/login">
+              {t(locale, "Sign in", "ចូលគណនី")}
+            </Link>
+            <Link className={styles.signup} href="/register">
+              {t(locale, "Sign up", "ចុះឈ្មោះ")}
+            </Link>
+          </>
+        )}
         <button
           className={styles.menuButton}
           type="button"

@@ -119,7 +119,7 @@ test("sign-in pages offer Google sign-in only when the server supports it", asyn
   ).toBeVisible();
 });
 
-test("first-time landlord activation continues to the rental wizard and returning visits skip onboarding", async ({
+test("first-time landlord activation lands on the guided dashboard and returning visits skip onboarding", async ({
   page,
 }) => {
   const state = await supplyApi(page);
@@ -133,9 +133,15 @@ test("first-time landlord activation continues to the rental wizard and returnin
   await page
     .getByRole("button", { name: "Complete profile and start trial" })
     .click();
-  await expect(page).toHaveURL(/\/landlord\/listings\/new$/);
+  await expect(page).toHaveURL(/\/landlord$/);
   await expect(
-    page.getByLabel("Property or rental name", { exact: true }),
+    page.getByRole("heading", { name: "No rentals yet" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Step 1 — Add your rental", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Add your first rental" }),
   ).toBeVisible();
   expect(
     state.writes.find(({ path }) => path === "/landlord/onboarding")?.body,
@@ -179,6 +185,43 @@ for (const role of ["STUDENT", "LANDLORD"] as const) {
     ).toHaveLength(0);
   });
 }
+
+test("the header swaps sign-in links for a working profile menu after sign-in", async ({
+  page,
+}) => {
+  const state = await supplyApi(page);
+  state.signedIn = false;
+  state.onboarding = onboarding("STUDENT", true);
+  const header = page.locator("header");
+
+  await page.goto("/");
+  await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByTestId("profile-trigger")).toHaveCount(0);
+
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("student@example.test");
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("student-password-123");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+
+  await expect(header.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+  const trigger = page.getByTestId("profile-trigger");
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const menu = page.getByTestId("profile-menu");
+  await expect(menu).toBeVisible();
+  await expect(menu.getByText("renter@example.test")).toBeVisible();
+  await expect(menu.getByRole("link", { name: "Saved rentals" })).toBeVisible();
+  await expect(menu.getByRole("link", { name: "My inquiries" })).toBeVisible();
+  await expect(menu.getByRole("button", { name: "Sign out" })).toBeVisible();
+
+  await menu.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(header.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByTestId("profile-trigger")).toHaveCount(0);
+});
 
 test("unauthenticated and student visitors cannot open the landlord form", async ({
   page,

@@ -94,9 +94,30 @@ test(
         "STUDENT_PROFILE_REQUIRED",
       );
 
+      const invertedBudget = await apiPost(
+        `${baseUrl}/me/onboarding/role`,
+        {
+          role: "STUDENT",
+          displayName: "Sokha Student",
+          preferredMinPrice: 200,
+          preferredMaxPrice: 100,
+        },
+        studentHeaders,
+      );
+      assert.equal(invertedBudget.response.status, 400);
+      assert.equal(
+        invertedBudget.body.error.code,
+        "STUDENT_BUDGET_RANGE_INVALID",
+      );
+
       const selectedStudent = await apiPost(
         `${baseUrl}/me/onboarding/role`,
-        { role: "STUDENT", displayName: "Sokha Student" },
+        {
+          role: "STUDENT",
+          displayName: "Sokha Student",
+          preferredMinPrice: 50,
+          preferredMaxPrice: 150,
+        },
         studentHeaders,
       );
       assert.equal(selectedStudent.response.status, 200);
@@ -111,7 +132,8 @@ test(
       );
       assert.equal(repeatedStudent.response.status, 200);
       const studentProfile = await database.query(
-        `SELECT sp.display_name, u.role
+        `SELECT sp.display_name, sp.preferred_min_price,
+                sp.preferred_max_price, sp.preferred_price_currency, u.role
          FROM users u
          JOIN student_profiles sp ON sp.user_id = u.id
          WHERE u.email = $1`,
@@ -119,6 +141,9 @@ test(
       );
       assert.deepEqual(studentProfile.rows[0], {
         display_name: "Sokha Student",
+        preferred_min_price: "50.00",
+        preferred_max_price: "150.00",
+        preferred_price_currency: "USD",
         role: "student",
       });
 
@@ -160,6 +185,17 @@ test(
         "ROLE_PROFILE_FIELDS_INVALID",
       );
 
+      const landlordWithStudentBudget = await apiPost(
+        `${baseUrl}/me/onboarding/role`,
+        { role: "LANDLORD", preferredMaxPrice: 100 },
+        landlordHeaders,
+      );
+      assert.equal(landlordWithStudentBudget.response.status, 400);
+      assert.equal(
+        landlordWithStudentBudget.body.error.code,
+        "ROLE_PROFILE_FIELDS_INVALID",
+      );
+
       const selectedLandlord = await apiPost(
         `${baseUrl}/me/onboarding/role`,
         { role: "LANDLORD" },
@@ -193,10 +229,7 @@ test(
       );
       assert.equal(activated.response.status, 200);
       assert.equal(activated.body.data.onboarding.nextPath, "/landlord");
-      assert.equal(
-        activated.body.data.successNextPath,
-        "/landlord/listings/new",
-      );
+      assert.equal(activated.body.data.successNextPath, "/landlord");
       assert.equal(activated.body.data.profile.contactPhone, "012345678");
       assert.equal(activated.body.data.profile.contactTelegram, "@dara_rooms");
       assert.equal(

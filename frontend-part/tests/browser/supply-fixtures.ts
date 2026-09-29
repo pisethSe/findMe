@@ -219,7 +219,7 @@ export async function supplyApi(page: Page) {
       return send({
         data: {
           onboarding: state.onboarding,
-          successNextPath: "/landlord/listings/new",
+          successNextPath: "/landlord",
           profile: {
             userId: session().user.id,
             displayName: "Rental owner",
@@ -354,6 +354,14 @@ export async function supplyApi(page: Page) {
         return send({ data: ready });
       }
       throw new Error(`Unhandled media fixture: ${method} ${path}`);
+    }
+    if (path === "/auth/me")
+      return state.signedIn
+        ? send({ data: session().user })
+        : error("SESSION_REQUIRED", 401);
+    if (path === "/auth/logout") {
+      state.signedIn = false;
+      return route.fulfill({ status: 204, body: "" });
     }
     if (
       path.startsWith("/landlord/") ||

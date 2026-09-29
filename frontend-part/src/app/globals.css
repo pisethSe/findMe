@@ -2887,6 +2887,34 @@ footer p {
   font-size: 0.88rem;
 }
 
+.dashboard-steps {
+  width: min(100%, 560px);
+  margin: 0 auto 22px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  text-align: left;
+}
+
+.dashboard-steps li {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--surface);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.dashboard-steps strong {
+  font-size: 0.9rem;
+}
+
+.dashboard-steps span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .dashboard-text-link {
   min-height: 44px;
   display: inline-flex;

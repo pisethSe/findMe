@@ -13,7 +13,10 @@ import {
 } from "../auth/auth-api";
 
 import { InstitutionPicker } from "../search/institution-picker";
-import { studentDestination } from "../auth/student-return-path";
+import {
+  safeStudentReturnPath,
+  studentDestination,
+} from "../auth/student-return-path";
 
 type SelectableRole = "STUDENT" | "LANDLORD";
 
@@ -32,6 +35,21 @@ const CAMPUS_RADIUS_OPTIONS = [
 
 const DEFAULT_CAMPUS_RADIUS_METERS = 5_000;
 
+/**
+ * Monthly room budget presets. Each option maps to the stored student
+ * preference bounds, so the value is a real search default rather than free
+ * text the search page could reject.
+ */
+const ROOM_BUDGET_OPTIONS = [
+  { value: "", min: undefined, max: undefined, label: "មិនកំណត់តម្លៃ" },
+  { value: "under-50", min: undefined, max: 50, label: "តិចជាង $50" },
+  { value: "50-100", min: 50, max: 100, label: "$50 – $100" },
+  { value: "100-150", min: 100, max: 150, label: "$100 – $150" },
+  { value: "150-200", min: 150, max: 200, label: "$150 – $200" },
+  { value: "200-300", min: 200, max: 300, label: "$200 – $300" },
+  { value: "300-up", min: 300, max: undefined, label: "$300 ឡើងទៅ" },
+] as const;
+
 export function RoleOnboardingForm() {
   const router = useRouter();
   const [role, setRole] = useState<SelectableRole | null>(null);
@@ -45,6 +63,7 @@ export function RoleOnboardingForm() {
   const [campusRadius, setCampusRadius] = useState(
     String(DEFAULT_CAMPUS_RADIUS_METERS),
   );
+  const [roomBudget, setRoomBudget] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -107,6 +126,9 @@ export function RoleOnboardingForm() {
     const formData = new FormData(event.currentTarget);
 
     try {
+      const budget =
+        ROOM_BUDGET_OPTIONS.find((option) => option.value === roomBudget) ??
+        ROOM_BUDGET_OPTIONS[0];
       const state = await selectRole({
         role,
         ...(role === "STUDENT"
@@ -114,15 +136,27 @@ export function RoleOnboardingForm() {
               displayName: String(formData.get("displayName") ?? ""),
               ...(campus ? { institutionId: campus.id } : {}),
               preferredRadiusMeters: Number(campusRadius),
+              ...(budget.min !== undefined
+                ? { preferredMinPrice: budget.min }
+                : {}),
+              ...(budget.max !== undefined
+                ? { preferredMaxPrice: budget.max }
+                : {}),
             }
           : {}),
       });
-      router.replace(
-        studentDestination(
-          state,
-          new URLSearchParams(window.location.search).get("next"),
-        ),
+      if (state.nextPath === "/onboarding/landlord") {
+        // Landlords still own a server-required profile step before any
+        // dashboard, so the server route wins.
+        router.replace(state.nextPath);
+        return;
+      }
+      // A safe deep link still wins; otherwise the student lands on the home
+      // page, exactly like any other signed-in visit.
+      const safeNext = safeStudentReturnPath(
+        new URLSearchParams(window.location.search).get("next"),
       );
+      router.replace(safeNext ?? "/");
     } catch (caught) {
       setError(
         caught instanceof AuthApiError
@@ -258,6 +292,29 @@ export function RoleOnboardingForm() {
               </select>
               <p className="field-help" lang="km">
                 អ្នកអាចប្តូរចម្ងាយនៅលើទំព័រស្វែងរកបាននៅពេលក្រោយ។
+              </p>
+            </div>
+
+            <div className="form-field onboarding-campus-field">
+              <label htmlFor="student-room-budget" lang="km">
+                តម្លៃបន្ទប់ជួលក្នុងមួយខែ (ដុល្លារ)
+              </label>
+              <select
+                id="student-room-budget"
+                name="roomBudget"
+                value={roomBudget}
+                disabled={pending}
+                onChange={(event) => setRoomBudget(event.target.value)}
+              >
+                {ROOM_BUDGET_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="field-help" lang="km">
+                ជួយឱ្យយើងបង្ហាញបន្ទប់ដែលសមនឹងថវិការបស់អ្នក។
+                អ្នកអាចប្តូរវានៅពេលក្រោយ។
               </p>
             </div>
           </div>

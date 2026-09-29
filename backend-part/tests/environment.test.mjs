@@ -87,7 +87,35 @@ test("validates authentication secrets and bounded token lifetimes", () => {
         REFRESH_TOKEN_SECRET: "b".repeat(32),
         REDIS_URL: "rediss://cache.example.test:6380",
       }),
-    /APP_ENV must be explicit/,
+    /APP_ENV must be staging or production/,
+  );
+  assert.throws(
+    () =>
+      validateAuthEnvironment({
+        NODE_ENV: "production",
+        APP_ENV: "local",
+        JWT_ACCESS_SECRET: "a".repeat(32),
+        REFRESH_TOKEN_SECRET: "b".repeat(32),
+      }),
+    /APP_ENV must be staging or production/,
+  );
+  assert.throws(
+    () =>
+      validateAuthEnvironment({
+        NODE_ENV: "production",
+        APP_ENV: "test",
+        JWT_ACCESS_SECRET: "a".repeat(32),
+        REFRESH_TOKEN_SECRET: "b".repeat(32),
+      }),
+    /APP_ENV must be staging or production/,
+  );
+  assert.doesNotThrow(() =>
+    validateAuthEnvironment({
+      NODE_ENV: "production",
+      APP_ENV: "staging",
+      JWT_ACCESS_SECRET: "a".repeat(32),
+      REFRESH_TOKEN_SECRET: "b".repeat(32),
+    }),
   );
   assert.throws(
     () =>

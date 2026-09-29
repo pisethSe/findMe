@@ -186,6 +186,90 @@
   text-align: left;
   padding: 8px 0;
 }
+.profileDropdown {
+  position: relative;
+}
+.profileDropdown summary {
+  list-style: none;
+  cursor: pointer;
+}
+.profileDropdown summary::-webkit-details-marker {
+  display: none;
+}
+.profileTrigger {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--text);
+  background: var(--paper-soft);
+}
+.profileTrigger:hover {
+  background: var(--paper);
+}
+.profileMenu {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 252px;
+  max-width: calc(100vw - 28px);
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: var(--elevation);
+  display: grid;
+  gap: 2px;
+  z-index: 60;
+  white-space: normal;
+  text-align: left;
+}
+.profileMenuHead {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.profileMenuHead strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.profileMenuHead small {
+  color: var(--secondary);
+  font-size: 11px;
+}
+.profileMenu a {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.profileMenu a:hover {
+  background: var(--paper-soft);
+}
+.profileMenu button {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.profileMenu button:hover {
+  background: var(--paper-soft);
+}
 .headerActions {
   justify-self: end;
   display: flex;

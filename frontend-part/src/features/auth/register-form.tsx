@@ -40,7 +40,9 @@ export function RegisterForm({
       await register({
         email: String(formData.get("email") ?? ""),
         password,
-        preferredLocale: formData.get("preferredLocale") === "EN" ? "EN" : "KM",
+        // The language picker was removed from the form; accounts keep the
+        // Khmer-first default. The API still requires this field.
+        preferredLocale: "KM",
       });
       router.replace(
         studentDestination(await getPostAuthenticationState(), safeReturnTo),
@@ -70,17 +72,6 @@ export function RegisterForm({
             inputMode="email"
             required
           />
-        </div>
-        <div className="form-field">
-          <label htmlFor="register-language">Preferred language</label>
-          <select
-            id="register-language"
-            name="preferredLocale"
-            defaultValue="KM"
-          >
-            <option value="KM">ភាសាខ្មែរ (Khmer)</option>
-            <option value="EN">English</option>
-          </select>
         </div>
         <div className="form-field">
           <label htmlFor="register-password">Password</label>

@@ -62,7 +62,7 @@ export interface LandlordEntitlement {
 
 export interface LandlordOnboardingResult {
   onboarding: OnboardingState;
-  successNextPath: "/landlord/listings/new" | "/landlord";
+  successNextPath: "/landlord";
   profile: {
     userId: string;
     displayName: string;
@@ -138,6 +138,59 @@ export function clearAccessToken(): void {
   inMemoryAccessToken = null;
 }
 
+/**
+ * Signed-in account for the shared site header. The cache survives client-side
+ * navigation so the header paints instantly on every page, and every response
+ * that carries the session user refreshes it.
+ */
+let cachedAccount: AuthUser | null = null;
+let accountResolved = false;
+
+function rememberAccount(user: AuthUser): void {
+  cachedAccount = user;
+  accountResolved = true;
+}
+
+/** The last resolved account without a network call, for instant header paint. */
+export function peekAccount(): AuthUser | null {
+  return accountResolved ? cachedAccount : null;
+}
+
+/**
+ * Resolve the signed-in account for the site header. Returns null when the
+ * session is missing or the lookup fails, so the header falls back to the
+ * sign-in links instead of breaking the page.
+ */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  if (accountResolved) return cachedAccount;
+  try {
+    const user = await authorizedRequest<AuthUser>("/auth/me", {
+      method: "GET",
+    });
+    rememberAccount(user);
+    return cachedAccount;
+  } catch {
+    accountResolved = true;
+    cachedAccount = null;
+    return null;
+  }
+}
+
+/** End the local session first so the header flips even if the network fails. */
+export async function signOut(): Promise<void> {
+  accountResolved = true;
+  cachedAccount = null;
+  clearAccessToken();
+  try {
+    await fetch(`${getApiBaseUrl()}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // The UI session is already gone; an offline sign-out still succeeds here.
+  }
+}
+
 export async function register(input: {
   email: string;
   password: string;
@@ -148,6 +201,7 @@ export async function register(input: {
     body: input,
   });
   inMemoryAccessToken = session.accessToken;
+  rememberAccount(session.user);
   return session;
 }
 
@@ -160,6 +214,7 @@ export async function login(input: {
     body: input,
   });
   inMemoryAccessToken = session.accessToken;
+  rememberAccount(session.user);
   return session;
 }
 
@@ -171,6 +226,7 @@ export async function refreshSession(): Promise<AuthSession> {
     })
       .then((session) => {
         inMemoryAccessToken = session.accessToken;
+        rememberAccount(session.user);
         return session;
       })
       .catch((error: unknown) => {
@@ -235,11 +291,22 @@ export async function selectRole(input: {
   displayName?: string;
   institutionId?: string;
   preferredRadiusMeters?: number;
+  preferredMinPrice?: number;
+  preferredMaxPrice?: number;
 }): Promise<OnboardingState> {
-  return authorizedRequest("/me/onboarding/role", {
-    method: "POST",
-    body: input,
-  });
+  const state = await authorizedRequest<OnboardingState>(
+    "/me/onboarding/role",
+    { method: "POST", body: input },
+  );
+  if (accountResolved && cachedAccount) {
+    // The header shows role-aware links, so keep it truthful after onboarding.
+    cachedAccount = {
+      ...cachedAccount,
+      role: state.role,
+      onboardingComplete: state.profileComplete,
+    };
+  }
+  return state;
 }
 
 export async function completeLandlordOnboarding(input: {

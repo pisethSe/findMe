@@ -4,6 +4,7 @@ import { PrismaService } from "../../database/prisma.service.js";
 import { recordAnalyticsEvent } from "../analytics/analytics.events.js";
 import {
   AccountStatus,
+  Currency,
   EntitlementSource,
   EntitlementStatus,
   UserRole,
@@ -107,6 +108,8 @@ export class OnboardingRepository {
           displayName: string;
           institutionId?: string;
           preferredRadiusMeters?: number;
+          preferredMinPrice?: number;
+          preferredMaxPrice?: number;
         }
       | undefined,
     now: Date,
@@ -138,6 +141,16 @@ export class OnboardingRepository {
               : {}),
             ...(studentProfile.preferredRadiusMeters !== undefined
               ? { preferredRadiusMeters: studentProfile.preferredRadiusMeters }
+              : {}),
+            ...(studentProfile.preferredMinPrice !== undefined
+              ? { preferredMinPrice: studentProfile.preferredMinPrice }
+              : {}),
+            ...(studentProfile.preferredMaxPrice !== undefined
+              ? { preferredMaxPrice: studentProfile.preferredMaxPrice }
+              : {}),
+            ...(studentProfile.preferredMinPrice !== undefined ||
+            studentProfile.preferredMaxPrice !== undefined
+              ? { preferredPriceCurrency: Currency.USD }
               : {}),
           },
         });
@@ -178,6 +191,16 @@ export class OnboardingRepository {
                 ? {
                     preferredRadiusMeters: studentProfile.preferredRadiusMeters,
                   }
+                : {}),
+              ...(studentProfile.preferredMinPrice !== undefined
+                ? { preferredMinPrice: studentProfile.preferredMinPrice }
+                : {}),
+              ...(studentProfile.preferredMaxPrice !== undefined
+                ? { preferredMaxPrice: studentProfile.preferredMaxPrice }
+                : {}),
+              ...(studentProfile.preferredMinPrice !== undefined ||
+              studentProfile.preferredMaxPrice !== undefined
+                ? { preferredPriceCurrency: Currency.USD }
                 : {}),
             },
           });

@@ -48,26 +48,31 @@ export class OnboardingService {
       });
     }
 
-    // Campus and radius are student-only search defaults. A landlord request
-    // must never carry them, so a cross-role client cannot seed supply state.
-    if (
-      input.role === "LANDLORD" &&
-      (input.institutionId !== undefined ||
-        input.preferredRadiusMeters !== undefined)
-    ) {
-      throw new BadRequestException({
-        code: "ROLE_PROFILE_FIELDS_INVALID",
-        message: "Student campus preferences are not accepted for landlords.",
-        fields: [
-          {
-            field:
-              input.institutionId !== undefined
-                ? "institutionId"
-                : "preferredRadiusMeters",
-            message: "Remove this field when continuing as a landlord.",
-          },
-        ],
-      });
+    // Campus, radius and the room budget are student-only defaults. A landlord
+    // request must never carry them, so a cross-role client cannot seed supply
+    // state.
+    if (input.role === "LANDLORD") {
+      const studentOnlyField = (
+        [
+          "institutionId",
+          "preferredRadiusMeters",
+          "preferredMinPrice",
+          "preferredMaxPrice",
+        ] as const
+      ).find((field) => input[field] !== undefined);
+      if (studentOnlyField) {
+        throw new BadRequestException({
+          code: "ROLE_PROFILE_FIELDS_INVALID",
+          message:
+            "Student profile preferences are not accepted for landlords.",
+          fields: [
+            {
+              field: studentOnlyField,
+              message: "Remove this field when continuing as a landlord.",
+            },
+          ],
+        });
+      }
     }
 
     if (input.role === "STUDENT" && !input.displayName) {
@@ -86,6 +91,23 @@ export class OnboardingService {
           {
             field: "displayName",
             message: "Display name is required for a student account.",
+          },
+        ],
+      });
+    }
+
+    if (
+      input.preferredMinPrice !== undefined &&
+      input.preferredMaxPrice !== undefined &&
+      input.preferredMinPrice > input.preferredMaxPrice
+    ) {
+      throw new BadRequestException({
+        code: "STUDENT_BUDGET_RANGE_INVALID",
+        message: "The minimum room budget cannot exceed the maximum.",
+        fields: [
+          {
+            field: "preferredMinPrice",
+            message: "Choose a range where the minimum is at most the maximum.",
           },
         ],
       });
@@ -113,6 +135,12 @@ export class OnboardingService {
               : {}),
             ...(input.preferredRadiusMeters !== undefined
               ? { preferredRadiusMeters: input.preferredRadiusMeters }
+              : {}),
+            ...(input.preferredMinPrice !== undefined
+              ? { preferredMinPrice: input.preferredMinPrice }
+              : {}),
+            ...(input.preferredMaxPrice !== undefined
+              ? { preferredMaxPrice: input.preferredMaxPrice }
               : {}),
           }
         : undefined,
@@ -145,7 +173,7 @@ export class OnboardingService {
   ): Promise<{
     onboarding: OnboardingState;
     activation: LandlordActivationRecord;
-    successNextPath: "/landlord/listings/new" | "/landlord";
+    successNextPath: "/landlord";
   }> {
     if (principal.role !== UserRole.LANDLORD) {
       throw new ForbiddenException({
@@ -196,8 +224,10 @@ export class OnboardingService {
     return {
       onboarding: toOnboardingState(user),
       activation: result.activation,
-      successNextPath:
-        result.outcome === "ACTIVATED" ? "/landlord/listings/new" : "/landlord",
+      // First-time landlords land on the plain dashboard, whose guided empty
+      // state walks them through the first listing instead of forcing the
+      // listing wizard open.
+      successNextPath: "/landlord",
     };
   }
 }

@@ -278,12 +278,14 @@ export function parsePasswordResetTtlMinutes(
 }
 
 export function validateAuthEnvironment(environment = process.env): void {
+  const appEnvironment = getAppEnvironment(environment.APP_ENV);
   if (
     environment.NODE_ENV === "production" &&
-    (!environment.APP_ENV || environment.APP_ENV.trim() === "")
+    appEnvironment !== "staging" &&
+    appEnvironment !== "production"
   ) {
     throw new TypeError(
-      "APP_ENV must be explicit when NODE_ENV is production.",
+      "APP_ENV must be staging or production when NODE_ENV is production.",
     );
   }
 
@@ -302,7 +304,6 @@ export function validateAuthEnvironment(environment = process.env): void {
     );
   }
 
-  const appEnvironment = getAppEnvironment(environment.APP_ENV);
   if (
     ["staging", "production"].includes(appEnvironment) &&
     [accessSecret, refreshSecret].some((secret) =>
